@@ -8,6 +8,7 @@
 </head>
 <body>
   <div id="gameScene" class="disable">
+    <div class="gameSceneHudTopLeft" id="gameSceneHudTopLeft"></div>
     <div class="gameSceneHudTopCenter disable" id="gameSceneHudTopCenter">
       <div class="selectSkillContainer">
         <div id="selectSkillImgContainer" class="selectSkillImgContainer"></div>
@@ -210,7 +211,7 @@
 
               </div>
             </div>
-            <button id="startButton">Start</button>
+            <button id="startButton"><span>Start</span><img class="disable" src="/images/buttonLoading.gif" /></button>
           </div>
           <div class="startSceneHudCenterRight">
             <div class="startSceneHudCenterRightServerSelect">
@@ -290,7 +291,7 @@
               <button class="selectedCharSkillSettingBtn" id="standingSceneSkillSettingBtn"><img src="/images/newIcon.png" class="disable">Spell Setting</button>
             </div>
           </div>
-          <button id="restartButton">Start</button>
+          <button id="restartButton"><span>Start</span><img class="disable" src="/images/buttonLoading.gif" /></button>
         </div>
         <div class="standingSceneHudCenterRight">
           <div class="standingSceneHudCenterRightServerSelect">
@@ -345,7 +346,7 @@
           <div id="popUpSkillUpgradeCostJewel"></div>
         </div>
       </div>
-      <button id="popUpSkillUpgradeBtn" class="popUpSkillUpgradeBtn">Upgrade</button>
+      <button id="popUpSkillUpgradeBtn" class="popUpSkillUpgradeBtn"><span>Upgrade</span><img class="disable" src="/images/buttonLoading.gif" /></button>
       <div id="skillUpgradeBlockMask" class="skillUpgradeBlockMask"></div>
     </div>
     <div class="popUpEquipSkillContainer">

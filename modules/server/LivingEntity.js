@@ -3,8 +3,6 @@ var util = require('../public/util.js');
 
 var gameConfig = require('../public/gameConfig.json');
 
-var INTERVAL_TIMER = 1000/gameConfig.INTERVAL;
-
 function LivingEntity(){
   GameObject.call(this);
   this.objectID = null;
@@ -22,9 +20,6 @@ function LivingEntity(){
   // this.before150msPos = {x : -1000, y : -1000};
   // this.before300msPos = {x : -1000, y : -1000};
   this.targetDirection = 0;
-
-  this.updateInterval = false;
-  this.updateFunction = new Function();
 
   this.entityTreeEle = {
     x : 0,

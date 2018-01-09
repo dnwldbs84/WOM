@@ -4,19 +4,47 @@ var objectAssign = require('../../modules/public/objectAssign.js');
 
 //must use with bind or call method
 exports.rotate = function(deltaTime){
-  if(this.targetDirection === this.direction){
-    if(this.currentState === gameConfig.OBJECT_STATE_MOVE || this.currentState === gameConfig.OBJECT_STATE_MOVE_AND_ATTACK){
-      this.move(deltaTime);
-    }else if(this.currentState === gameConfig.OBJECT_STATE_ATTACK){
-    }else if(this.currentState === gameConfig.OBJECT_STATE_CAST){
-      this.executeSkill();
+  if(exports.isNumeric(this.rotateSpeed)){
+    if(this.targetDirection === this.direction){
+      if(this.currentState === gameConfig.OBJECT_STATE_MOVE || this.currentState === gameConfig.OBJECT_STATE_MOVE_AND_ATTACK){
+        this.move(deltaTime);
+      }else if(this.currentState === gameConfig.OBJECT_STATE_ATTACK){
+      }else if(this.currentState === gameConfig.OBJECT_STATE_CAST){
+        this.executeSkill();
+      }
     }
-  }
-  //check rotate direction
-  else{
-    if(this.direction > 0 && this.targetDirection < 0){
-      if((180 - this.direction + 180 + this.targetDirection) < (this.direction - this.targetDirection)){
-        if(Math.abs(this.targetDirection - this.direction) < this.rotateSpeed * deltaTime){
+    //check rotate direction
+    else{
+      if(this.direction > 0 && this.targetDirection < 0){
+        if((180 - this.direction + 180 + this.targetDirection) < (this.direction - this.targetDirection)){
+          if(Math.abs(this.targetDirection - this.direction) < this.rotateSpeed * deltaTime){
+            this.direction += Math.abs(this.targetDirection - this.direction);
+          }else{
+            this.direction += this.rotateSpeed * deltaTime;
+          }
+        }else if(this.targetDirection < this.direction){
+          if(Math.abs(this.targetDirection - this.direction)<this.rotateSpeed * deltaTime){
+            this.direction -= Math.abs(this.targetDirection - this.direction);
+          }else{
+            this.direction -= this.rotateSpeed * deltaTime;
+          }
+        }
+      }else if(this.direction < 0 && this.targetDirection >0 ){
+        if((180 + this.direction + 180 - this.targetDirection) < (this.targetDirection - this.direction)){
+          if(Math.abs(this.targetDirection - this.direction)<this.rotateSpeed * deltaTime){
+            this.direction -= Math.abs(this.targetDirection - this.direction);
+          }else{
+            this.direction -= this.rotateSpeed * deltaTime;
+          }
+        }else if(this.targetDirection > this.direction){
+          if(Math.abs(this.targetDirection - this.direction)<this.rotateSpeed * deltaTime){
+            this.direction += Math.abs(this.targetDirection - this.direction);
+          }else{
+            this.direction += this.rotateSpeed * deltaTime;
+          }
+        }
+      }else if(this.targetDirection > this.direction){
+        if(Math.abs(this.targetDirection - this.direction)<this.rotateSpeed * deltaTime){
           this.direction += Math.abs(this.targetDirection - this.direction);
         }else{
           this.direction += this.rotateSpeed * deltaTime;
@@ -28,94 +56,70 @@ exports.rotate = function(deltaTime){
           this.direction -= this.rotateSpeed * deltaTime;
         }
       }
-    }else if(this.direction < 0 && this.targetDirection >0 ){
-      if((180 + this.direction + 180 - this.targetDirection) < (this.targetDirection - this.direction)){
-        if(Math.abs(this.targetDirection - this.direction)<this.rotateSpeed * deltaTime){
-          this.direction -= Math.abs(this.targetDirection - this.direction);
-        }else{
-          this.direction -= this.rotateSpeed * deltaTime;
-        }
-      }else if(this.targetDirection > this.direction){
-        if(Math.abs(this.targetDirection - this.direction)<this.rotateSpeed * deltaTime){
-          this.direction += Math.abs(this.targetDirection - this.direction);
-        }else{
-          this.direction += this.rotateSpeed * deltaTime;
-        }
-      }
-    }else if(this.targetDirection > this.direction){
-      if(Math.abs(this.targetDirection - this.direction)<this.rotateSpeed * deltaTime){
-        this.direction += Math.abs(this.targetDirection - this.direction);
-      }else{
-        this.direction += this.rotateSpeed * deltaTime;
-      }
-    }else if(this.targetDirection < this.direction){
-      if(Math.abs(this.targetDirection - this.direction)<this.rotateSpeed * deltaTime){
-        this.direction -= Math.abs(this.targetDirection - this.direction);
-      }else{
-        this.direction -= this.rotateSpeed * deltaTime;
+      if(this.currentState === gameConfig.OBJECT_STATE_MOVE || this.currentState === gameConfig.OBJECT_STATE_MOVE_AND_ATTACK){
+        this.move(deltaTime, true);
       }
     }
-    if(this.currentState === gameConfig.OBJECT_STATE_MOVE || this.currentState === gameConfig.OBJECT_STATE_MOVE_AND_ATTACK){
-      this.move(deltaTime, true);
-    }
-  }
 
-  if(this.direction >= 180){
-    this.direction -= 360;
-  }else if(this.direction <= -180){
-    this.direction += 360;
+    if(this.direction >= 180){
+      this.direction -= 360;
+    }else if(this.direction <= -180){
+      this.direction += 360;
+    }
   }
 };
 
 //must use with bind or call method
 exports.move = function(deltaTime, isMoveSlight){
   //calculate dist with target
-  var distX = this.targetPosition.x - this.center.x;
-  var distY = this.targetPosition.y - this.center.y;
+  if(exports.isNumeric(this.speed.x) && exports.isNumeric(this.speed.y)){
+    var distX = this.targetPosition.x - this.center.x;
+    var distY = this.targetPosition.y - this.center.y;
 
-  var distSquare = Math.pow(distX, 2) + Math.pow(distY, 2);
-  if(distSquare < 100 && this.currentState === gameConfig.OBJECT_STATE_MOVE_AND_ATTACK){
-    this.executeSkill();
-  }else if(distSquare < 100){
-    this.stop();
-    this.changeState(gameConfig.OBJECT_STATE_IDLE);
-  }
-  if(Math.abs(distX) < Math.abs(this.speed.x) * deltaTime){
-    this.speed.x = distX / deltaTime;
-  }
-  if(Math.abs(distY) < Math.abs(this.speed.y) * deltaTime){
-    this.speed.y = distY / deltaTime;
-  }
-  var addPos = this.onMove(this);
-  if(addPos){
-    if(exports.isNumeric(addPos.x) && exports.isNumeric(addPos.y)){
-      this.position.x += addPos.x;
-      this.position.y += addPos.y;
+    var distSquare = Math.pow(distX, 2) + Math.pow(distY, 2);
+    if(distSquare < 100 && this.currentState === gameConfig.OBJECT_STATE_MOVE_AND_ATTACK){
+      this.executeSkill();
+    }else if(distSquare < 100){
+      this.stop();
+      this.changeState(gameConfig.OBJECT_STATE_IDLE);
     }
-  }
-  if(isMoveSlight){
-    this.position.x += this.speed.x * deltaTime * gameConfig.MOVE_SLIGHT_RATE;
-    this.position.y += this.speed.y * deltaTime * gameConfig.MOVE_SLIGHT_RATE;
-  }else{
-    this.position.x += this.speed.x * deltaTime;
-    this.position.y += this.speed.y * deltaTime;
-  }
+    if(Math.abs(distX) < Math.abs(this.speed.x) * deltaTime){
+      this.speed.x = distX / deltaTime;
+    }
+    if(Math.abs(distY) < Math.abs(this.speed.y) * deltaTime){
+      this.speed.y = distY / deltaTime;
+    }
+    var addPos = this.onMove(this);
+    if(addPos){
+      if(exports.isNumeric(addPos.x) && exports.isNumeric(addPos.y)){
+        this.position.x += addPos.x;
+        this.position.y += addPos.y;
+      }
+    }
+    if(isMoveSlight){
+      this.position.x += this.speed.x * deltaTime * gameConfig.MOVE_SLIGHT_RATE;
+      this.position.y += this.speed.y * deltaTime * gameConfig.MOVE_SLIGHT_RATE;
+    }else{
+      this.position.x += this.speed.x * deltaTime;
+      this.position.y += this.speed.y * deltaTime;
+    }
 
-  if(this.position.x < 0){
-    this.position.x = 0;
-  }else if(this.position.x > gameConfig.CANVAS_MAX_SIZE.width - this.size.width){
-    this.position.x = gameConfig.CANVAS_MAX_SIZE.width - this.size.width;
-  }
-  if(this.position.y < 0){
-    this.position.y = 0;
-  }else if(this.position.y > gameConfig.CANVAS_MAX_SIZE.height - this.size.height){
-    this.position.y = gameConfig.CANVAS_MAX_SIZE.height - this.size.height;
-  }
+    if(this.position.x < 0){
+      this.position.x = 0;
+    }else if(this.position.x > gameConfig.CANVAS_MAX_SIZE.width - this.size.width){
+      this.position.x = gameConfig.CANVAS_MAX_SIZE.width - this.size.width;
+    }
+    if(this.position.y < 0){
+      this.position.y = 0;
+    }else if(this.position.y > gameConfig.CANVAS_MAX_SIZE.height - this.size.height){
+      this.position.y = gameConfig.CANVAS_MAX_SIZE.height - this.size.height;
+    }
 
-  this.setCenter();
-  if(addPos){
-    this.setTargetDirection();
-    this.setSpeed();
+    this.setCenter();
+    if(addPos){
+      this.setTargetDirection();
+      this.setSpeed();
+    }
   }
 };
 

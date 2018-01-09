@@ -145,9 +145,7 @@ OBJChest.prototype = Object.create(GameObject.prototype);
 OBJChest.prototype.constructor = OBJChest;
 
 OBJChest.prototype.takeDamage = function(attackUserID, damage){
-  console.log(this.objectID + ' is hit by ' + attackUserID);
   this.HP -= damage;
-  console.log(this.HP);
   if(this.HP <= 0){
     this.destroy(attackUserID);
   }else{

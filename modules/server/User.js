@@ -18,7 +18,7 @@ var gameConfig = require('../public/gameConfig.json');
 var serverConfig = require('./serverConfig.json');
 var objectAssign = require('../public/objectAssign');
 
-var INTERVAL_TIMER = 1000/gameConfig.INTERVAL;
+var INTERVAL_TIMER = 1000/serverConfig.INTERVAL;
 
 function User(socketID, userStat, userBase, exp){
   LivingEntity.call(this);
@@ -120,8 +120,6 @@ function User(socketID, userStat, userBase, exp){
   this.inherentPassiveSkill = 0;
 
   this.socketID = socketID;
-
-  this.currentSkill = undefined;
 
   this.buffUpdateInterval = false;
   this.regenInterval = false;
@@ -679,29 +677,31 @@ User.prototype.addBuff = function(buffGroupIndex, actorID){
 User.prototype.getSkill = function(index){
   //check skill possession
   var skillData = objectAssign({}, util.findData(skillTable, 'index', index));
-  var possessSkill = false;
-  for(var i=0; i<this.possessSkills.length; i++){
-    var tempSkillData = objectAssign({}, util.findData(skillTable, 'index', this.possessSkills[i]));
-    if(skillData.groupIndex === tempSkillData.groupIndex){
-      possessSkill = tempSkillData;
-      break;
+  if(Object.keys(skillData).length){
+    var possessSkill = false;
+    for(var i=0; i<this.possessSkills.length; i++){
+      var tempSkillData = objectAssign({}, util.findData(skillTable, 'index', this.possessSkills[i]));
+      if(skillData.groupIndex === tempSkillData.groupIndex){
+        possessSkill = tempSkillData;
+        break;
+      }
     }
+    //check possible levelup
+    if(!possessSkill){
+      this.possessSkills.push(skillData.index);
+      this.onGetSkill(this, index);
+      return this.possessSkills;
+    }else{
+      var goldAmount = skillData.exchangeToGold;
+      var jewelAmount = skillData.exchangeToJewel;
+      if(util.isNumeric(goldAmount)){
+        this.gold += goldAmount;
+      }
+      if(util.isNumeric(jewelAmount)){
+        this.jewel += jewelAmount;
+      }
+      this.onSkillChangeToResource(this, index);
   }
-  //check possible levelup
-  if(!possessSkill){
-    this.possessSkills.push(skillData.index);
-    this.onGetSkill(this, index);
-    return this.possessSkills;
-  }else{
-    var goldAmount = skillData.exchangeToGold;
-    var jewelAmount = skillData.exchangeToJewel;
-    if(util.isNumeric(goldAmount)){
-      this.gold += goldAmount;
-    }
-    if(util.isNumeric(jewelAmount)){
-      this.jewel += jewelAmount;
-    }
-    this.onSkillChangeToResource(this, index);
     // if(possessSkill.nextSkillIndex !== -1){
     //   var changeSkillIndex = this.possessSkills.indexOf(possessSkill.index);
     //   if(changeSkillIndex === -1){
@@ -737,89 +737,90 @@ User.prototype.upgradeSkill = function(skillIndex){
     }
   }
   var skillData = objectAssign({}, util.findData(skillTable, 'index', skillIndex));
-  var nextSkillIndex = skillData.nextSkillIndex;
-  if(isBaseSkill || isInherentSkill || isPossession){
-    if(nextSkillIndex !== -1){
-      if(this.gold >= skillData.upgradeGoldAmount && this.jewel >= skillData.upgradeJewelAmount){
-        this.gold -= skillData.upgradeGoldAmount;
-        this.jewel -= skillData.upgradeJewelAmount;
-        if(isBaseSkill){
-          this.baseSkill = nextSkillIndex;
-          this.onSkillUpgrade(this, skillIndex, nextSkillIndex);
-          this.updateCharTypeSkill();
-        }else if(isInherentSkill){
-          this.inherentPassiveSkill = nextSkillIndex;
-          this.onSkillUpgrade(this, skillIndex, nextSkillIndex);
-          this.updateCharTypeSkill();
-        }else if(isPossession){
-          var index = this.possessSkills.indexOf(skillIndex);
-          this.possessSkills.splice(index, 1);
-          this.possessSkills.push(nextSkillIndex);
-          //check equip passive
-          for(var i=0; i<this.passiveList.length; i++){
-            var buffGroupIndex = skillData.buffToSelf;
-            if(this.passiveList[i].index === buffGroupIndex){
-              var nextBuffGroupIndex = objectAssign({}, util.findData(skillTable, 'index', nextSkillIndex)).buffToSelf;
-              var nextBuffGroupData = objectAssign({}, util.findData(buffGroupTable, 'index', nextBuffGroupIndex));
-              this.passiveList.splice(i, 1, nextBuffGroupData);
-              break;
+  if(Object.keys(skillData).length){
+    var nextSkillIndex = skillData.nextSkillIndex;
+    if(isBaseSkill || isInherentSkill || isPossession){
+      if(nextSkillIndex !== -1){
+        if(this.gold >= skillData.upgradeGoldAmount && this.jewel >= skillData.upgradeJewelAmount){
+          this.gold -= skillData.upgradeGoldAmount;
+          this.jewel -= skillData.upgradeJewelAmount;
+          if(isBaseSkill){
+            this.baseSkill = nextSkillIndex;
+            this.onSkillUpgrade(this, skillIndex, nextSkillIndex);
+            this.updateCharTypeSkill();
+          }else if(isInherentSkill){
+            this.inherentPassiveSkill = nextSkillIndex;
+            this.onSkillUpgrade(this, skillIndex, nextSkillIndex);
+            this.updateCharTypeSkill();
+          }else if(isPossession){
+            var index = this.possessSkills.indexOf(skillIndex);
+            this.possessSkills.splice(index, 1);
+            this.possessSkills.push(nextSkillIndex);
+            //check equip passive
+            for(var i=0; i<this.passiveList.length; i++){
+              var buffGroupIndex = skillData.buffToSelf;
+              if(this.passiveList[i].index === buffGroupIndex){
+                var nextBuffGroupIndex = objectAssign({}, util.findData(skillTable, 'index', nextSkillIndex)).buffToSelf;
+                var nextBuffGroupData = objectAssign({}, util.findData(buffGroupTable, 'index', nextBuffGroupIndex));
+                this.passiveList.splice(i, 1, nextBuffGroupData);
+                break;
+              }
             }
+            this.onSkillUpgrade(this, skillIndex, nextSkillIndex);
           }
-          this.onSkillUpgrade(this, skillIndex, nextSkillIndex);
-        }
-      }else{
+        }else{
           //need more resource maybe cheat?
           console.log('cheating!!!');
+        }
+      }else{
+        console.log('skill reach max level');
       }
     }else{
-      console.log('skill reach max level');
-    }
-  }else{
-    if(nextSkillIndex !== -1){
-      if(this.gold >= skillData.upgradeGoldAmount && this.jewel >= skillData.upgradeJewelAmount){
-        if(this.pyroBaseSkill === skillIndex){
-          this.gold -= skillData.upgradeGoldAmount;
-          this.jewel -= skillData.upgradeJewelAmount;
-          this.pyroBaseSkill = nextSkillIndex;
-          this.onSkillUpgrade(this, skillIndex, nextSkillIndex);
-        }else if(this.pyroInherentPassiveSkill === skillIndex){
-          this.gold -= skillData.upgradeGoldAmount;
-          this.jewel -= skillData.upgradeJewelAmount;
-          this.pyroInherentPassiveSkill = nextSkillIndex;
-          this.onSkillUpgrade(this, skillIndex, nextSkillIndex);
-        }else if(this.frosterBaseSkill === skillIndex){
-          this.gold -= skillData.upgradeGoldAmount;
-          this.jewel -= skillData.upgradeJewelAmount;
-          this.frosterBaseSkill = nextSkillIndex;
-          this.onSkillUpgrade(this, skillIndex, nextSkillIndex);
-        }else if(this.frosterInherentPassiveSkill === skillIndex){
-          this.gold -= skillData.upgradeGoldAmount;
-          this.jewel -= skillData.upgradeJewelAmount;
-          this.frosterInherentPassiveSkill = nextSkillIndex;
-          this.onSkillUpgrade(this, skillIndex, nextSkillIndex);
-        }else if(this.mysterBaseSkill === skillIndex){
-          this.gold -= skillData.upgradeGoldAmount;
-          this.jewel -= skillData.upgradeJewelAmount;
-          this.mysterBaseSkill = nextSkillIndex;
-          this.onSkillUpgrade(this, skillIndex, nextSkillIndex);
-        }else if(this.mysterInherentPassiveSkill === skillIndex){
-          this.gold -= skillData.upgradeGoldAmount;
-          this.jewel -= skillData.upgradeJewelAmount;
-          this.mysterInherentPassiveSkill = nextSkillIndex
-          this.onSkillUpgrade(this, skillIndex, nextSkillIndex);
+      if(nextSkillIndex !== -1){
+        if(this.gold >= skillData.upgradeGoldAmount && this.jewel >= skillData.upgradeJewelAmount){
+          if(this.pyroBaseSkill === skillIndex){
+            this.gold -= skillData.upgradeGoldAmount;
+            this.jewel -= skillData.upgradeJewelAmount;
+            this.pyroBaseSkill = nextSkillIndex;
+            this.onSkillUpgrade(this, skillIndex, nextSkillIndex);
+          }else if(this.pyroInherentPassiveSkill === skillIndex){
+            this.gold -= skillData.upgradeGoldAmount;
+            this.jewel -= skillData.upgradeJewelAmount;
+            this.pyroInherentPassiveSkill = nextSkillIndex;
+            this.onSkillUpgrade(this, skillIndex, nextSkillIndex);
+          }else if(this.frosterBaseSkill === skillIndex){
+            this.gold -= skillData.upgradeGoldAmount;
+            this.jewel -= skillData.upgradeJewelAmount;
+            this.frosterBaseSkill = nextSkillIndex;
+            this.onSkillUpgrade(this, skillIndex, nextSkillIndex);
+          }else if(this.frosterInherentPassiveSkill === skillIndex){
+            this.gold -= skillData.upgradeGoldAmount;
+            this.jewel -= skillData.upgradeJewelAmount;
+            this.frosterInherentPassiveSkill = nextSkillIndex;
+            this.onSkillUpgrade(this, skillIndex, nextSkillIndex);
+          }else if(this.mysterBaseSkill === skillIndex){
+            this.gold -= skillData.upgradeGoldAmount;
+            this.jewel -= skillData.upgradeJewelAmount;
+            this.mysterBaseSkill = nextSkillIndex;
+            this.onSkillUpgrade(this, skillIndex, nextSkillIndex);
+          }else if(this.mysterInherentPassiveSkill === skillIndex){
+            this.gold -= skillData.upgradeGoldAmount;
+            this.jewel -= skillData.upgradeJewelAmount;
+            this.mysterInherentPassiveSkill = nextSkillIndex
+            this.onSkillUpgrade(this, skillIndex, nextSkillIndex);
+          }else{
+            console.log('dont possess skill : ' + skillIndex);
+          }
         }else{
-          console.log('dont possess skill : ' + skillIndex);
-        }
-      }else{
           //need more resource maybe cheat?
           console.log('cheating!!!');
+        }
+      }else if(nextSkillIndex === -1){
+        console.log('skill reach max level');
       }
-    }else if(nextSkillIndex === -1){
-      console.log('skill reach max level');
     }
+    this.onBuffExchange(this);
   }
-
-  this.onBuffExchange(this);
 };
 User.prototype.exchangePassive = function(beforeBuffGID, afterBuffGID){
   var beforeBuffGroupDate = objectAssign({}, util.findData(buffGroupTable, 'index', beforeBuffGID));
@@ -833,7 +834,7 @@ User.prototype.exchangePassive = function(beforeBuffGID, afterBuffGID){
   if(index >= 0){
     this.passiveList.splice(index, 1);
   }
-  if(afterBuffGroupDate){
+  if(Object.keys(afterBuffGroupDate).length){
     this.passiveList.push(afterBuffGroupDate);
   }
   this.onBuffExchange(this);
@@ -848,7 +849,7 @@ User.prototype.equipPassives = function(buffGroupIndexList){
       }
     }
     var buffGroupData = objectAssign({}, util.findData(buffGroupTable, 'index', buffGroupIndexList[i]));
-    if(!isDuplicate){
+    if(!isDuplicate && Object.keys(buffGroupData).length){
       this.passiveList.push(buffGroupData);
     }
   }
@@ -885,15 +886,6 @@ User.prototype.checkSkillPossession = function(skillIndex){
   }
   console.log('dont have skill');
   return false;
-};
-User.prototype.stop = function(){
-  if(this.updateInterval){
-    clearInterval(this.updateInterval);
-    this.updateInterval = false;
-  }
-  if(this.currentSkill){
-    this.currentSkill = undefined;
-  }
 };
 User.prototype.takeDamage = function(attackUserID, fireDamage, frostDamage, arcaneDamage, damageToMP, hitBuffList, skillIndex){
   if(!this.conditions[gameConfig.USER_CONDITION_IMMORTAL]){
@@ -981,7 +973,6 @@ User.prototype.takeDamage = function(attackUserID, fireDamage, frostDamage, arca
 
     this.HP -= dmg;
     this.onTakeDamage(this, dmg, skillIndex);
-    console.log(this.objectID + ' : ' + this.HP);
     if(dmgToMP > 0){
       this.takeDamageToMP(dmgToMP);
     }
@@ -1099,6 +1090,7 @@ User.prototype.lossSkills = function(lossRate){
       lossSkillCount = lossSkillCount > skillListOverLevel2.length ? skillListOverLevel2.length : lossSkillCount;
       if(lossSkillCount && skillListOverLevel2.length){
         var beforeSkills = [];
+        var repeatCount = 1;
         for(var i=0; i<lossSkillCount; i++){
           var randomIndex = Math.floor(Math.random() * lossSkillCount);
 
@@ -1110,6 +1102,14 @@ User.prototype.lossSkills = function(lossRate){
             }
             var afterSkill = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', beforeSkill.groupIndex, 'nextSkillIndex', beforeSkill.index));
             skillListOverLevel2.splice(randomIndex, 1, afterSkill);
+          }else{
+            //if dont decrease, repeat fiveTimes
+            if(repeatCount > 10){
+              repeatCount = 1;
+            }else{
+              i--;
+              repeatCount++;
+            }
           }
         }
         if(skillListOverLevel2[0].groupIndex === baseSkillData.groupIndex){
@@ -1211,7 +1211,6 @@ User.prototype.getJewel = function(jewelAmount){
 User.prototype.levelUp = function(){
   this.level ++;
   var userLevelData = objectAssign({}, util.findDataWithTwoColumns(userStatTable, 'type', this.type, 'level', this.level));
-  console.log('level up to ' + this.level);
   //add levelBonus
   //additional level up check.
   this.updateUserBaseStat();
@@ -1223,6 +1222,7 @@ User.prototype.levelUp = function(){
   var additionalLevelUp = false;
   if(userLevelData.needExp !== -1 && this.exp >= userLevelData.needExp){
     additionalLevelUp = true;
+    this.exp -= userLevelData.needExp;
     this.levelUp();
   }
   if(!additionalLevelUp){

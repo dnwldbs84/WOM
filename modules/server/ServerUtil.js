@@ -217,7 +217,13 @@ exports.onUserDeath = function(user, attackUserID, deadUserID){
       }
     }
   }
-  this.onNeedInformUserDeath(attackUserID, deadUserID, loseResource, skillIndexes);
+  var attackUserType = this.getUserType(attackUserID);
+  var deadUserType = this.getUserType(deadUserID);
+  var killFeedBackLevel = this.calcKillFeedBackLevel(attackUserID);
+
+  this.onNeedInformUserDeath({userID : attackUserID, userType : attackUserType, feedBackLevel : killFeedBackLevel},
+                             {userID : deadUserID, userType : deadUserType}
+                             , loseResource, skillIndexes);
   userDrop.call(this, golds, jewels, skills, user.center);
 };
 exports.setAffectedEleColSkillWithEntity = function(skill, affectedID, collisionType){
@@ -228,6 +234,7 @@ exports.setAffectedEleColSkillWithEntity = function(skill, affectedID, collision
 
     projectileID : skill.objectID || 0,
     actorID : skill.id,
+
     affectedID : affectedID,
 
     fireDamage : skill.fireDamage || 0,

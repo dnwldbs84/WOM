@@ -30,7 +30,7 @@ var objectAssign = require('../public/objectAssign');
 // var QuadTree = require('quadtree-lib');
 var QuadTree = require('../public/quadtree.js');
 
-var INTERVAL_TIMER = 1000/gameConfig.INTERVAL;
+var INTERVAL_TIMER = 1000/serverConfig.INTERVAL;
 
 //quadTree var
 //user and chest
@@ -79,7 +79,7 @@ function GameManager(){
   this.addedObjBoxs = [];
   // this.objExpsCount = serverConfig.OBJ_EXP_MIN_COUNT;
   // this.objSkillsCount = serverConfig.OBJ_SKILL_MIN_COUNT;
-  this.objGoldsCount = serverConfig.OBJ_GOLD_MIN_COUNT;
+  // this.objGoldsCount = serverConfig.OBJ_GOLD_MIN_COUNT;
   // this.objJewelsCount = serverConfig.OBJ_JEWEL_MIN_COUNT;
 
   this.longTimeInterval = false;
@@ -147,18 +147,18 @@ GameManager.prototype.mapSetting = function(){
   this.setChestsLocation();
   this.setStaticTreeEle();
   // this.setOBJExps();
-  this.setOBJSkills();
-  this.setOBJGolds();
+  // this.setOBJSkills();
+  // this.setOBJGolds();
 
   // this.testJewel();
   // this.testBox();
 };
-GameManager.prototype.testJewel = function(){
-  var objJewel = this.createOBJs(1, gameConfig.PREFIX_OBJECT_JEWEL, 1, {x : 300, y: 300});
-};
-GameManager.prototype.testBox = function(){
-  var objBox = this.createOBJs(1, gameConfig.PREFIX_OBJECT_BOX, 1, {x : 500, y : 500});
-};
+// GameManager.prototype.testJewel = function(){
+//   var objJewel = this.createOBJs(1, gameConfig.PREFIX_OBJECT_JEWEL, 1, {x : 300, y: 300});
+// };
+// GameManager.prototype.testBox = function(){
+//   var objBox = this.createOBJs(1, gameConfig.PREFIX_OBJECT_BOX, 1, {x : 500, y : 500});
+// };
 GameManager.prototype.updateGame = function(){
   if(this.longTimeInterval === false){
     this.longTimeInterval = setInterval(longTimeIntervalHandler.bind(this), serverConfig.LONG_TIME_INTERVAL_TIME);
@@ -203,40 +203,40 @@ GameManager.prototype.setChestsLocation = function(){
 GameManager.prototype.setStaticTreeEle = function(){
   staticTree.pushAll(staticEles);
 };
-GameManager.prototype.setOBJSkills = function(){
-  for(var i=0; i<this.objSkillsCount; i++){
-    var randomID = SUtil.generateRandomUniqueID(this.objSkills, gameConfig.PREFIX_OBJECT_SKILL);
-    var objSkill = new OBJSkill(randomID);
-    var skillIndex = 21;
-    var radius = gameConfig.OBJ_SKILL_RADIUS;
-    var randomPos = SUtil.generateRandomPos(collectionTree, 0, 0, gameConfig.CANVAS_MAX_SIZE.width - radius, gameConfig.CANVAS_MAX_SIZE.height - radius,
-                                      radius, serverConfig.OBJ_SKILL_RANGE_WITH_OTHERS, randomID, staticTree);
-
-    objSkill.initOBJSkill(randomPos, radius, skillIndex);
-    objSkill.setCollectionEle();
-    // this.staticTree.push(food.staticEle);
-    this.objSkills.push(objSkill);
-    collectionEles.push(objSkill.collectionEle);
-    collectionTree.push(objSkill.collectionEle);
-  }
-};
-GameManager.prototype.setOBJGolds = function(){
-  for(var i=0; i<this.objGoldsCount; i++){
-    var randomID = SUtil.generateRandomUniqueID(this.objGolds, gameConfig.PREFIX_OBJECT_GOLD);
-    var objGold = new OBJGold(randomID);
-    var goldAmount = SUtil.getRandomNum(serverConfig.OBJ_GOLD_MIN_GOLD_AMOUNT, serverConfig.OBJ_GOLD_MAX_GOLD_AMOUNT);
-    var radius = SUtil.goldToRadius(goldAmount);
-    var randomPos = SUtil.generateRandomPos(collectionTree, 0, 0, gameConfig.CANVAS_MAX_SIZE.width - radius, gameConfig.CANVAS_MAX_SIZE.height - radius,
-                                      radius, serverConfig.OBJ_GOLD_RANGE_WITH_OTHERS, randomID, staticTree);
-
-    objGold.initOBJGold(randomPos, radius, goldAmount);
-    objGold.setCollectionEle();
-    // this.staticTree.push(food.staticEle);
-    this.objGolds.push(objGold);
-    collectionEles.push(objGold.collectionEle);
-    collectionTree.push(objGold.collectionEle);
-  }
-};
+// GameManager.prototype.setOBJSkills = function(){
+//   for(var i=0; i<this.objSkillsCount; i++){
+//     var randomID = SUtil.generateRandomUniqueID(this.objSkills, gameConfig.PREFIX_OBJECT_SKILL);
+//     var objSkill = new OBJSkill(randomID);
+//     var skillIndex = 21;
+//     var radius = gameConfig.OBJ_SKILL_RADIUS;
+//     var randomPos = SUtil.generateRandomPos(collectionTree, 0, 0, gameConfig.CANVAS_MAX_SIZE.width - radius, gameConfig.CANVAS_MAX_SIZE.height - radius,
+//                                       radius, serverConfig.OBJ_SKILL_RANGE_WITH_OTHERS, randomID, staticTree);
+//
+//     objSkill.initOBJSkill(randomPos, radius, skillIndex);
+//     objSkill.setCollectionEle();
+//     // this.staticTree.push(food.staticEle);
+//     this.objSkills.push(objSkill);
+//     collectionEles.push(objSkill.collectionEle);
+//     collectionTree.push(objSkill.collectionEle);
+//   }
+// };
+// GameManager.prototype.setOBJGolds = function(){
+//   for(var i=0; i<this.objGoldsCount; i++){
+//     var randomID = SUtil.generateRandomUniqueID(this.objGolds, gameConfig.PREFIX_OBJECT_GOLD);
+//     var objGold = new OBJGold(randomID);
+//     var goldAmount = SUtil.getRandomNum(serverConfig.OBJ_GOLD_MIN_GOLD_AMOUNT, serverConfig.OBJ_GOLD_MAX_GOLD_AMOUNT);
+//     var radius = SUtil.goldToRadius(goldAmount);
+//     var randomPos = SUtil.generateRandomPos(collectionTree, 0, 0, gameConfig.CANVAS_MAX_SIZE.width - radius, gameConfig.CANVAS_MAX_SIZE.height - radius,
+//                                       radius, serverConfig.OBJ_GOLD_RANGE_WITH_OTHERS, randomID, staticTree);
+//
+//     objGold.initOBJGold(randomPos, radius, goldAmount);
+//     objGold.setCollectionEle();
+//     // this.staticTree.push(food.staticEle);
+//     this.objGolds.push(objGold);
+//     collectionEles.push(objGold.collectionEle);
+//     collectionTree.push(objGold.collectionEle);
+//   }
+// };
 GameManager.prototype.createChest = function(chestLocationID){
   var chestGrounds = objectAssign({}, util.findAllDatas(obstacleTable, 'type', gameConfig.OBJ_TYPE_CHEST_GROUND));
   for(var i=0; i<Object.keys(chestGrounds).length; i++){
@@ -543,23 +543,23 @@ GameManager.prototype.joinUser = function(user){
   this.users[user.objectID].onDeath = SUtil.onUserDeath.bind(this);
   // this.setStartBuff(user);
   // this.objExpsCount += serverConfig.OBJ_EXP_ADD_PER_USER;
-  this.objGoldsCount += serverConfig.OBJ_GOLD_ADD_PER_USER;
+  // this.objGoldsCount += serverConfig.OBJ_GOLD_ADD_PER_USER;
   // console.log(user.conditions);
   // console.log(this.users);
   console.log(user.objectID + ' join in GameManager');
 };
 GameManager.prototype.kickUser = function(user){
-  if(!(user.objectID in this.users)){
-    console.log("can`t find user`s ID. user already out of game");
-  }else{
+  if(user.objectID in this.users){
     this.users[user.objectID].clearAll();
     delete this.users[user.objectID];
-    this.objGoldsCount -= serverConfig.OBJ_GOLD_ADD_PER_USER;
+    // this.objGoldsCount -= serverConfig.OBJ_GOLD_ADD_PER_USER;
     // this.objExpsCount -= serverConfig.OBJ_EXP_ADD_PER_USER;
+  }else{
+    console.log("can`t find user`s ID. user already out of game");
   }
 };
 GameManager.prototype.stopUser = function(user){
-  user.stop();
+  user.clearAll();
 };
 GameManager.prototype.setStartBuff = function(user){
   this.users[user.objectID].addBuff(serverConfig.START_BUFF_INDEX, user.objectID);
@@ -668,60 +668,66 @@ GameManager.prototype.applyProjectile = function(userID, projectileDatas){
   }
 };
 GameManager.prototype.checkCheat = function(userData){
-  var lastPositionIndex = this.users[userData.objectID].beforePositions.length;
-  if(lastPositionIndex > 0){
-    var lastPosition = this.users[userData.objectID].beforePositions[lastPositionIndex - 1];
-    var timeSpan = (userData.time - lastPosition.time)/1000;
-    var distX = Math.abs(userData.position.x - lastPosition.x);
-    var distY = Math.abs(userData.position.y - lastPosition.y);
-    var dist = Math.sqrt(Math.pow(distX,2) + Math.pow(distY,2));
-    if(dist > this.users[userData.objectID].maxSpeed * timeSpan * serverConfig.TOLERANCE_LIMIT_RATE){
-      return false;
-    }
-  }
-  return true;
-};
-var count = 0;
-GameManager.prototype.updateUserData = function(userData){
-  if(userData.objectID in this.users && !userData.isDead){
-    if(util.isNumeric(userData.position.x) && util.isNumeric(userData.position.y)){
-      if(userData.time){
-        this.users[userData.objectID].beforePositions.push({
-          x : this.users[userData.objectID].position.x,
-          y : this.users[userData.objectID].position.y,
-          time : this.users[userData.objectID].time
-        });
-        if(this.users[userData.objectID].beforePositions.length > 5){
-          while(this.users[userData.objectID].beforePositions.length > 5){
-            this.users[userData.objectID].beforePositions.splice(0, 1);
-          }
-        }
-        // for(var i=0; i<this.users[userData.objectID].beforePositions.length; i++){
-        //   // console.log(Date.now() - this.users[userData.objectID].beforePositions[i].time);
-        //   if(Date.now() - this.users[userData.objectID].beforePositions[i].time > 300){
-        //     this.users[userData.objectID].before300msPos.x = this.users[userData.objectID].beforePositions[i].x;
-        //     this.users[userData.objectID].before300msPos.y = this.users[userData.objectID].beforePositions[i].y;
-        //   }else if(Date.now() - this.users[userData.objectID].beforePositions[i].time > 150){
-        //     this.users[userData.objectID].before150msPos.x = this.users[userData.objectID].beforePositions[i].x;
-        //     this.users[userData.objectID].before150msPos.y = this.users[userData.objectID].beforePositions[i].y;
-        //   }
-        // }
-        this.users[userData.objectID].time = userData.time;
-      }
-      this.users[userData.objectID].currentState = userData.currentState;
-      this.users[userData.objectID].position = userData.position;
-      this.users[userData.objectID].direction = userData.direction;
-
-      this.users[userData.objectID].setCenter();
-      if(userData.targetPosition){
-        this.users[userData.objectID].targetPosition = userData.targetPosition;
-      }
-      if(userData.skillIndex){
-        this.users[userData.objectID].currentSkill = userData.skillIndex;
+  if(userData.objectID in this.users && !this.users[userData.objectID].isDead){
+    var lastPositionIndex = this.users[userData.objectID].beforePositions.length;
+    if(lastPositionIndex > 0){
+      var lastPosition = this.users[userData.objectID].beforePositions[lastPositionIndex - 1];
+      var timeSpan = (userData.time - lastPosition.time)/1000;
+      var distX = Math.abs(userData.position.x - lastPosition.x);
+      var distY = Math.abs(userData.position.y - lastPosition.y);
+      var dist = Math.sqrt(Math.pow(distX,2) + Math.pow(distY,2));
+      if(dist > this.users[userData.objectID].maxSpeed * timeSpan * serverConfig.TOLERANCE_LIMIT_RATE){
+        return false;
       }
     }
+    return true;
   }else{
-    console.log('cant find user data');
+    return true;
+  }
+};
+GameManager.prototype.updateUserData = function(userData){
+  try {
+    if(userData.objectID in this.users && !this.users[userData.objectID].isDead){
+      if(util.isNumeric(userData.position.x) && util.isNumeric(userData.position.y)){
+        if(userData.time){
+          this.users[userData.objectID].beforePositions.push({
+            x : this.users[userData.objectID].position.x,
+            y : this.users[userData.objectID].position.y,
+            time : this.users[userData.objectID].time
+          });
+          if(this.users[userData.objectID].beforePositions.length > 5){
+            while(this.users[userData.objectID].beforePositions.length > 5){
+              this.users[userData.objectID].beforePositions.splice(0, 1);
+            }
+          }
+          // for(var i=0; i<this.users[userData.objectID].beforePositions.length; i++){
+          //   // console.log(Date.now() - this.users[userData.objectID].beforePositions[i].time);
+          //   if(Date.now() - this.users[userData.objectID].beforePositions[i].time > 300){
+          //     this.users[userData.objectID].before300msPos.x = this.users[userData.objectID].beforePositions[i].x;
+          //     this.users[userData.objectID].before300msPos.y = this.users[userData.objectID].beforePositions[i].y;
+          //   }else if(Date.now() - this.users[userData.objectID].beforePositions[i].time > 150){
+          //     this.users[userData.objectID].before150msPos.x = this.users[userData.objectID].beforePositions[i].x;
+          //     this.users[userData.objectID].before150msPos.y = this.users[userData.objectID].beforePositions[i].y;
+          //   }
+          // }
+          this.users[userData.objectID].time = userData.time;
+        }
+        this.users[userData.objectID].currentState = userData.currentState;
+        this.users[userData.objectID].position = userData.position;
+        this.users[userData.objectID].direction = userData.direction;
+
+        this.users[userData.objectID].setCenter();
+        if(userData.targetPosition){
+          this.users[userData.objectID].targetPosition = userData.targetPosition;
+        }
+      }
+    }else{
+      if(userData.objectID in this.users){
+        console.log('cant find user data');
+      }
+    }
+  } catch (e) {
+    throw e;
   }
 };
 GameManager.prototype.addUserExp = function(userID, exp){
@@ -783,29 +789,33 @@ GameManager.prototype.getInherentPassiveSkill = function(userID, charType){
   }
 };
 GameManager.prototype.processUserDataSetting = function(user){
-  return {
-    objectID : user.objectID,
-    type : user.type,
+  try {
+    return {
+      objectID : user.objectID,
+      type : user.type,
 
-    currentState : user.currentState,
-    position : user.position,
-    targetPosition : user.targetPosition,
-    maxSpeed : user.maxSpeed,
-    direction : user.direction,
-    rotateSpeed : user.rotateSpeed,
-    size : user.size,
+      currentState : user.currentState,
+      position : user.position,
+      targetPosition : user.targetPosition,
+      maxSpeed : user.maxSpeed,
+      direction : user.direction,
+      rotateSpeed : user.rotateSpeed,
+      size : user.size,
 
-    level : user.level,
-    exp : user.exp,
+      level : user.level,
+      exp : user.exp,
 
-    maxHP : user.maxHP,
-    maxMP : user.maxMP,
-    HP : user.HP,
-    MP : user.MP,
-    castSpeed : user.castSpeed,
+      maxHP : user.maxHP,
+      maxMP : user.maxMP,
+      HP : user.HP,
+      MP : user.MP,
+      castSpeed : user.castSpeed,
 
-    conditions : user.conditions
-  };
+      conditions : user.conditions
+    };
+  } catch (e) {
+    throw e;
+  }
 };
 // data setting for send to client
 GameManager.prototype.processUserDataSettings = function(){
@@ -861,28 +871,36 @@ GameManager.prototype.processUserAllTypeLevels = function(userID){
   }
 };
 GameManager.prototype.processChangedUserStat = function(user){
-  return {
-    objectID : user.objectID,
-    type : user.type,
-    level : user.level,
-    exp : user.exp,
-    maxHP : user.maxHP,
-    maxMP : user.maxMP,
-    HP : user.HP,
-    MP : user.MP,
-    castSpeed : user.castSpeed,
-    maxSpeed : user.maxSpeed,
-    rotateSpeed : user.rotateSpeed,
+  try {
+    return {
+      objectID : user.objectID,
+      type : user.type,
+      level : user.level,
+      exp : user.exp,
+      maxHP : user.maxHP,
+      maxMP : user.maxMP,
+      HP : user.HP,
+      MP : user.MP,
+      castSpeed : user.castSpeed,
+      maxSpeed : user.maxSpeed,
+      rotateSpeed : user.rotateSpeed,
 
-    conditions : user.conditions
-  };
+      conditions : user.conditions
+    };
+  } catch (e) {
+    throw e;
+  }
 };
 GameManager.prototype.processUserResource = function(user){
-  return{
-    objectID : user.objectID,
-    gold : user.gold,
-    jewel : user.jewel
-  };
+  try {
+    return{
+      objectID : user.objectID,
+      gold : user.gold,
+      jewel : user.jewel
+    };
+  } catch (e) {
+    throw e;
+  }
 };
 GameManager.prototype.processScoreDatas = function(exceptID){
   var datas = [];
@@ -901,40 +919,70 @@ GameManager.prototype.processScoreDatas = function(exceptID){
   return datas;
 };
 GameManager.prototype.processUserPrivateDataSetting = function(user){
-  return {
-    damageRate : user.damageRate,
-    fireDamageRate : user.fireDamageRate,
-    frostDamageRate : user.frostDamageRate,
-    arcaneDamageRate : user.arcaneDamageRate,
-    resistAll : user.resistAll,
-    resistFire : user.resistFire,
-    resistFrost : user.resistFrost,
-    resistArcane : user.resistArcane,
+  try {
+    return {
+      damageRate : user.damageRate,
+      fireDamageRate : user.fireDamageRate,
+      frostDamageRate : user.frostDamageRate,
+      arcaneDamageRate : user.arcaneDamageRate,
+      resistAll : user.resistAll,
+      resistFire : user.resistFire,
+      resistFrost : user.resistFrost,
+      resistArcane : user.resistArcane,
 
-    level : user.level,
+      level : user.level,
 
-    statPower : user.statPower,
-    statMagic : user.statMagic,
-    statSpeed : user.statSpeed,
-    cooldownReduceRate : user.cooldownReduceRate
-  };
+      statPower : user.statPower,
+      statMagic : user.statMagic,
+      statSpeed : user.statSpeed,
+      cooldownReduceRate : user.cooldownReduceRate
+    };
+  } catch (e) {
+    throw e;
+  }
+};
+GameManager.prototype.processBuffDataSettings = function(){
+  var userBuffDatas = [];
+  for(var index in this.users){
+    if(!this.users[index].isDead){
+      var buffIndexList = [];
+      var passiveIndexList = [];
+      for(var i=0; i<this.users[index].buffList.length; i++){
+        buffIndexList.push({index : this.users[index].buffList[i].index, startTime : this.users[index].buffList[i].startTime});
+      }
+      for(var i=0; i<this.users[index].passiveList.length; i++){
+        passiveIndexList.push(this.users[index].passiveList[i].index);
+      }
+      userBuffDatas.push({
+        objectID : index,
+        inherentPassive : this.users[index].inherentPassiveSkill,
+        buffList : buffIndexList,
+        passiveList : passiveIndexList
+      });
+    }
+  }
+  return userBuffDatas;
 };
 GameManager.prototype.processBuffDataSetting = function(user){
-  var buffIndexList = [];
-  var passiveIndexList = [];
-  for(var i=0; i<user.buffList.length; i++){
-    buffIndexList.push({index : user.buffList[i].index, startTime : user.buffList[i].startTime});
+  try {
+    var buffIndexList = [];
+    var passiveIndexList = [];
+    for(var i=0; i<user.buffList.length; i++){
+      buffIndexList.push({index : user.buffList[i].index, startTime : user.buffList[i].startTime});
+    }
+    for(var i=0; i<user.passiveList.length; i++){
+      passiveIndexList.push(user.passiveList[i].index);
+    }
+    return{
+      objectID : user.objectID,
+      inherentPassive : user.inherentPassiveSkill,
+      buffList : buffIndexList,
+      passiveList : passiveIndexList
+    }
+  } catch (e) {
+    throw e;
   }
-  for(var i=0; i<user.passiveList.length; i++){
-    passiveIndexList.push(user.passiveList[i].index);
-  }
-  return{
-    objectID : user.objectID,
-    inherentPassive : user.inherentPassiveSkill,
-    buffList : buffIndexList,
-    passiveList : passiveIndexList,
-  }
-}
+};
 GameManager.prototype.addSkillData = function(userData){
   if(userData.objectID in this.users){
     userData.baseSkill = this.users[userData.objectID].baseSkill;
@@ -1111,13 +1159,21 @@ GameManager.prototype.checkCreateChest = function(){
   return false;
 };
 GameManager.prototype.upgradeSkill = function(user, skillIndex){
-  if(user.objectID in this.users){
-    user.upgradeSkill(skillIndex);
+  try {
+    if(user.objectID in this.users){
+      user.upgradeSkill(skillIndex);
+    }
+  } catch (e) {
+    throw e;
   }
 };
 GameManager.prototype.exchangePassive = function(user, beforeBuffGID, afterBuffGID){
-  if(user.objectID in this.users){
-    user.exchangePassive(beforeBuffGID, afterBuffGID);
+  try {
+    if(user.objectID in this.users){
+      user.exchangePassive(beforeBuffGID, afterBuffGID);
+    }
+  } catch (e) {
+    throw e;
   }
 };
 GameManager.prototype.equipPassives = function(userID, buffGroupIndexList){
@@ -1126,13 +1182,21 @@ GameManager.prototype.equipPassives = function(userID, buffGroupIndexList){
   }
 };
 GameManager.prototype.equipPassive = function(user, buffGroupIndex){
-  if(user.objectID in this.users){
-    user.equipPassive(buffGroupIndex);
+  try {
+    if(user.objectID in this.users){
+      user.equipPassive(buffGroupIndex);
+    }
+  } catch (e) {
+    throw e;
   }
 };
 GameManager.prototype.unequipPassive = function(user, buffGroupIndex){
-  if(user.objectID in this.users){
-    user.unequipPassive(buffGroupIndex);
+  try {
+    if(user.objectID in this.users){
+      user.unequipPassive(buffGroupIndex);
+    }
+  } catch (e) {
+    throw e;
   }
 };
 GameManager.prototype.checkSkillPossession = function(userID, skillIndex){
@@ -1182,6 +1246,32 @@ GameManager.prototype.getUserTimeDiff = function(userID){
 GameManager.prototype.getUserLatency = function(userID){
   if(userID in this.users){
     return this.users[userID].latency;
+  }
+};
+GameManager.prototype.getUserType = function(userID){
+  if(userID in this.users){
+    return this.users[userID].type;
+  }
+};
+GameManager.prototype.calcKillFeedBackLevel = function(userID){
+  if(userID in this.users){
+    if(this.users[userID].killCount >= serverConfig.KILL_FEEDBACK_LEVEL_7_KILL_COUNT && this.users[userID].killScore >= serverConfig.KILL_FEEDBACK_LEVEL_7_KILL_SCORE){
+      return gameConfig.KILL_FEEDBACK_LEVEL_7;
+    }else if(this.users[userID].killCount >= serverConfig.KILL_FEEDBACK_LEVEL_6_KILL_COUNT && this.users[userID].killScore >= serverConfig.KILL_FEEDBACK_LEVEL_6_KILL_SCORE){
+      return gameConfig.KILL_FEEDBACK_LEVEL_6;
+    }else if(this.users[userID].killCount >= serverConfig.KILL_FEEDBACK_LEVEL_5_KILL_COUNT && this.users[userID].killScore >= serverConfig.KILL_FEEDBACK_LEVEL_5_KILL_SCORE){
+      return gameConfig.KILL_FEEDBACK_LEVEL_5;
+    }else if(this.users[userID].killCount >= serverConfig.KILL_FEEDBACK_LEVEL_4_KILL_COUNT && this.users[userID].killScore >= serverConfig.KILL_FEEDBACK_LEVEL_4_KILL_SCORE){
+      return gameConfig.KILL_FEEDBACK_LEVEL_4;
+    }else if(this.users[userID].killCount >= serverConfig.KILL_FEEDBACK_LEVEL_3_KILL_COUNT && this.users[userID].killScore >= serverConfig.KILL_FEEDBACK_LEVEL_3_KILL_SCORE){
+      return gameConfig.KILL_FEEDBACK_LEVEL_3;
+    }else if(this.users[userID].killCount >= serverConfig.KILL_FEEDBACK_LEVEL_2_KILL_COUNT && this.users[userID].killScore >= serverConfig.KILL_FEEDBACK_LEVEL_2_KILL_SCORE){
+      return gameConfig.KILL_FEEDBACK_LEVEL_2;
+    }else if(this.users[userID].killCount >= serverConfig.KILL_FEEDBACK_LEVEL_1_KILL_COUNT && this.users[userID].killScore >= serverConfig.KILL_FEEDBACK_LEVEL_1_KILL_SCORE){
+      return gameConfig.KILL_FEEDBACK_LEVEL_1;
+    }else{
+      return gameConfig.KILL_FEEDBACK_LEVEL_0;
+    }
   }
 };
 function longTimeIntervalHandler(){
@@ -1373,8 +1463,10 @@ function updateIntervalHandler(){
 
   //updateUserArray
   for(var index in this.users){
-    this.users[index].setEntityEle();
-    userEles.push(this.users[index].entityTreeEle);
+    if(!this.users[index].isDead){
+      this.users[index].setEntityEle();
+      userEles.push(this.users[index].entityTreeEle);
+    }
     // this.users[index].setBefore150msEntitiyEle();
     // userBefore150msEles.push(this.users[index].entityBefore150msTreeEle);
 
@@ -1387,7 +1479,7 @@ function updateIntervalHandler(){
   //update collectable objects array
   // var addExpCounts = this.objExpsCount -this.objExps.length;
   // var addSkillCounts = this.objSkillsCount - this.objSkills.length;
-  var addGoldCounts = this.objGoldsCount - this.objGolds.length;
+  // var addGoldCounts = this.objGoldsCount - this.objGolds.length;
   // if(addExpCounts > 0){
   //   var createdObjs = this.createOBJs(addExpCounts, gameConfig.PREFIX_OBJECT_EXP);
   //   this.onNeedInformCreateObjs(createdObjs);
@@ -1396,12 +1488,12 @@ function updateIntervalHandler(){
   //   var createdObjs = this.createOBJs(addSkillCounts, gameConfig.PREFIX_OBJECT_SKILL);
   //   this.onNeedInformCreateObjs(createdObjs);
   // }
-  if(addGoldCounts > 0){
-    var createdObjs = this.createOBJs(addGoldCounts, gameConfig.PREFIX_OBJECT_GOLD);
-    if(createdObjs.length){
-      this.onNeedInformCreateObjs(createdObjs);
-    }
-  }
+  // if(addGoldCounts > 0){
+  //   var createdObjs = this.createOBJs(addGoldCounts, gameConfig.PREFIX_OBJECT_GOLD);
+  //   if(createdObjs.length){
+  //     this.onNeedInformCreateObjs(createdObjs);
+  //   }
+  // }
 
   var addedObjEles = [];
   // for(var i=0; i<this.addedObjExps.length; i++){
@@ -1643,6 +1735,7 @@ function affectIntervalHandler(){
               var isMeetCondition = this.addUserSkillTick(affectedEles[i].actorID);
               if(isMeetCondition){
                 this.addUserExp(affectedEles[i].actorID, serverConfig.OBSTACLE_TREE_EXP);
+                this.createBoxWhenHitTree(affectedEles[i].affectedID);
               }
             }else{
               this.addUserExp(affectedEles[i].actorID, serverConfig.OBSTACLE_TREE_EXP);
@@ -1658,6 +1751,7 @@ function affectIntervalHandler(){
               var isMeetCondition = this.addUserSkillTick(affectedEles[i].actorID);
               if(isMeetCondition){
                 this.addUserExp(affectedEles[i].actorID, serverConfig.OBSTACLE_STONE_EXP);
+                this.createOBJsWhenHitStone(affectedEles[i].affectedID);
               }
             }else{
               this.addUserExp(affectedEles[i].actorID, serverConfig.OBSTACLE_STONE_EXP);
