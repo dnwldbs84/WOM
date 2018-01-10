@@ -37,6 +37,19 @@ app.get('/error', function(req, res){
     res.end(data);
   });
 });
+app.get('/noaction', function(req, res){
+  fs.readFile('html/noaction.html', 'utf8', function(err, data){
+    res.writeHead(200, {'Content-Type': 'text/html'});
+    res.end(data);
+  });
+})
+app.post('/usersInfo', function(req, res){
+  if(GM){
+    var cUser = GM.users.length;
+    var mUser = serverConfig.MAX_USER_COUNT;
+    res.send({currentUser : cUser, maxUser : mUser});
+  }
+});
 
 var server = http.createServer(app);
 var port = process.env.PORT || config.port;
@@ -256,6 +269,10 @@ io.on('connection', function(socket){
         socket.disconnect();
       }
     } catch (e) {
+      if(user){
+        GM.stopUser(user);
+        GM.kickUser(user);
+      }
       console.log(e.message);
       socket.disconnect();
     }
@@ -296,6 +313,10 @@ io.on('connection', function(socket){
         socket.disconnect();
       }
     } catch (e) {
+      if(user){
+        GM.stopUser(user);
+        GM.kickUser(user);
+      }
       console.log(e.message);
       socket.disconnect();
     }
@@ -323,6 +344,10 @@ io.on('connection', function(socket){
         }
       }
     } catch (e) {
+      if(user){
+        GM.stopUser(user);
+        GM.kickUser(user);
+      }
       console.log(e.message);
       socket.disconnect();
     }
@@ -338,6 +363,10 @@ io.on('connection', function(socket){
         socket.disconnect();
       }
     } catch (e) {
+      if(user){
+        GM.stopUser(user);
+        GM.kickUser(user);
+      }
       console.log(e.message);
       socket.disconnect();
     }
@@ -356,6 +385,10 @@ io.on('connection', function(socket){
         socket.disconnect();
       }
     } catch (e) {
+      if(user){
+        GM.stopUser(user);
+        GM.kickUser(user);
+      }
       console.log(e.message);
       socket.disconnect();
     }
@@ -381,6 +414,10 @@ io.on('connection', function(socket){
         }
       }
     } catch (e) {
+      if(user){
+        GM.stopUser(user);
+        GM.kickUser(user);
+      }
       console.log(e.message);
       socket.disconnect();
     }
@@ -408,6 +445,10 @@ io.on('connection', function(socket){
         io.sockets.emit('skillFired', data, user.objectID);
       }
     } catch (e) {
+      if(user){
+        GM.stopUser(user);
+        GM.kickUser(user);
+      }
       console.log(e.message);
       socket.disconnect();
     }
@@ -437,6 +478,10 @@ io.on('connection', function(socket){
         io.sockets.emit('projectilesFired', datas, serverSyncFireTime, user.objectID);
       }
     } catch (e) {
+      if(user){
+        GM.stopUser(user);
+        GM.kickUser(user);
+      }
       console.log(e.message);
       socket.disconnect();
     }
@@ -454,6 +499,10 @@ io.on('connection', function(socket){
         socket.disconnect();
       }
     } catch (e) {
+      if(user){
+        GM.stopUser(user);
+        GM.kickUser(user);
+      }
       console.log(e.message);
       socket.disconnect();
     }
@@ -466,6 +515,10 @@ io.on('connection', function(socket){
         socket.disconnect();
       }
     } catch (e) {
+      if(user){
+        GM.stopUser(user);
+        GM.kickUser(user);
+      }
       console.log(e.message);
       socket.disconnect();
     }
@@ -478,6 +531,10 @@ io.on('connection', function(socket){
         socket.disconnect();
       }
     } catch (e) {
+      if(user){
+        GM.stopUser(user);
+        GM.kickUser(user);
+      }
       console.log(e.message);
       socket.disconnect();
     }
@@ -490,6 +547,10 @@ io.on('connection', function(socket){
         socket.disconnect();
       }
     } catch (e) {
+      if(user){
+        GM.stopUser(user);
+        GM.kickUser(user);
+      }
       console.log(e.message);
       socket.disconnect();
     }
@@ -525,6 +586,10 @@ io.on('connection', function(socket){
       GM.updateUserTimeDiff(user.objectID, timeDiff);
       GM.updateUserLatency(user.objectID, userLatency);
     }catch (e) {
+      if(user){
+        GM.stopUser(user);
+        GM.kickUser(user);
+      }
       console.log(e.message);
       socket.disconnect();
     }

@@ -776,3 +776,26 @@ exports.setImgCssStyle = function(imgDiv, iconData, expandRate){
 exports.processMessage = function(msg){
   return msg.replace(/(<([^>]+)>)/ig, '').substring(0,25);
 };
+exports.createDomSelectOption = function(text, value, isDisabled, parentNode){
+  var option = document.createElement("option");
+  option.setAttribute("value", value);
+  if(isDisabled){
+    option.disabled = true;
+  }
+  var text = document.createTextNode(text);
+  option.appendChild(text);
+  parentNode.appendChild(option);
+};
+exports.createRequest = function(){
+  var request;
+  try {
+    request = new XMLHttpRequest();
+  } catch (e){
+    try {
+      request = new ActiveXObject('Msxml2.XMLHTTP');
+    } catch (innerE) {
+      request = new ActiveXObject('Microsoft.XMLHTTP');
+    }
+  }
+  return request;
+}
