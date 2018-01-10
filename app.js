@@ -508,11 +508,13 @@ io.on('connection', function(socket){
   });
   socket.on('chatting', function(msg){
     try {
-      user = null;
       var msg = util.processMessage(msg);
       io.sockets.emit('chatting', user.objectID, msg);
-
     } catch (e) {
+      if(user){
+        GM.stopUser(user);
+        GM.kickUser(user);
+      }
       console.log(e.message);
       socket.disconnect();
     }
