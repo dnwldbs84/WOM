@@ -1068,7 +1068,7 @@ var resourceUI;
 var blankFrameData;
 
 var startScene, gameScene, standingScene;
-var restartButton;
+var startButton, restartButton;
 
 // var startSceneHudCenterCenterChar1, startSceneHudCenterCenterChar2, startSceneHudCenterCenterChar3;
 var characterType = 1;
@@ -1161,7 +1161,7 @@ UIManager.prototype = {
     gameScene = document.getElementById('gameScene');
     standingScene = document.getElementById('standingScene');
 
-    var startButton = document.getElementById('startButton');
+    startButton = document.getElementById('startButton');
 
     var startSceneSelectedCharName = document.getElementById('startSceneSelectedCharName');
     var startSceneSelectedCharStatPower = document.getElementById('startSceneSelectedCharStatPower');
@@ -1208,60 +1208,61 @@ UIManager.prototype = {
     startButton.getElementsByTagName('span')[0].classList.remove('disable');
     startButton.getElementsByTagName('img')[0].classList.add('disable');
 
-    var children = document.getElementById('startSceneHudCenterCenterCharSelect').children;
-    for(var i=0; i<children.length; i++){
-      children[i].onclick = function(){
-        var type = parseInt(this.getAttribute('type'));
-        if(type === gameConfig.CHAR_TYPE_FIRE || type === gameConfig.CHAR_TYPE_FROST || type === gameConfig.CHAR_TYPE_ARCANE){
-          characterType = type;
-        }else{
-          characterType = gameConfig.CHAR_TYPE_FIRE;
-        }
-        for(var j=0; j<children.length; j++){
-          children[j].classList.remove('selectedChar');
-        }
-        this.classList.add('selectedChar');
-
-        //updateSelectedPanel
-        var name = "";
-        var desc = "";
-        var color = "";
-        switch (type) {
-          case gameConfig.CHAR_TYPE_FIRE:
-            name = fireCharName;
-            desc = fireCharDesc;
-            color = "red";
-            break;
-          case gameConfig.CHAR_TYPE_FROST:
-            name = frostCharName;
-            desc = frostCharDesc;
-            color = "blue";
-            break;
-          case gameConfig.CHAR_TYPE_ARCANE:
-            name = arcaneCharName;
-            desc = arcaneCharDesc;
-            color = "purple";
-            break;
-          default:
-        }
-        var statData = objectAssign({}, util.findDataWithTwoColumns(userStatTable, 'type', characterType, 'level', 1));
-        startSceneSelectedCharName.innerHTML = "<span class='" + color + "'>" + name + "</span>";
-        startSceneSelectedCharDesc.innerHTML = desc;
-        startSceneSelectedCharStatPower.getElementsByTagName('span')[0].innerHTML = statData.power;
-        startSceneSelectedCharStatMagic.getElementsByTagName('span')[0].innerHTML = statData.magic;
-        startSceneSelectedCharStatSpeed.getElementsByTagName('span')[0].innerHTML = statData.speed;
-
-        startSceneSelectedCharStatPower.onmouseover = statTooltipOnHandler.bind(startSceneSelectedCharStatPower, gameConfig.STAT_POWER_INDEX, statData.power);
-        startSceneSelectedCharStatPower.onmouseout = bottomTooltipOffHandler.bind(startSceneSelectedCharStatPower);
-
-        startSceneSelectedCharStatMagic.onmouseover = statTooltipOnHandler.bind(startSceneSelectedCharStatMagic, gameConfig.STAT_MAGIC_INDEX, statData.magic);
-        startSceneSelectedCharStatMagic.onmouseout = bottomTooltipOffHandler.bind(startSceneSelectedCharStatMagic);
-
-        startSceneSelectedCharStatSpeed.onmouseover = statTooltipOnHandler.bind(startSceneSelectedCharStatSpeed, gameConfig.STAT_SPEED_INDEX, statData.speed);
-        startSceneSelectedCharStatSpeed.onmouseout = bottomTooltipOffHandler.bind(startSceneSelectedCharStatSpeed);
-      };
-    }
-    children[0].onclick();
+    setStartSceneCharIconClick();
+    // var children = document.getElementById('startSceneHudCenterCenterCharSelect').children;
+    // for(var i=0; i<children.length; i++){
+    //   children[i].onclick = function(){
+    //     var type = parseInt(this.getAttribute('type'));
+    //     if(type === gameConfig.CHAR_TYPE_FIRE || type === gameConfig.CHAR_TYPE_FROST || type === gameConfig.CHAR_TYPE_ARCANE){
+    //       characterType = type;
+    //     }else{
+    //       characterType = gameConfig.CHAR_TYPE_FIRE;
+    //     }
+    //     for(var j=0; j<children.length; j++){
+    //       children[j].classList.remove('selectedChar');
+    //     }
+    //     this.classList.add('selectedChar');
+    //
+    //     //updateSelectedPanel
+    //     var name = "";
+    //     var desc = "";
+    //     var color = "";
+    //     switch (type) {
+    //       case gameConfig.CHAR_TYPE_FIRE:
+    //         name = fireCharName;
+    //         desc = fireCharDesc;
+    //         color = "red";
+    //         break;
+    //       case gameConfig.CHAR_TYPE_FROST:
+    //         name = frostCharName;
+    //         desc = frostCharDesc;
+    //         color = "blue";
+    //         break;
+    //       case gameConfig.CHAR_TYPE_ARCANE:
+    //         name = arcaneCharName;
+    //         desc = arcaneCharDesc;
+    //         color = "purple";
+    //         break;
+    //       default:
+    //     }
+    //     var statData = objectAssign({}, util.findDataWithTwoColumns(userStatTable, 'type', characterType, 'level', 1));
+    //     startSceneSelectedCharName.innerHTML = "<span class='" + color + "'>" + name + "</span>";
+    //     startSceneSelectedCharDesc.innerHTML = desc;
+    //     startSceneSelectedCharStatPower.getElementsByTagName('span')[0].innerHTML = statData.power;
+    //     startSceneSelectedCharStatMagic.getElementsByTagName('span')[0].innerHTML = statData.magic;
+    //     startSceneSelectedCharStatSpeed.getElementsByTagName('span')[0].innerHTML = statData.speed;
+    //
+    //     startSceneSelectedCharStatPower.onmouseover = statTooltipOnHandler.bind(startSceneSelectedCharStatPower, gameConfig.STAT_POWER_INDEX, statData.power);
+    //     startSceneSelectedCharStatPower.onmouseout = bottomTooltipOffHandler.bind(startSceneSelectedCharStatPower);
+    //
+    //     startSceneSelectedCharStatMagic.onmouseover = statTooltipOnHandler.bind(startSceneSelectedCharStatMagic, gameConfig.STAT_MAGIC_INDEX, statData.magic);
+    //     startSceneSelectedCharStatMagic.onmouseout = bottomTooltipOffHandler.bind(startSceneSelectedCharStatMagic);
+    //
+    //     startSceneSelectedCharStatSpeed.onmouseover = statTooltipOnHandler.bind(startSceneSelectedCharStatSpeed, gameConfig.STAT_SPEED_INDEX, statData.speed);
+    //     startSceneSelectedCharStatSpeed.onmouseout = bottomTooltipOffHandler.bind(startSceneSelectedCharStatSpeed);
+    //   };
+    // }
+    // children[0].onclick();
   },
   setServerList : function(){
     var servers = document.getElementById('servers');
@@ -1272,8 +1273,10 @@ UIManager.prototype = {
       if(req.readyState === 4){
         if(req.status === 200){
           var res = JSON.parse(req.response);
-          var ping = Date.now() - startTime;
-          util.createDomSelectOption(index, ip, false, servers, res, ping);
+          if(res.serverState === 'serverOn'){
+            var ping = Date.now() - startTime;
+            util.createDomSelectOption(index, ip, false, servers, res, ping);
+          }
         }
       }
     }
@@ -1323,16 +1326,62 @@ UIManager.prototype = {
     var servers = document.getElementById('servers');
     return servers.options[servers.selectedIndex].value;
   },
+  checkServerCondition : function(url){
+    var req = util.createRequest();
+    var startTime = Date.now();
+
+    req.onreadystatechange = function(e){
+      if(req.readyState === 4){
+        if(req.status === 200){
+          var res = JSON.parse(req.response);
+          var ping = Date.now() - startTime;
+          if(res.canJoin){
+            if(ping < gameConfig.MAX_PING_LIMIT){
+              return true;
+            }else{
+              alert('Ping is too high! How about join to other server.');
+              return false;
+            }
+          }else{
+            alert('The server is currently full! How about join to other server.');
+            return false;
+          }
+        }else{
+          alert('Sorry. Unpredicted internet server error!');
+          return false;
+        }
+      }
+    }
+
+    try {
+      startTime = Date.now();
+      req.open('POST', url + '/serverCheck', false);
+      // req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+      req.send();
+    } catch (e) {
+      console.log(e.message);
+      console.log(url + ' is not response');
+    }
+  },
   disableStartButton : function(){
     startButton.onclick = '';
     startButton.getElementsByTagName('span')[0].classList.add('disable');
     startButton.getElementsByTagName('img')[0].classList.remove('disable');
-  },
-  disableStartScene : function(){
+
+    //char icon disable
     var children = document.getElementById('startSceneHudCenterCenterCharSelect').children;
     for(var i=0; i<children.length; i++){
       children[i].onclick = new Function();
     }
+  },
+  enableStartButton : function(){
+    startButton.onclick = startBtnClickHandler.bind(this, startButton);
+    startButton.getElementsByTagName('span')[0].classList.remove('disable');
+    startButton.getElementsByTagName('img')[0].classList.add('disable');
+
+    setStartSceneCharIconClick();
+  },
+  disableStartScene : function(){
     // startScene.classList.add('disable');
     startScene.classList.add('disappearSmoothAni');
     startScene.classList.remove('enable');
@@ -4081,6 +4130,62 @@ function disablePopUpTutorial(){
   popUpSkillTutorialClickText2.classList.add('disable');
   popUpSkillTutorialArrow.classList.add('disable');
 };
+function setStartSceneCharIconClick(){
+  var children = document.getElementById('startSceneHudCenterCenterCharSelect').children;
+  for(var i=0; i<children.length; i++){
+    children[i].onclick = function(){
+      var type = parseInt(this.getAttribute('type'));
+      if(type === gameConfig.CHAR_TYPE_FIRE || type === gameConfig.CHAR_TYPE_FROST || type === gameConfig.CHAR_TYPE_ARCANE){
+        characterType = type;
+      }else{
+        characterType = gameConfig.CHAR_TYPE_FIRE;
+      }
+      for(var j=0; j<children.length; j++){
+        children[j].classList.remove('selectedChar');
+      }
+      this.classList.add('selectedChar');
+
+      //updateSelectedPanel
+      var name = "";
+      var desc = "";
+      var color = "";
+      switch (type) {
+        case gameConfig.CHAR_TYPE_FIRE:
+          name = fireCharName;
+          desc = fireCharDesc;
+          color = "red";
+          break;
+        case gameConfig.CHAR_TYPE_FROST:
+          name = frostCharName;
+          desc = frostCharDesc;
+          color = "blue";
+          break;
+        case gameConfig.CHAR_TYPE_ARCANE:
+          name = arcaneCharName;
+          desc = arcaneCharDesc;
+          color = "purple";
+          break;
+        default:
+      }
+      var statData = objectAssign({}, util.findDataWithTwoColumns(userStatTable, 'type', characterType, 'level', 1));
+      startSceneSelectedCharName.innerHTML = "<span class='" + color + "'>" + name + "</span>";
+      startSceneSelectedCharDesc.innerHTML = desc;
+      startSceneSelectedCharStatPower.getElementsByTagName('span')[0].innerHTML = statData.power;
+      startSceneSelectedCharStatMagic.getElementsByTagName('span')[0].innerHTML = statData.magic;
+      startSceneSelectedCharStatSpeed.getElementsByTagName('span')[0].innerHTML = statData.speed;
+
+      startSceneSelectedCharStatPower.onmouseover = statTooltipOnHandler.bind(startSceneSelectedCharStatPower, gameConfig.STAT_POWER_INDEX, statData.power);
+      startSceneSelectedCharStatPower.onmouseout = bottomTooltipOffHandler.bind(startSceneSelectedCharStatPower);
+
+      startSceneSelectedCharStatMagic.onmouseover = statTooltipOnHandler.bind(startSceneSelectedCharStatMagic, gameConfig.STAT_MAGIC_INDEX, statData.magic);
+      startSceneSelectedCharStatMagic.onmouseout = bottomTooltipOffHandler.bind(startSceneSelectedCharStatMagic);
+
+      startSceneSelectedCharStatSpeed.onmouseover = statTooltipOnHandler.bind(startSceneSelectedCharStatSpeed, gameConfig.STAT_SPEED_INDEX, statData.speed);
+      startSceneSelectedCharStatSpeed.onmouseout = bottomTooltipOffHandler.bind(startSceneSelectedCharStatSpeed);
+    };
+  }
+  children[0].onclick();
+};
 module.exports = UIManager;
 
 },{"../public/gameConfig.json":8,"../public/objectAssign.js":9,"../public/serverList.json":11,"../public/util.js":12}],5:[function(require,module,exports){
@@ -4837,6 +4942,7 @@ module.exports={
   "MAX_SERVER_RESPONSE_TIME" : 5000,
   "LIMIT_NO_ACTION_TIME" : 7200000,
   "LONG_TIME_INTERVAL" : 300000,
+  "MAX_PING_LIMIT" : 2000,
   "INTERVAL" : 60,
   "FPS" : 60,
 
@@ -6834,11 +6940,18 @@ function stateFuncStandby(){
 //setup socket here!!! now changestates in socket response functions
 function stateFuncStart(){
   UIManager.disableStartButton();
+
+  var url = UIManager.getSelectedServer();
   // UIManager.disableStartScene();
-  setupSocket();
-  socket.emit('reqStartGame', characterType);
-  userPingCheckTime = Date.now();
-  socket.emit('firePing', userPingCheckTime);
+  if(UIManager.checkServerCondition(url)){
+    setupSocket(url);
+    var userName = UIManager.getUserName();
+    socket.emit('reqStartGame', characterType, userName);
+    userPingCheckTime = Date.now();
+    socket.emit('firePing', userPingCheckTime);
+  }else{
+    UIManager.enableStartButton();
+  }
 };
 //game play on
 function stateFuncGameSetup(){
@@ -7153,9 +7266,8 @@ function drawRestartScene(){
 };
 
 // socket connect and server response configs
-function setupSocket(){
-  var url = UIManager.getSelectedServer();
-  socket = io('/', { forceNew: false });
+function setupSocket(url){
+  socket = io(url, { forceNew: false });
 
   socket.on('connect', function(){
     console.log('connection to the server');

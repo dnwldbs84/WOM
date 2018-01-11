@@ -65,10 +65,22 @@ app.post('/usersInfo', function(req, res){
   if(GM){
     var cUser = Object.keys(GM.users).length;
     var mUser = serverConfig.MAX_USER_COUNT;
-    console.log({currentUser : cUser, maxUser : mUser});
-    res.send({currentUser : cUser, maxUser : mUser});
+    res.send({serverState : 'serverOn', currentUser : cUser, maxUser : mUser});
+  }else{
+    res.send({serverState : 'serverOff'});
   }
 });
+app.post('/serverCheck', function(req, res){
+  if(GM){
+    if(Object.keys(GM.users).length < serverConfig.MAX_USER_COUNT){
+      res.send({canJoin : true});
+    }else{
+      res.send({canJoin : false});
+    }
+  }else{
+    res.send({canJoin : false});
+  }
+})
 
 var server = http.createServer(app);
 var port = process.env.PORT || config.port;
