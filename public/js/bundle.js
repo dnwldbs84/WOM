@@ -1142,6 +1142,7 @@ function UIManager(sTable, bTable, iTable, usTable){
 
   this.serverResponseTimeout = false;
 
+  this.onLoadCompleteServerList = new Function();
   this.onStartBtnClick = new Function();
 
   this.onPopUpSkillChangeClick = new Function();
@@ -1279,10 +1280,10 @@ UIManager.prototype = {
     util.createDomSelectOption("NA", "", true, servers);
     var ip = "";
     for(var index in serverList.NA){
-      ip = 'http://' + serverList.NA[index] + '/usersInfo';
+      ip = 'http://' + serverList.NA[index];
       try {
         startTime = Date.now();
-        req.open('POST', ip, false);
+        req.open('POST', ip + '/usersInfo', false);
         // req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
         req.send();
       } catch (e) {
@@ -1292,10 +1293,10 @@ UIManager.prototype = {
     }
     util.createDomSelectOption("ASIA", "", true, servers);
     for(var index in serverList.ASIA){
-      ip = 'http://' + serverList.ASIA[index] + '/usersInfo';
+      ip = 'http://' + serverList.ASIA[index];
       try {
         startTime = Date.now();
-        req.open('POST', ip, false);
+        req.open('POST', ip + '/usersInfo', false);
         // req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
         req.send();
       } catch (e) {
@@ -1305,10 +1306,10 @@ UIManager.prototype = {
     }
     util.createDomSelectOption("EU", "", true, servers);
     for(var index in serverList.EU){
-      ip = 'http://' + serverList.EU[index] + '/usersInfo'
+      ip = 'http://' + serverList.EU[index];
       try {
         startTime = Date.now();
-        req.open('POST', ip, false);
+        req.open('POST', ip + '/usersInfo', false);
         // req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
         req.send();
       } catch (e) {
@@ -1316,6 +1317,11 @@ UIManager.prototype = {
         console.log(ip + 'is not response');
       }
     }
+    this.onLoadCompleteServerList();
+  },
+  getSelectedServer : function(){
+    var servers = document.getElementById('servers');
+    return servers.options[servers.selectedIndex].value;
   },
   disableStartButton : function(){
     startButton.onclick = '';
@@ -6676,6 +6682,7 @@ var Manager;
 var loadedResourcesCount = 0;
 var resourceObject, resourceCharacter, resourceUI, resourceSkillEffect;
 var isLoadResources = false, isUISettingComplete = false, loadingStartTime = Date.now(), loadingTextChangeTime = Date.now();
+var isLoadServerList = false;
 
 var userHandImgData = new Array(5);
 var userCastingTimeHandler = false;
@@ -6810,7 +6817,8 @@ function stateFuncLoad(){
   // UIManager.setSkillIconResource(resourceSkillIcon);
 };
 function stateFuncCheckLoad(){
-  if(isLoadResources && isUISettingComplete && Date.now() - loadingStartTime >= gameConfig.MINIMUM_LOADING_TIME){
+  if(isLoadResources && isUISettingComplete && Date.now() - loadingStartTime >= gameConfig.MINIMUM_LOADING_TIME
+     && isLoadServerList){
     UIManager.startSceneLoadingComplete();
     changeState(gameConfig.GAME_STATE_START_SCENE);
   }else if(Date.now() - loadingTextChangeTime >= gameConfig.CHANGE_LOADING_TEXT_TIME){
@@ -6894,6 +6902,9 @@ function setBaseSetting(){
   }
 
   UIManager = new CUIManager(skillTable, buffGroupTable, iconResourceTable, userStatTable);
+  UIManager.onLoadCompleteServerList = function(){
+    isLoadServerList = true;
+  };
   UIManager.onStartBtnClick = function(charType, clickButton){
     userLastActionTime = Date.now();
     characterType = charType;
@@ -7143,6 +7154,7 @@ function drawRestartScene(){
 
 // socket connect and server response configs
 function setupSocket(){
+  var url = UIManager.getSelectedServer();
   socket = io('/', { forceNew: false });
 
   socket.on('connect', function(){
