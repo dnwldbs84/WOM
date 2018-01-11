@@ -308,7 +308,7 @@ io.on('connection', function(socket){
       socket.disconnect();
     }
   });
-  socket.on('reqRestartGame', function(charType, equipSkills){
+  socket.on('reqRestartGame', function(userName, charType, equipSkills){
     try {
       if(user.objectID && charType === gameConfig.CHAR_TYPE_FIRE || charType === gameConfig.CHAR_TYPE_FROST || charType === gameConfig.CHAR_TYPE_ARCANE){
         var level = GM.getLevel(user.objectID, charType);
@@ -320,6 +320,7 @@ io.on('connection', function(socket){
         GM.setUserPosition(user.objectID);
         GM.startUserUpdate(user.objectID);
         GM.setScore(user.objectID);
+        GM.setUserName(user.objectID, userName);
         var baseSkill = GM.getBaseSkill(user.objectID, charType);
         var inherentPassiveSkill = GM.getInherentPassiveSkill(user.objectID, charType);
 

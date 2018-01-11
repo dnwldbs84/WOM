@@ -151,7 +151,7 @@ exports.onUserScoreChange = function(){
 exports.onUserLevelUP = function(user){
   this.onNeedInformUserLevelUp(user);
 };
-exports.onUserDeath = function(user, attackUserID, deadUserID){
+exports.onUserDeath = function(user, attackUserID, deadUserID, deadUserName){
   var dropData = objectAssign({}, util.findDataWithTwoColumns(charDropTable, 'level', user.level, 'type', user.type));
 
   user.decreaseLevel(dropData.levelTo);
@@ -220,9 +220,10 @@ exports.onUserDeath = function(user, attackUserID, deadUserID){
   var attackUserType = this.getUserType(attackUserID);
   var deadUserType = this.getUserType(deadUserID);
   var killFeedBackLevel = this.calcKillFeedBackLevel(attackUserID);
+  var attackUserName = this.getUserName(attackUserID);
 
-  this.onNeedInformUserDeath({userID : attackUserID, userType : attackUserType, feedBackLevel : killFeedBackLevel},
-                             {userID : deadUserID, userType : deadUserType}
+  this.onNeedInformUserDeath({userID : attackUserID, userType : attackUserType, feedBackLevel : killFeedBackLevel, userName : attackUserName},
+                             {userID : deadUserID, userType : deadUserType, userName : deadUserName}
                              , loseResource, skillIndexes);
   userDrop.call(this, golds, jewels, skills, user.center);
 };

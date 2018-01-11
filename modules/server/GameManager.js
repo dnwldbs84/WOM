@@ -778,6 +778,16 @@ GameManager.prototype.setScore = function(userID){
     this.users[userID].calcUserScore();
   }
 };
+GameManager.prototype.getUserName = function(userID){
+  if(userID in this.users){
+    return this.users[userID].name;
+  }
+};
+GameManager.prototype.setUserName = function(userID, userName){
+  if(userID in this.users){
+    this.users[userID].setName(userName);
+  }
+};
 GameManager.prototype.getBaseSkill = function(userID, charType){
   if(userID in this.users){
     return this.users[userID].getBaseSkill(charType);

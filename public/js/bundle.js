@@ -1123,7 +1123,7 @@ var popUpEquipBaseSkill, popUpEquipSkillsContainer, popUpEquipSkill1, popUpEquip
 
 var standingSceneSelectedCharName, standingSceneSelectedCharStatPower, standingSceneSelectedCharStatMagic, standingSceneSelectedCharStatSpeed,
     standingSceneSelectedCharBaseSkill, standingSceneSelectedCharPassiveSkill, standingSceneSelectedCharEquipSkill1, standingSceneSelectedCharEquipSkill2, standingSceneSelectedCharEquipSkill3, standingSceneSelectedCharEquipSkill4,
-    standingSceneSkillSettingBtn;
+    standingSceneSkillSettingBtn, userStandingNickName;
 
 var miniMapUser, miniMapChest1, miniMapChest2, miniMapChest3, miniMapChest4, miniMapChest5, miniMapChest6, miniMapChest7, miniMapChest8, miniMapChest9;
 
@@ -1204,6 +1204,7 @@ UIManager.prototype = {
     standingSceneSelectedCharEquipSkill4.onmouseout = bottomTooltipOffHandler.bind(standingSceneSelectedCharEquipSkill4);
 
     standingSceneSkillSettingBtn = document.getElementById('standingSceneSkillSettingBtn');
+    userStandingNickName = document.getElementById('userStandingNickName');
 
     // startButton.addEventListener('click', startBtnClickHandler.bind(this, startButton), false);
     startButton.onclick = startBtnClickHandler.bind(this, startButton);
@@ -1337,9 +1338,10 @@ UIManager.prototype = {
     }
   },
   getStandingUserName : function(){
-    var userStandingNickName = document.getElementById('userStandingNickName').value;
-    if(userStandingNickName){
-      return util.processMessage(userStandingNickName);
+    // var userStandingNickName = document.getElementById('userStandingNickName').value;
+    var nickName = userStandingNickName.value;
+    if(nickName){
+      return util.processMessage(nickName);
     }else{
       return "noname";
     }
@@ -1430,10 +1432,8 @@ UIManager.prototype = {
       restartButton.getElementsByTagName('img')[0].classList.add('disable');
     }, 1000);
 
-    var userStandingNickNameDOM = document.getElementById('userStandingNickName');
-    var userStandingNickName = document.getElementById('userStandingNickName').value;
-    if(userStandingNickName !== 'noname'){
-      userStandingNickNameDOM.value = userName;
+    if(userName !== 'noname'){
+      userStandingNickName.value = userName;
     }
 
     var index = 0;
@@ -2914,9 +2914,18 @@ UIManager.prototype = {
         deadUserColor = 'purple';
         break;
     }
-
+    if(!attackUserInfo.userName){
+      var attackUserName = 'noname';
+    }else{
+      attackUserName = attackUserInfo.userName;
+    }
+    if(!deadUserInfo.userName){
+      var deadUserName = 'noname';
+    }else{
+      deadUserName = deadUserInfo.userName;
+    }
     if(attackUserInfo.userID === deadUserInfo.userID){
-      output += '&nbsp; <span class=' + attackUserColor + '>' + attackUserInfo.userID + '</span>';
+      output += '&nbsp; <span class=' + attackUserColor + '>' + attackUserName + '</span>';
       output += '&nbsp; kill oneself'
     }else if(attackUserInfo.feedBackLevel){
       switch (attackUserInfo.feedBackLevel) {
@@ -2972,13 +2981,13 @@ UIManager.prototype = {
           }, 50);
           break;
       }
-      output += '&nbsp; <span class=' + attackUserColor + '>' + attackUserInfo.userID + '</span>';
+      output += '&nbsp; <span class=' + attackUserColor + '>' + attackUserName + '</span>';
       output += '&nbsp;&nbsp; kill ';
-      output += '&nbsp; <span class=' + deadUserColor + '>' + deadUserInfo.userID + '</span>';
+      output += '&nbsp; <span class=' + deadUserColor + '>' + deadUserName + '</span>';
     }else{
-      output += '&nbsp; <span class=' + attackUserColor + '>' + attackUserInfo.userID + '</span>';
+      output += '&nbsp; <span class=' + attackUserColor + '>' + attackUserName + '</span>';
       output += '&nbsp;&nbsp;  kill ';
-      output += '&nbsp; <span class=' + deadUserColor + '>' + deadUserInfo.userID + '</span>';
+      output += '&nbsp; <span class=' + deadUserColor + '>' + deadUserName + '</span>';
     }
     output += '&nbsp;!!!<br>';
 

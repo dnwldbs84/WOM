@@ -149,6 +149,9 @@ function User(socketID, userName, userStat, userBase, exp){
 User.prototype = Object.create(LivingEntity.prototype);
 User.prototype.constructor = User;
 
+User.prototype.setName = function(name){
+  this.name = name;
+};
 User.prototype.setSkills = function(baseSkill, possessSkills, inherentPassiveSkill){
   this.baseSkill = baseSkill;
   // this.equipSkills = equipSkills;
@@ -1042,7 +1045,7 @@ User.prototype.death = function(attackUserID){
     console.log(this.objectID + ' is dead by ' + attackUserID);
     this.clearAll();
 
-    this.onDeath(this, attackUserID, this.objectID);
+    this.onDeath(this, attackUserID, this.objectID, this.name);
     this.setPosition(-2000, -2000);
   }
 };
