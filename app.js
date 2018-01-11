@@ -63,8 +63,9 @@ app.get('/noaction', function(req, res){
 })
 app.post('/usersInfo', function(req, res){
   if(GM){
-    var cUser = GM.users.length;
+    var cUser = Object.keys(GM.users).length;
     var mUser = serverConfig.MAX_USER_COUNT;
+    console.log({currentUser : cUser, maxUser : mUser});
     res.send({currentUser : cUser, maxUser : mUser});
   }
 });
