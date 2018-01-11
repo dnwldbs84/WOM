@@ -1144,6 +1144,8 @@ function UIManager(sTable, bTable, iTable, usTable){
 
   this.onLoadCompleteServerList = new Function();
   this.onStartBtnClick = new Function();
+  this.serverConditionOn = new Function();
+  this.serverConditionOff = new Function();
 
   this.onPopUpSkillChangeClick = new Function();
   this.onSelectCharIcon = new Function();
@@ -1326,9 +1328,27 @@ UIManager.prototype = {
     var servers = document.getElementById('servers');
     return servers.options[servers.selectedIndex].value;
   },
+  getStartUserName : function(){
+    var userStartNickName = document.getElementById('userStartNickName').value;
+    if(userStartNickName){
+      return util.processMessage(userStartNickName);
+    }else{
+      return "noname";
+    }
+  },
+  getStandingUserName : function(){
+    var userStandingNickName = document.getElementById('userStandingNickName').value;
+    if(userStandingNickName){
+      return util.processMessage(userStandingNickName);
+    }else{
+      return "noname";
+    }
+  },
   checkServerCondition : function(url){
     var req = util.createRequest();
     var startTime = Date.now();
+    var thisServerConditionOn = this.serverConditionOn;
+    var thisServerConditionOff = this.serverConditionOff;
 
     req.onreadystatechange = function(e){
       if(req.readyState === 4){
@@ -1337,18 +1357,18 @@ UIManager.prototype = {
           var ping = Date.now() - startTime;
           if(res.canJoin){
             if(ping < gameConfig.MAX_PING_LIMIT){
-              return true;
+              thisServerConditionOn();
             }else{
               alert('Ping is too high! How about join to other server.');
-              return false;
+              thisServerConditionOff();
             }
           }else{
             alert('The server is currently full! How about join to other server.');
-            return false;
+            thisServerConditionOff();
           }
         }else{
           alert('Sorry. Unpredicted internet server error!');
-          return false;
+          thisServerConditionOff();
         }
       }
     }
@@ -1399,7 +1419,7 @@ UIManager.prototype = {
     }, 1000);
     // startButton.removeEventListener('click', startBtnClickHandler);
   },
-  initStandingScene : function(charType){
+  initStandingScene : function(charType, userName){
     standingScene.classList.add('appearSmoothAni');
     standingScene.classList.remove('disable');
     standingScene.classList.add('enable');
@@ -1409,6 +1429,12 @@ UIManager.prototype = {
       restartButton.getElementsByTagName('span')[0].classList.remove('disable');
       restartButton.getElementsByTagName('img')[0].classList.add('disable');
     }, 1000);
+
+    var userStandingNickNameDOM = document.getElementById('userStandingNickName');
+    var userStandingNickName = document.getElementById('userStandingNickName').value;
+    if(userStandingNickName !== 'noname'){
+      userStandingNickNameDOM.value = userName;
+    }
 
     var index = 0;
     switch (charType) {
@@ -4198,7 +4224,8 @@ var INTERVAL_TIMER = 1000/gameConfig.INTERVAL;
 var User = function(userData){
   this.objectID = userData.objectID;
 
-  this.type = userData.type
+  this.name = userData.name;
+  this.type = userData.type;
   this.imgData = userData.imgData;
 
   this.hitImgDataList = [];
@@ -6788,7 +6815,7 @@ var Manager;
 var loadedResourcesCount = 0;
 var resourceObject, resourceCharacter, resourceUI, resourceSkillEffect;
 var isLoadResources = false, isUISettingComplete = false, loadingStartTime = Date.now(), loadingTextChangeTime = Date.now();
-var isLoadServerList = false;
+var isLoadServerList = false, isServerConditionGood = false;
 
 var userHandImgData = new Array(5);
 var userCastingTimeHandler = false;
@@ -6831,6 +6858,7 @@ var pyroBaseSkill = gameConfig.SKILL_INDEX_PYRO_BASE, pyroInherentPassiveSkill =
     frosterBaseSkill = gameConfig.SKILL_INDEX_FROST_BASE, frosterInherentPassiveSkill = gameConfig.SKILL_INDEX_FROST_PASSIVE, frosterEquipSkills = new Array(4),
     mysterBaseSkill = gameConfig.SKILL_INDEX_ARCANE_BASE, mysterInherentPassiveSkill = gameConfig.SKILL_INDEX_ARCANE_PASSIVE, mysterEquipSkills = new Array(4);
 
+var userName = "";
 var baseSkill = 0;
 var baseSkillData = null;
 var inherentPassiveSkill = 0;
@@ -6943,9 +6971,10 @@ function stateFuncStart(){
 
   var url = UIManager.getSelectedServer();
   // UIManager.disableStartScene();
-  if(UIManager.checkServerCondition(url)){
+  UIManager.checkServerCondition(url);
+  if(isServerConditionGood){
     setupSocket(url);
-    var userName = UIManager.getUserName();
+    userName = UIManager.getStartUserName();
     socket.emit('reqStartGame', characterType, userName);
     userPingCheckTime = Date.now();
     socket.emit('firePing', userPingCheckTime);
@@ -6992,7 +7021,8 @@ function stateFuncEnd(){
   setTimeout(function(){
     UIManager.closePopUpSkillChange();
     UIManager.disableDeadScene();
-    UIManager.initStandingScene(characterType);
+
+    UIManager.initStandingScene(characterType, userName);
     UIManager.setPopUpSkillChange(true);
 
     changeState(gameConfig.GAME_STATE_RESTART_SCENE);
@@ -7003,7 +7033,8 @@ function stateFuncStandbyRestart(){
 }
 function stateFuncRestart(){
   UIManager.disableStandingScene();
-  socket.emit('reqRestartGame', characterType, equipSkills);
+  userName = UIManager.getStandingUserName();
+  socket.emit('reqRestartGame', userName, characterType, equipSkills);
 };
 //functions
 function setBaseSetting(){
@@ -7018,6 +7049,12 @@ function setBaseSetting(){
   UIManager.onLoadCompleteServerList = function(){
     isLoadServerList = true;
   };
+  UIManager.serverConditionOn = function(){
+    isServerConditionGood = true;
+  };
+  UIManager.serverConditionOff = function(){
+    isServerConditionGood = false;
+  }
   UIManager.onStartBtnClick = function(charType, clickButton){
     userLastActionTime = Date.now();
     characterType = charType;

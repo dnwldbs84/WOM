@@ -20,9 +20,11 @@ var objectAssign = require('../public/objectAssign');
 
 var INTERVAL_TIMER = 1000/serverConfig.INTERVAL;
 
-function User(socketID, userStat, userBase, exp){
+function User(socketID, userName, userStat, userBase, exp){
   LivingEntity.call(this);
   // base setting;
+  this.name = userName;
+
   this.timeDiff = 0;
   this.latency = 0;
 

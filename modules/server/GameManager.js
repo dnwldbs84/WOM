@@ -793,6 +793,7 @@ GameManager.prototype.processUserDataSetting = function(user){
     return {
       objectID : user.objectID,
       type : user.type,
+      name : user.name,
 
       currentState : user.currentState,
       position : user.position,
@@ -829,8 +830,8 @@ GameManager.prototype.processUserDataSettings = function(){
     if(!this.users[index].isDead){
       userData.push({
         objectID : index,
-        name : this.users[index].objectID,
         type : this.users[index].type,
+        name : this.users[index].name,
 
         killScore : this.users[index].killScore,
         totalScore : this.users[index].score,
@@ -909,10 +910,10 @@ GameManager.prototype.processScoreDatas = function(exceptID){
       if(exceptID){
         //if user disconnect
         if(exceptID !== this.users[i].objectID){
-          datas.push({name : this.users[i].objectID, level: this.users[i].level, killScore : this.users[i].killCount, totalScore : this.users[i].score});
+          datas.push({name : this.users[i].name, level: this.users[i].level, killScore : this.users[i].killCount, totalScore : this.users[i].score});
         }
       }else{
-        datas.push({name : this.users[i].objectID, level: this.users[i].level, killScore : this.users[i].killCount, totalScore : this.users[i].score});
+        datas.push({name : this.users[i].name, level: this.users[i].level, killScore : this.users[i].killCount, totalScore : this.users[i].score});
       }
     }
   }

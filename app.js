@@ -241,12 +241,12 @@ GM.onNeedInformProjectileExplode = function(projectileData){
 io.on('connection', function(socket){
   console.log('user connect : ' + socket.id);
   var user;
-  socket.on('reqStartGame', function(userType){
+  socket.on('reqStartGame', function(userType, userName){
     try {
       if(userType === gameConfig.CHAR_TYPE_FIRE || userType === gameConfig.CHAR_TYPE_FROST || userType === gameConfig.CHAR_TYPE_ARCANE){
         var userStat = objectAssign({}, util.findDataWithTwoColumns(userStatTable, 'type', userType, 'level', 1));
         var userBase = objectAssign({}, util.findData(userBaseTable, 'type', userType));
-        user = new User(socket.id, userStat, userBase, 0);
+        user = new User(socket.id, userName, userStat, userBase, 0);
 
         var baseSkill = userBase.baseSkill;
         var equipSkills = [];
