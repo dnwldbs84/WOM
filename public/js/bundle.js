@@ -1265,11 +1265,14 @@ UIManager.prototype = {
   setServerList : function(){
     var servers = document.getElementById('servers');
     var req = util.createRequest();
+    var startTime = Date.now();
 
     req.onreadystatechange = function(e){
       if(req.readyState === 4){
         if(req.status === 200){
-          util.createDomSelectOption(index, ip, false, servers);
+          var res = JSON.parse(req.response);
+          var ping = Date.now() - startTime;
+          util.createDomSelectOption(index, ip, false, servers, res, ping);
         }
       }
     }
@@ -1278,8 +1281,9 @@ UIManager.prototype = {
     for(var index in serverList.NA){
       ip = 'http://' + serverList.NA[index] + '/usersInfo';
       try {
+        startTime = Date.now();
         req.open('POST', ip, false);
-        req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        // req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
         req.send();
       } catch (e) {
         console.log(e.message);
@@ -1290,8 +1294,9 @@ UIManager.prototype = {
     for(var index in serverList.ASIA){
       ip = 'http://' + serverList.ASIA[index] + '/usersInfo';
       try {
+        startTime = Date.now();
         req.open('POST', ip, false);
-        req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        // req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
         req.send();
       } catch (e) {
         console.log(e.message);
@@ -1302,8 +1307,9 @@ UIManager.prototype = {
     for(var index in serverList.EU){
       ip = 'http://' + serverList.EU[index] + '/usersInfo'
       try {
+        startTime = Date.now();
         req.open('POST', ip, false);
-        req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        // req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
         req.send();
       } catch (e) {
         console.log(e.message);
@@ -6597,14 +6603,20 @@ exports.setImgCssStyle = function(imgDiv, iconData, expandRate){
 exports.processMessage = function(msg){
   return msg.replace(/(<([^>]+)>)/ig, '').substring(0,25);
 };
-exports.createDomSelectOption = function(text, value, isDisabled, parentNode){
+exports.createDomSelectOption = function(text, value, isDisabled, parentNode, userData, pingData){
   var option = document.createElement("option");
   option.setAttribute("value", value);
   if(isDisabled){
     option.disabled = true;
   }
-  var text = document.createTextNode(text);
-  option.appendChild(text);
+  if(userData){
+    text += " [" + userData.currentUser + "/" + userData.maxUser + "] ";
+  }
+  if(pingData){
+    text += pingData + "ms";
+  }
+  var optionText = document.createTextNode(text);
+  option.appendChild(optionText);
   parentNode.appendChild(option);
 };
 exports.createRequest = function(){
