@@ -1116,6 +1116,7 @@ var beforeRisingMessageTime = Date.now();
 var killBoardDisableTimeout = false;
 
 var isClearTutorial = false, isPlayingTutorial = false;
+
 var popUpSkillChange, popUpCloseBtn, popUpSkillContainer, popUpBackground;
 var popUpSkillInfoAndBtn, popUpSkillInfoIcon, popUpSkillInfoDesc, skillUpgradeEffect, popUpSkillUpgradeCostGold, popUpSkillUpgradeCostJewel, popUpSkillUpgradeBtn, popUpCancelSkillSelectBtn;
 var popUpSkillTutorialClickText1, popUpSkillTutorialClickText2, popUpSkillTutorialArrow, popUpSkillTextSkillInfo;
@@ -1269,30 +1270,8 @@ UIManager.prototype = {
   },
   setServerList : function(){
     var servers = document.getElementById('servers');
-    var req = util.createRequest();
     var isFindAvailableServer = false;
     var isFirstResponse = false;
-    req.onreadystatechange = function(e){
-      if(req.readyState === 4){
-        if(req.status === 200){
-          var res = JSON.parse(req.response);
-          var DOMOption = servers.querySelectorAll('[value="' + res.ip + '"]')[0];
-          var text = DOMOption.text + '[' + res.currentUser + '/' + res.maxUser + ']' + (Date.now() - res.startTime) + 'ms';
-          DOMOption.text = text;
-          if(!isFirstResponse){
-            //select default
-            isFirstResponse = true;
-            servers.selectedIndex = res.optionIndex;
-          }
-          if(!isFindAvailableServer){
-            if(parseInt(res.currentUser) < parseInt(res.maxUser)){
-              isFindAvailableServer = true;
-              servers.selectedIndex = res.optionIndex;
-            }
-          }
-        }
-      }
-    }
 
     var optionIndex = 0;
     for(var index in serverList){
@@ -1302,11 +1281,37 @@ UIManager.prototype = {
         var ip = 'http://' + serverList[index].IP;
         util.createDomSelectOption(index, ip, false, servers);
         try {
-          req.open('POST', ip + '/usersInfo', true);
-          req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-          // var data = JSON.stringify({'ip' : ip});
-          // req.send({ip : ip});
-          req.send('ip=' + ip + '&startTime=' + Date.now() + '&optionIndex=' + optionIndex);
+          (function tryAjax(){
+            var req = util.createRequest();
+            req.onreadystatechange = function(e){
+              if(req.readyState === 4){
+                if(req.status === 200){
+                  console.log('response');
+                  var res = JSON.parse(req.response);
+                  console.log(res.ip);
+                  var DOMOption = servers.querySelectorAll('[value="' + res.ip + '"]')[0];
+                  var text = DOMOption.text + '[' + res.currentUser + '/' + res.maxUser + ']' + (Date.now() - res.startTime) + 'ms';
+                  DOMOption.text = text;
+                  if(!isFirstResponse){
+                    //select default
+                    isFirstResponse = true;
+                    servers.selectedIndex = res.optionIndex;
+                  }
+                  if(!isFindAvailableServer){
+                    if(parseInt(res.currentUser) < parseInt(res.maxUser)){
+                      isFindAvailableServer = true;
+                      servers.selectedIndex = res.optionIndex;
+                    }
+                  }
+                }
+              }
+            }
+            req.open('POST', ip + '/usersInfo', true);
+            req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            // var data = JSON.stringify({'ip' : ip});
+            // req.send({ip : ip});
+            req.send('ip=' + ip + '&startTime=' + Date.now() + '&optionIndex=' + optionIndex);
+          })();
         } catch (e) {
           console.log(e.message);
           console.log(ip + ' in not response');
@@ -5956,6 +5961,7 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 module.exports={
   "NORTH AMERICA" : { "IP" : "" },
   "ASIA" : { "IP" : "" },
+  "ASIA 2" : { "IP" : "localhost" },
   "ASIA 1" : { "IP" : "52.68.95.222" },
   "EUROPE" : { "IP" : "" }
 }
