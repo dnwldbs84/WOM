@@ -1,6 +1,7 @@
 var http = require('http');
 var express = require('express');
 var socketio = require('socket.io');
+var bodyParser = require('body-parser')
 var path = require('path');
 var fs = require('fs');
 var csvJson = require('./modules/public/csvjson.js');
@@ -35,6 +36,7 @@ var allowCORS = function(req, res, next) {
 
 app.use(allowCORS);
 
+app.use(bodyParser.urlencoded({ extended: false }))
 // app.use(function(req, res, next) {
 //     res.header("Access-Control-Allow-Origin", "*");
 //     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
@@ -62,12 +64,16 @@ app.get('/noaction', function(req, res){
   });
 })
 app.post('/usersInfo', function(req, res){
-  if(GM){
+  // console.log(req.body);
+  if(!req.body){
+    res.sendStatus(400);
+  }else if(GM){
     var cUser = Object.keys(GM.users).length;
     var mUser = serverConfig.MAX_USER_COUNT;
-    res.send({serverState : 'serverOn', currentUser : cUser, maxUser : mUser});
+    res.send({ip : req.body.ip, startTime : req.body.startTime,
+             currentUser : cUser, maxUser : mUser, optionIndex : req.body.optionIndex});
   }else{
-    res.send({serverState : 'serverOff'});
+    res.sendStatus(400);
   }
 });
 app.post('/serverCheck', function(req, res){

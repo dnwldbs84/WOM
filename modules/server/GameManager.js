@@ -722,7 +722,7 @@ GameManager.prototype.updateUserData = function(userData){
         }
       }
     }else{
-      if(userData.objectID in this.users){
+      if(!userData.objectID in this.users){
         console.log('cant find user data');
       }
     }

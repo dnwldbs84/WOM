@@ -1270,58 +1270,49 @@ UIManager.prototype = {
   setServerList : function(){
     var servers = document.getElementById('servers');
     var req = util.createRequest();
-    var startTime = Date.now();
-
+    var isFindAvailableServer = false;
+    var isFirstResponse = false;
     req.onreadystatechange = function(e){
       if(req.readyState === 4){
         if(req.status === 200){
           var res = JSON.parse(req.response);
-          if(res.serverState === 'serverOn'){
-            var ping = Date.now() - startTime;
-            util.createDomSelectOption(index, ip, false, servers, res, ping);
+          var DOMOption = servers.querySelectorAll('[value="' + res.ip + '"]')[0];
+          var text = DOMOption.text + '[' + res.currentUser + '/' + res.maxUser + ']' + (Date.now() - res.startTime) + 'ms';
+          DOMOption.text = text;
+          if(!isFirstResponse){
+            //select default
+            isFirstResponse = true;
+            servers.selectedIndex = res.optionIndex;
+          }
+          if(!isFindAvailableServer){
+            if(parseInt(res.currentUser) < parseInt(res.maxUser)){
+              isFindAvailableServer = true;
+              servers.selectedIndex = res.optionIndex;
+            }
           }
         }
       }
     }
-    util.createDomSelectOption("NA", "", true, servers);
-    var ip = "";
-    for(var index in serverList.NA){
-      ip = 'http://' + serverList.NA[index];
-      try {
-        startTime = Date.now();
-        req.open('POST', ip + '/usersInfo', false);
-        // req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-        req.send();
-      } catch (e) {
-        console.log(e.message);
-        console.log(ip + ' is not response');
+
+    var optionIndex = 0;
+    for(var index in serverList){
+      if(!serverList[index].IP){
+        util.createDomSelectOption(index,"", true, servers);
+      }else{
+        var ip = 'http://' + serverList[index].IP;
+        util.createDomSelectOption(index, ip, false, servers);
+        try {
+          req.open('POST', ip + '/usersInfo', true);
+          req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+          // var data = JSON.stringify({'ip' : ip});
+          // req.send({ip : ip});
+          req.send('ip=' + ip + '&startTime=' + Date.now() + '&optionIndex=' + optionIndex);
+        } catch (e) {
+          console.log(e.message);
+          console.log(ip + ' in not response');
+        }
       }
-    }
-    util.createDomSelectOption("ASIA", "", true, servers);
-    for(var index in serverList.ASIA){
-      ip = 'http://' + serverList.ASIA[index];
-      try {
-        startTime = Date.now();
-        req.open('POST', ip + '/usersInfo', false);
-        // req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-        req.send();
-      } catch (e) {
-        console.log(e.message);
-        console.log(ip + 'is not response');
-      }
-    }
-    util.createDomSelectOption("EU", "", true, servers);
-    for(var index in serverList.EU){
-      ip = 'http://' + serverList.EU[index];
-      try {
-        startTime = Date.now();
-        req.open('POST', ip + '/usersInfo', false);
-        // req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-        req.send();
-      } catch (e) {
-        console.log(e.message);
-        console.log(ip + 'is not response');
-      }
+      optionIndex++;
     }
     this.onLoadCompleteServerList();
   },
@@ -5963,13 +5954,11 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 
 },{}],11:[function(require,module,exports){
 module.exports={
-  "NA" : {
-  },
-  "ASIA" : {
-    "ASIA1" : "52.68.95.222"
-  },
-  "EU" : {
-  }
+  "NORTH AMERICA" : { "IP" : "" },
+  "ASIA" : { "IP" : "" },
+  "ASIA 1" : { "IP" : "52.68.95.222" },
+  "ASIA 2" : { "IP" : "localhost" },
+  "EUROPE" : { "IP" : "" }
 }
 
 },{}],12:[function(require,module,exports){
@@ -6751,17 +6740,11 @@ exports.setImgCssStyle = function(imgDiv, iconData, expandRate){
 exports.processMessage = function(msg){
   return msg.replace(/(<([^>]+)>)/ig, '').substring(0,25);
 };
-exports.createDomSelectOption = function(text, value, isDisabled, parentNode, userData, pingData){
+exports.createDomSelectOption = function(text, value, isDisabled, parentNode){
   var option = document.createElement("option");
   option.setAttribute("value", value);
   if(isDisabled){
     option.disabled = true;
-  }
-  if(userData){
-    text += " [" + userData.currentUser + "/" + userData.maxUser + "] ";
-  }
-  if(pingData){
-    text += pingData + "ms";
   }
   var optionText = document.createTextNode(text);
   option.appendChild(optionText);
@@ -6824,7 +6807,7 @@ var Manager;
 var loadedResourcesCount = 0;
 var resourceObject, resourceCharacter, resourceUI, resourceSkillEffect;
 var isLoadResources = false, isUISettingComplete = false, loadingStartTime = Date.now(), loadingTextChangeTime = Date.now();
-var isLoadServerList = false, isServerConditionGood = false;
+var isLoadServerList = false, isServerConditionGood = false, isConnectSocket = false;
 
 var userHandImgData = new Array(5);
 var userCastingTimeHandler = false;
@@ -6900,7 +6883,7 @@ function changeState(newState){
     case gameConfig.GAME_STATE_GAME_START:
       gameState = newState;
       gameSetupFunc = stateFuncStart;
-      gameUpdateFunc = null;
+      gameUpdateFunc = stateFuncCheckServer;
       break;
     case gameConfig.GAME_STATE_GAME_ON:
       gameState = newState;
@@ -6981,14 +6964,22 @@ function stateFuncStart(){
   var url = UIManager.getSelectedServer();
   // UIManager.disableStartScene();
   UIManager.checkServerCondition(url);
-  if(isServerConditionGood){
-    setupSocket(url);
-    userName = UIManager.getStartUserName();
-    socket.emit('reqStartGame', characterType, userName);
-    userPingCheckTime = Date.now();
-    socket.emit('firePing', userPingCheckTime);
-  }else{
-    UIManager.enableStartButton();
+
+};
+function stateFuncCheckServer(){
+  if(!isConnectSocket){
+    if(isServerConditionGood){
+      isConnectSocket = true;
+      var url = UIManager.getSelectedServer();
+      setupSocket(url);
+      userName = UIManager.getStartUserName();
+      socket.emit('reqStartGame', characterType, userName);
+      userPingCheckTime = Date.now();
+      socket.emit('firePing', userPingCheckTime);
+    }else{
+      isConnectSocket = false;
+      UIManager.enableStartButton();
+    }
   }
 };
 //game play on

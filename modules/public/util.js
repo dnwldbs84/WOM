@@ -782,8 +782,8 @@ exports.createDomSelectOption = function(text, value, isDisabled, parentNode){
   if(isDisabled){
     option.disabled = true;
   }
-  var text = document.createTextNode(text);
-  option.appendChild(text);
+  var optionText = document.createTextNode(text);
+  option.appendChild(optionText);
   parentNode.appendChild(option);
 };
 exports.createRequest = function(){
