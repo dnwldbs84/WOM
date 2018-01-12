@@ -1368,7 +1368,7 @@ UIManager.prototype = {
 
     try {
       startTime = Date.now();
-      req.open('POST', url + '/serverCheck', false);
+      req.open('POST', url + '/serverCheck', true);
       // req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
       req.send();
     } catch (e) {
@@ -5957,7 +5957,6 @@ module.exports={
   "NORTH AMERICA" : { "IP" : "" },
   "ASIA" : { "IP" : "" },
   "ASIA 1" : { "IP" : "52.68.95.222" },
-  "ASIA 2" : { "IP" : "localhost" },
   "EUROPE" : { "IP" : "" }
 }
 
