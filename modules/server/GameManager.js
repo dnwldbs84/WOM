@@ -920,10 +920,10 @@ GameManager.prototype.processScoreDatas = function(exceptID){
       if(exceptID){
         //if user disconnect
         if(exceptID !== this.users[i].objectID){
-          datas.push({name : this.users[i].name, level: this.users[i].level, killScore : this.users[i].killCount, totalScore : this.users[i].score});
+          datas.push({id : this.users[i].objectID, name : this.users[i].name, level: this.users[i].level, killScore : this.users[i].killCount, totalScore : this.users[i].score});
         }
       }else{
-        datas.push({name : this.users[i].name, level: this.users[i].level, killScore : this.users[i].killCount, totalScore : this.users[i].score});
+        datas.push({id : this.users[i].objectID, name : this.users[i].name, level: this.users[i].level, killScore : this.users[i].killCount, totalScore : this.users[i].score});
       }
     }
   }

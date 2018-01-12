@@ -352,6 +352,9 @@ CManager.prototype = {
 
 		this.user.changeState(gameConfig.OBJECT_STATE_MOVE);
 	},
+	stopUser : function(){
+		this.user.changeState(gameConfig.OBJECT_STATE_IDLE);
+	},
 	moveAndAttackUser : function(userID, userTargetPosition, skillData, moveBackward){
 		if(userID in this.users){
 			this.users[userID].targetPosition = userTargetPosition;
@@ -879,7 +882,7 @@ var onMainUserMoveHandler = function(user){
 }
 module.exports = CManager;
 
-},{"../public/gameConfig.json":8,"../public/objectAssign.js":9,"../public/quadtree.js":10,"../public/util.js":12,"./CObstacle.js":2,"./CUser.js":5}],2:[function(require,module,exports){
+},{"../public/gameConfig.json":8,"../public/objectAssign.js":9,"../public/quadtree.js":10,"../public/util.js":11,"./CObstacle.js":2,"./CUser.js":5}],2:[function(require,module,exports){
 function CObstacle(posX, posY, radius, id, resourceData){
   this.objectID = id;
 
@@ -1056,11 +1059,11 @@ var ProjectileSkill = function(skillInstance, currentPosition, ID, direction){
 
 module.exports = CSkill;
 
-},{"../public/gameConfig.json":8,"../public/util.js":12}],4:[function(require,module,exports){
+},{"../public/gameConfig.json":8,"../public/util.js":11}],4:[function(require,module,exports){
 var util = require('../public/util.js');
 var gameConfig = require('../public/gameConfig.json');
 var objectAssign = require('../public/objectAssign.js');
-var serverList = require('../public/serverList.json');
+// var serverList = require('../public/serverList.json');
 
 var skillTable, buffGroupTable, iconResourceTable, userStatTable;
 var resourceUI;
@@ -1148,6 +1151,7 @@ function UIManager(sTable, bTable, iTable, usTable){
   this.serverConditionOn = new Function();
   this.serverConditionOff = new Function();
 
+  this.onSetRankers = new Function();
   this.onPopUpSkillChangeClick = new Function();
   this.onSelectCharIcon = new Function();
   this.onSelectSkillCancelBtnClick = new Function();
@@ -1272,6 +1276,16 @@ UIManager.prototype = {
     var servers = document.getElementById('servers');
     var isFindAvailableServer = false;
     var isFirstResponse = false;
+    var thisOnLoadCompleteServerList = this.onLoadCompleteServerList;
+
+    setTimeout(function(){
+      if(!isFindAvailableServer){
+        alert('Sorry. Can`t find available server.')
+        servers.selectedIndex = 1;
+        isFindAvailableServer = true;
+        thisOnLoadCompleteServerList();
+      }
+    }, gameConfig.MAX_FIND_AVAILABLE_SERVER_TIME);
 
     var optionIndex = 0;
     for(var index in serverList){
@@ -1279,18 +1293,26 @@ UIManager.prototype = {
         util.createDomSelectOption(index,"", true, servers);
       }else{
         var ip = 'http://' + serverList[index].IP;
-        util.createDomSelectOption(index, ip, false, servers);
+        util.createDomSelectOption(index, ip, true, servers);
         try {
           (function tryAjax(){
             var req = util.createRequest();
             req.onreadystatechange = function(e){
               if(req.readyState === 4){
                 if(req.status === 200){
-                  console.log('response');
                   var res = JSON.parse(req.response);
-                  console.log(res.ip);
                   var DOMOption = servers.querySelectorAll('[value="' + res.ip + '"]')[0];
-                  var text = DOMOption.text + '[' + res.currentUser + '/' + res.maxUser + ']' + (Date.now() - res.startTime) + 'ms';
+                  DOMOption.disabled = false;
+                  if(parseInt(res.currentUser) >= parseInt(res.maxUser)){
+                    DOMOption.classList.add('overUser');
+                  }
+                  if(Date.now() - res.startTime >= gameConfig.MAX_PING_LIMIT){
+                    DOMOption.classList.add('highPing');
+                  }
+                  if(!DOMOption.classList.contains('overUser') && !DOMOption.classList.contains('highPing')){
+                    DOMOption.classList.add('available');
+                  }
+                  var text = DOMOption.text + ' [' + res.currentUser + '/' + res.maxUser + '] ' + (Date.now() - res.startTime) + 'ms';
                   DOMOption.text = text;
                   if(!isFirstResponse){
                     //select default
@@ -1300,6 +1322,7 @@ UIManager.prototype = {
                   if(!isFindAvailableServer){
                     if(parseInt(res.currentUser) < parseInt(res.maxUser)){
                       isFindAvailableServer = true;
+                      thisOnLoadCompleteServerList();
                       servers.selectedIndex = res.optionIndex;
                     }
                   }
@@ -1319,7 +1342,6 @@ UIManager.prototype = {
       }
       optionIndex++;
     }
-    this.onLoadCompleteServerList();
   },
   getSelectedServer : function(){
     var servers = document.getElementById('servers');
@@ -1328,18 +1350,18 @@ UIManager.prototype = {
   getStartUserName : function(){
     var userStartNickName = document.getElementById('userStartNickName').value;
     if(userStartNickName){
-      return util.processMessage(userStartNickName);
+      return util.processMessage(userStartNickName, gameConfig.USER_NICK_NAME_LENGTH);
     }else{
-      return "noname";
+      return "NoName";
     }
   },
   getStandingUserName : function(){
     // var userStandingNickName = document.getElementById('userStandingNickName').value;
     var nickName = userStandingNickName.value;
     if(nickName){
-      return util.processMessage(nickName);
+      return util.processMessage(nickName, gameConfig.USER_NICK_NAME_LENGTH);
     }else{
-      return "noname";
+      return "NoName";
     }
   },
   checkServerCondition : function(url){
@@ -1428,7 +1450,7 @@ UIManager.prototype = {
       restartButton.getElementsByTagName('img')[0].classList.add('disable');
     }, 1000);
 
-    if(userName !== 'noname'){
+    if(userName !== 'NoName'){
       userStandingNickName.value = userName;
     }
 
@@ -2814,6 +2836,8 @@ UIManager.prototype = {
     }
   },
   setBoard : function(userDatas, userID){
+    var rankers = [];
+
     var rank = [];
     var userRank = 0;
     var userName = "";
@@ -2822,15 +2846,19 @@ UIManager.prototype = {
       return b.totalScore - a.totalScore;
     });
     for(var i=0; i<userDatas.length; i++){
-      if(userID === userDatas[i].name){
+      if(userID === userDatas[i].id){
         userRank = i + 1;
         userName = userDatas[i].name;
         userLevel = userDatas[i].level;
         userKillScore = userDatas[i].killScore;
         userScore = userDatas[i].totalScore;
       }
+      if(i === 0 || i === 1 || i === 2){
+        rankers.push(userDatas[i].id);
+      }
       rank.push({rank : i + 1, name : userDatas[i].name, level:userDatas[i].level, kill : userDatas[i].killScore, score : userDatas[i].totalScore});
     }
+
     var rankOutput = "<h3>Rank</h3><hr>";
     var nameOutput = "<h3>Name</h3><hr>";
     var levelOutput = "<h3>Level</h3><hr>";
@@ -2840,26 +2868,58 @@ UIManager.prototype = {
     var length = rank.length > 10 ? 10 : rank.length;
 
     for(var i=0; i<length; i++){
+      var isRanker = false;
+      if(i === 0 || i === 1 || i === 2){
+        isRanker = true;
+      }
       if(userRank <= 10 && userRank === i + 1){
-        rankOutput += "<p class='user'>" + rank[i].rank + "</p>";
-        nameOutput += "<p class='user'>" + rank[i].name + "</p>";
-        levelOutput += "<p class='user'>" + rank[i].level + "</p>";
-        killScoreOutput += "<p class='user'>" + rank[i].kill + "</p>";
-        totalScoreOutput += "<p class='user'>" + rank[i].score + "</p>";
+        if(isRanker){
+          if(i == 0){
+            rankOutput += "<img src='/images/rank1Icon.png'/>";
+          }else if(i === 1){
+            rankOutput += "<img src='/images/rank2Icon.png'/>";
+          }else{
+            rankOutput += "<img src='/images/rank3Icon.png'/>";
+          }
+          nameOutput += "<p class='user ranker'>" + rank[i].name + "</p>";
+          levelOutput += "<p class='user ranker'>" + rank[i].level + "</p>";
+          killScoreOutput += "<p class='user ranker'>" + rank[i].kill + "</p>";
+          totalScoreOutput += "<p class='user ranker'>" + rank[i].score + "</p>";
+        }else{
+          rankOutput += "<p class='user'>" + rank[i].rank + "</p>";
+          nameOutput += "<p class='user'>" + rank[i].name + "</p>";
+          levelOutput += "<p class='user'>" + rank[i].level + "</p>";
+          killScoreOutput += "<p class='user'>" + rank[i].kill + "</p>";
+          totalScoreOutput += "<p class='user'>" + rank[i].score + "</p>";
+        }
       }else{
-        rankOutput += "<p>" + rank[i].rank + "</p>";
-        nameOutput += "<p>" + rank[i].name + "</p>";
-        levelOutput += "<p>" + rank[i].level + "</p>";
-        killScoreOutput += "<p>" + rank[i].kill + "</p>";
-        totalScoreOutput += "<p>" + rank[i].score + "</p>";
+        if(isRanker){
+          if(i == 0){
+            rankOutput += "<img src='/images/rank1Icon.png'/>";
+          }else if(i === 1){
+            rankOutput += "<img src='/images/rank2Icon.png'/>";
+          }else{
+            rankOutput += "<img src='/images/rank3Icon.png'/>";
+          }
+          nameOutput += "<p class='ranker'>" + rank[i].name + "</p>";
+          levelOutput += "<p class='ranker'>" + rank[i].level + "</p>";
+          killScoreOutput += "<p class='ranker'>" + rank[i].kill + "</p>";
+          totalScoreOutput += "<p class='ranker'>" + rank[i].score + "</p>";
+        }else{
+          rankOutput += "<p>" + rank[i].rank + "</p>";
+          nameOutput += "<p>" + rank[i].name + "</p>";
+          levelOutput += "<p>" + rank[i].level + "</p>";
+          killScoreOutput += "<p>" + rank[i].kill + "</p>";
+          totalScoreOutput += "<p>" + rank[i].score + "</p>";
+        }
       }
     }
     if(userRank > 10){
-      rankOutput += "<p class='user' style='font-size: 13px'>" + userRank + "</p>";
-      nameOutput += "<p class='user' style='font-size: 13px'>" + userName + "</p>";
-      levelOutput += "<p class='user' style='font-size: 13px'>" + userLevel + "</p>";
-      killScoreOutput += "<p class='user' style='font-size: 13px'>" + userKillScore + "</p>";
-      totalScoreOutput += "<p class='user' style='font-size: 13px'>" + userKillScore + "</p>";
+      rankOutput += "<p class='user' style='font-size: 12px'>" + userRank + "</p>";
+      nameOutput += "<p class='user' style='font-size: 12px'>" + userName + "</p>";
+      levelOutput += "<p class='user' style='font-size: 12px'>" + userLevel + "</p>";
+      killScoreOutput += "<p class='user' style='font-size: 12px'>" + userKillScore + "</p>";
+      totalScoreOutput += "<p class='user' style='font-size: 12px'>" + userKillScore + "</p>";
     }
     // if(userRank > 10){
     //   output += rank[i].rank + ' : ' + rank[i].name + ' : ' + rank[i].kill;
@@ -2871,6 +2931,8 @@ UIManager.prototype = {
     gameBoardLevel.innerHTML = levelOutput;
     gameBoardKillScore.innerHTML = killScoreOutput;
     gameBoardTotalScore.innerHTML = totalScoreOutput;
+
+    this.onSetRankers(rankers);
   },
   updateBoard : function(userDatas, userID){
     this.setBoard(userDatas, userID);
@@ -2911,12 +2973,12 @@ UIManager.prototype = {
         break;
     }
     if(!attackUserInfo.userName){
-      var attackUserName = 'noname';
+      var attackUserName = 'NoName';
     }else{
       attackUserName = attackUserInfo.userName;
     }
     if(!deadUserInfo.userName){
-      var deadUserName = 'noname';
+      var deadUserName = 'NoName';
     }else{
       deadUserName = deadUserInfo.userName;
     }
@@ -3998,8 +4060,11 @@ function makeSkillTooltipString(skillData){
       case gameConfig.SKILL_TYPE_RANGE:
         if(skillData.fireDamage + skillData.frostDamage + skillData.arcaneDamage){
           output += "<div><span class='yellow'>Damage : </span>" + "<span class='" + color + "'>" + (skillData.fireDamage + skillData.frostDamage + skillData.arcaneDamage) + "</span></div>";
+          output += "<div><span class='yellow'>Range : </span>" + (skillData.explosionRadius) + "</div>";
+        }else{
+          output += "<div><span class='yellow'>Range : </span>" + (skillData.explosionRadius) + "</div>";
+          output += "<div></div>";
         }
-        output += "<div><span class='yellow'>Range : </span>" + (skillData.explosionRadius) + "</div>";
         break;
       case gameConfig.SKILL_TYPE_SELF:
         var buffGroupData = objectAssign({}, util.findData(buffGroupTable, 'index', skillData.buffToSelf));
@@ -4219,7 +4284,7 @@ function setStartSceneCharIconClick(){
 };
 module.exports = UIManager;
 
-},{"../public/gameConfig.json":8,"../public/objectAssign.js":9,"../public/serverList.json":11,"../public/util.js":12}],5:[function(require,module,exports){
+},{"../public/gameConfig.json":8,"../public/objectAssign.js":9,"../public/util.js":11}],5:[function(require,module,exports){
 var util = require('../public/util.js');
 var Skill = require('./CSkill.js');
 var gameConfig = require('../public/gameConfig.json');
@@ -4505,7 +4570,7 @@ function imgHandTimeoutHandler(tickTime){
 };
 module.exports = User;
 
-},{"../public/gameConfig.json":8,"../public/util.js":12,"./CSkill.js":3}],6:[function(require,module,exports){
+},{"../public/gameConfig.json":8,"../public/util.js":11,"./CSkill.js":3}],6:[function(require,module,exports){
 
 module.exports = {
     toObject        : toObject,
@@ -4962,7 +5027,7 @@ module.exports={
   "obstacleData" :
   "index,type,id,posX,posY,radius,treeImgRadius,imgData\n1,1,OTT1,1813,5287,15,45,103\n2,1,OTT2,2916,4689,15,45,103\n3,1,OTT3,3534,5217,15,45,103\n4,1,OTT4,2659,2268,15,45,103\n5,1,OTT5,2205,4811,15,45,103\n6,1,OTT6,4255,5123,15,45,103\n7,1,OTT7,911,5296,15,45,103\n8,1,OTT8,5019,847,15,45,103\n9,1,OTT9,3650,3575,15,45,103\n10,1,OTT10,2442,5525,15,45,103\n11,1,OTT11,4170,1353,15,45,103\n12,1,OTT12,2703,3846,15,45,103\n13,1,OTT13,1050,5250,15,45,103\n14,1,OTT14,5747,3310,15,45,103\n15,1,OTT15,1155,5825,15,45,103\n16,1,OTT16,3538,3638,25,75,102\n17,1,OTT17,5915,2959,25,75,102\n18,1,OTT18,1326,2446,25,75,102\n19,1,OTT19,2381,1937,25,75,102\n20,1,OTT20,5638,4165,25,75,102\n21,1,OTT21,4779,1984,25,75,102\n22,1,OTT22,4577,3139,25,75,102\n23,1,OTT23,5046,3716,25,75,102\n24,1,OTT24,4318,5169,25,75,102\n25,1,OTT25,4394,933,25,75,102\n26,1,OTT26,1539,3673,25,75,102\n27,1,OTT27,2505,1130,25,75,102\n28,1,OTT28,3130,420,25,75,102\n29,1,OTT29,1619,5102,25,75,102\n30,1,OTT30,1495,471,25,75,102\n31,1,OTT31,5776,3131,25,75,102\n32,1,OTT32,5713,5996,25,75,102\n33,1,OTT33,5333,5525,25,75,102\n34,1,OTT34,713,5955,25,75,102\n35,1,OTT35,1487,2343,25,75,102\n36,1,OTT36,3320,2989,25,75,102\n37,1,OTT37,4549,5696,25,75,102\n38,1,OTT38,1885,1192,25,75,102\n39,1,OTT39,620,3401,25,75,102\n40,1,OTT40,1365,1602,25,75,102\n41,1,OTT41,4259,5741,25,75,102\n42,1,OTT42,3759,2736,25,75,102\n43,1,OTT43,2441,2818,25,75,102\n44,1,OTT44,1297,2105,25,75,102\n45,1,OTT45,2790,1331,25,75,102\n46,1,OTT46,1056,1944,25,75,102\n47,1,OTT47,3698,1095,25,75,102\n48,1,OTT48,2627,3504,25,75,102\n49,1,OTT49,3488,1280,25,75,102\n50,1,OTT50,5526,4258,25,75,102\n51,1,OTT51,2504,1595,25,75,102\n52,1,OTT52,4500,1250,25,75,102\n53,1,OTT53,2582,749,30,90,101\n54,1,OTT54,5811,4682,30,90,101\n55,1,OTT55,1681,1557,30,90,101\n56,1,OTT56,5229,4733,30,90,101\n57,1,OTT57,2955,3093,30,90,101\n58,1,OTT58,3779,2909,30,90,101\n59,1,OTT59,5111,2341,30,90,101\n60,1,OTT60,3025,4827,30,90,101\n61,1,OTT61,1756,2445,30,90,101\n62,1,OTT62,4879,1238,30,90,101\n63,1,OTT63,3044,1209,30,90,101\n64,1,OTT64,2502,5932,30,90,101\n65,1,OTT65,3481,1035,30,90,101\n66,1,OTT66,3321,4427,30,90,101\n67,1,OTT67,5508,1295,30,90,101\n68,1,OTT68,650,728,30,90,101\n69,1,OTT69,1030,5347,30,90,101\n70,1,OTT70,5296,5735,30,90,101\n71,1,OTT71,5335,4911,30,90,101\n72,1,OTT72,4424,756,30,90,101\n73,1,OTT73,3617,3077,30,90,101\n74,1,OTT74,2067,3735,30,90,101\n75,1,OTT75,5656,1688,30,90,101\n76,1,OTT76,2026,3498,30,90,101\n77,1,OTT77,4142,5665,30,90,101\n78,1,OTT78,2142,1107,30,90,101\n79,1,OTT79,421,1652,30,90,101\n80,1,OTT80,5672,5072,30,90,101\n81,1,OTT81,2898,3001,30,90,101\n82,1,OTT82,5229,5102,30,90,101\n83,1,OTT83,1712,5196,30,90,101\n84,1,OTT84,844,4561,30,90,101\n85,1,OTT85,3324,2013,30,90,101\n86,1,OTT86,5427,1796,30,90,101\n87,1,OTT87,1800,1100,30,90,101\n88,1,OTT88,1900,1850,30,90,101\n89,1,OTT89,4350,4650,30,90,101\n90,1,OTT90,4450,4600,30,90,101\n91,1,OTT91,4600,1350,30,90,101\n101,2,OTR1,2908,4747,50,,106\n102,2,OTR2,5515,1649,50,,106\n103,2,OTR3,2290,5083,50,,106\n104,2,OTR4,3017,1005,50,,106\n105,2,OTR5,5004,4010,50,,106\n106,2,OTR6,1866,2244,50,,106\n107,2,OTR7,591,879,50,,106\n108,2,OTR8,3546,5294,50,,106\n109,2,OTR9,638,2656,50,,106\n110,2,OTR10,5974,3515,50,,106\n111,2,OTR11,5355,1263,50,,106\n112,2,OTR12,3815,716,50,,106\n113,2,OTR13,1121,2027,50,,106\n114,2,OTR14,3565,2288,50,,106\n115,2,OTR15,1075,5062,50,,106\n116,2,OTR16,4508,425,50,,106\n117,2,OTR17,4486,3926,50,,106\n118,2,OTR18,4685,3434,50,,106\n119,2,OTR19,3495,2151,50,,106\n120,2,OTR20,664,461,50,,106\n121,2,OTR21,4250,914,50,,106\n122,2,OTR22,3419,933,50,,106\n123,2,OTR23,3913,5340,50,,106\n124,2,OTR24,3886,5790,50,,106\n125,2,OTR25,3154,4025,50,,106\n126,2,OTR26,2000,1200,50,,106\n127,2,OTR27,4963,3212,70,,105\n128,2,OTR28,1190,5523,70,,105\n129,2,OTR29,3644,4896,70,,105\n130,2,OTR30,5263,886,70,,105\n131,2,OTR31,3689,3554,70,,105\n132,2,OTR32,2274,2461,70,,105\n133,2,OTR33,1310,1804,70,,105\n134,2,OTR34,1144,5225,70,,105\n135,2,OTR35,814,1889,70,,105\n136,2,OTR36,2152,3749,70,,105\n137,2,OTR37,4610,1118,70,,105\n138,2,OTR38,2968,782,70,,105\n139,2,OTR39,1476,1488,70,,105\n140,2,OTR40,651,3039,70,,105\n141,2,OTR41,2017,1779,70,,105\n142,2,OTR42,5493,5642,70,,105\n143,2,OTR43,4557,1479,70,,105\n144,2,OTR44,3271,4796,70,,105\n145,2,OTR45,1643,4767,70,,105\n146,2,OTR46,5339,3605,70,,105\n147,2,OTR47,666,2321,70,,105\n148,2,OTR48,3681,2011,70,,105\n149,2,OTR49,5014,5235,70,,105\n150,2,OTR50,2958,1974,70,,105\n151,2,OTR51,1758,3574,70,,105\n152,2,OTR52,3550,2900,70,,105\n201,3,OCG1,2090,920,35,,113\n202,3,OCG2,4480,1400,35,,113\n203,3,OCG3,2060,2000,35,,113\n204,3,OCG4,5520,2400,35,,113\n205,3,OCG5,3160,3160,35,,113\n206,3,OCG6,800,3920,35,,113\n207,3,OCG7,4260,4320,35,,113\n208,3,OCG8,1840,4920,35,,113\n209,3,OCG9,4230,5400,35,,113\n",
   "resourceData" :
-  "index,name,srcPosX,srcPosY,srcWidth,srcHeight,width,height\n1,pyroNovice,0,0,70,70,60,60\n2,pyroApprentice,70,0,70,70,61,61\n3,pyroAdept,140,0,70,70,63,63\n4,pyroExpert,210,0,70,70,64,64\n5,pyroMaster,280,0,70,70,65,65\n6,frosterNovice,0,70,70,70,60,60\n7,frosterApprentice,70,70,70,70,61,61\n8,frosterAdept,140,70,70,70,63,63\n9,frosterExpert,210,70,70,70,64,64\n10,frosterMaster,280,70,70,70,65,65\n11,mysterNovice,0,140,70,70,60,60\n12,mysterApprentice,70,140,70,70,61,61\n13,mysterAdept,140,140,70,70,63,63\n14,mysterExpert,210,140,70,70,64,64\n15,mysterMaster,280,140,70,70,65,65\n16,charHandIdle,0,210,120,100,120,100\n17,charHandCast1,120,210,120,100,120,100\n18,charHandCast2,240,210,120,100,120,100\n19,charHandCast3,360,210,120,100,120,100\n20,charHandCast4,480,210,120,100,120,100\n21,castEffectFire,0,310,120,100,120,100\n22,castEffectFrost,120,310,120,100,120,100\n23,castEffectArcane,240,310,120,100,120,100\n24,projectileFire,0,220,70,70,65,65\n25,projectileFrost,70,220,70,70,65,65\n26,projectileArcane,140,220,70,70,65,65\n27,skillEffectFire,0,290,160,160,155,155\n28,skillEffectFrost,160,290,160,160,155,155\n29,skillEffectArcane,320,290,160,160,155,155\n100,projectileSkillArrow,0,410,240,80,240,80\n101,objTreeLarge,210,0,210,210,225,225\n102,objTreeMedium,210,0,210,210,185,185\n103,objTreeSmall,210,0,210,210,145,145\n104,objTreeInside,420,0,210,210,0,0\n105,objStoneLarge,0,0,210,210,165,165\n106,objStoneMedium,0,0,210,210,125,125\n107,objStoneSmall,0,0,210,210,85,85\n108,objChest1,0,210,90,90,85,85\n109,objChest2,90,210,90,90,85,85\n110,objChest3,180,210,90,90,85,85\n111,objChest4,270,210,90,90,85,85\n112,objChest5,360,210,90,90,85,85\n113,objChestGround,450,210,90,90,85,85\n200,objGold,0,300,70,70,65,65\n201,objJewel,70,300,70,70,65,65\n202,objSkillFire,0,370,70,70,65,65\n203,objSkillFrost,70,370,70,70,65,65\n204,objSkillArcane,140,370,70,70,65,65\n205,objBox,140,300,70,70,65,65\n1001,conditionEffectFreeze,0,0,80,80,75,75\n1002,conditionEffectChill,80,0,80,80,75,75\n1003,conditionEffectImmortal,160,0,80,80,75,75\n1004,conditionEffectSilence,240,0,80,80,75,75\n1005,conditionEffectIgnite1,0,80,60,60,55,55\n1006,conditionEffectIgnite2,60,80,60,60,55,55\n1007,conditionEffectIgnite3,120,80,60,60,55,55\n1008,conditionEffectIgnite4,180,80,60,60,55,55\n1009,conditionEffectIgnite5,240,80,60,60,55,55\n1010,conditionEffectIgnite6,300,80,60,60,55,55\n1011,fireHitEffect,210,220,70,70,65,65\n1012,frostHitEffect,280,220,70,70,65,65\n1013,arcaneHitEffect,350,220,70,70,65,65\n1014,blankImg,0,450,60,60,55,55\n1015,passiveEffectFire1,60,450,60,60,60,60\n1016,passiveEffectFire2,120,450,60,60,65,65\n1017,passiveEffectFire3,180,450,60,60,70,70\n1018,passiveEffectFire4,240,450,60,60,75,75\n1019,passiveEffectFire5,300,450,60,60,80,80\n1020,passiveEffectFire6,360,450,60,60,85,85\n1021,passiveEffectFire7,420,450,60,60,90,90\n1022,passiveEffectFrost1,0,510,60,60,60,60\n1023,passiveEffectFrost2,60,510,60,60,65,65\n1024,passiveEffectFrost3,120,510,60,60,70,70\n1025,passiveEffectFrost4,180,510,60,60,75,75\n1026,passiveEffectFrost5,240,510,60,60,80,80\n1027,passiveEffectFrost6,300,510,60,60,85,85\n1028,passiveEffectFrost7,360,510,60,60,90,90\n1029,passiveEffectArcane1,480,450,60,60,60,60\n1030,passiveEffectArcane2,420,510,60,60,65,65\n1031,passiveEffectArcane3,480,510,60,60,70,70\n1032,passiveEffectArcane4,540,510,60,60,75,75\n1033,passiveEffectArcane5,600,510,60,60,80,80\n1034,passiveEffectArcane6,660,510,60,60,85,85\n1035,passiveEffectArcane7,720,510,60,60,90,90\n1036,fireSkillEffectInnerFire,0,140,80,80,80,80\n1037,fireSkillEffectFury1,80,140,80,80,80,80\n1038,fireSkillEffectFury2,80,140,80,80,83,83\n1039,fireSkillEffectFury3,80,140,80,80,86,86\n1040,fireSkillEffectFury4,80,140,80,80,90,90\n1041,fireSkillEffectFury5,80,140,80,80,85,88\n1042,frostSkillEffectPurify,160,140,80,80,70,70\n1043,frostSkillEffectIceBlock,240,140,80,80,90,90\n1044,arcaneSkillEffectCloak,320,140,80,80,90,90\n1045,arcaneSkillEffectHaste1,400,140,80,80,80,80\n1046,arcaneSkillEffectHaste2,400,140,80,80,83,83\n1047,arcaneSkillEffectHaste3,400,140,80,80,86,86\n1048,arcaneSkillEffectHaste4,400,140,80,80,90,90\n1049,arcaneSkillEffectHaste5,400,140,80,80,85,88\n1050,fireProjectileRollingFire,480,290,90,90,90,90\n1051,frostProjectileFrostOrb,570,290,90,90,90,90\n1052,arcaneSkillNoDamageExplosion,660,290,90,90,90,90\n1053,regenHP1,360,80,60,60,55,55\n1054,regenHP2,420,80,60,60,55,55\n1055,regenHP3,480,80,60,60,55,55\n1056,regenHP4,540,80,60,60,55,55\n1057,regenHP5,600,80,60,60,55,55\n1058,regenMP1,360,20,60,60,55,55\n1059,regenMP2,420,20,60,60,55,55\n1060,regenMP3,480,20,60,60,55,55\n1061,regenMP4,540,20,60,60,55,55\n1062,regenMP5,600,20,60,60,55,55\n1063,purifyAndHeal1,660,20,60,60,55,55\n1064,purifyAndHeal2,720,20,60,60,55,55\n1065,dispel1,480,140,60,60,55,55\n1066,dispel2,540,140,60,60,55,55\n1067,dispel3,600,140,60,60,55,55\n1068,dispel4,660,140,60,60,55,55\n1069,levelUp1,160,0,80,80,64,64\n1070,levelUp2,160,0,80,80,66,66\n1071,levelUp3,160,0,80,80,68,68\n1072,levelUp4,160,0,80,80,70,70\n1073,levelUp5,160,0,80,80,72,72\n",
+  "index,name,srcPosX,srcPosY,srcWidth,srcHeight,width,height\n1,pyroNovice,0,0,70,70,60,60\n2,pyroApprentice,70,0,70,70,61,61\n3,pyroAdept,140,0,70,70,63,63\n4,pyroExpert,210,0,70,70,64,64\n5,pyroMaster,280,0,70,70,65,65\n6,frosterNovice,0,70,70,70,60,60\n7,frosterApprentice,70,70,70,70,61,61\n8,frosterAdept,140,70,70,70,63,63\n9,frosterExpert,210,70,70,70,64,64\n10,frosterMaster,280,70,70,70,65,65\n11,mysterNovice,0,140,70,70,60,60\n12,mysterApprentice,70,140,70,70,61,61\n13,mysterAdept,140,140,70,70,63,63\n14,mysterExpert,210,140,70,70,64,64\n15,mysterMaster,280,140,70,70,65,65\n16,charHandIdle,0,210,120,100,120,100\n17,charHandCast1,120,210,120,100,120,100\n18,charHandCast2,240,210,120,100,120,100\n19,charHandCast3,360,210,120,100,120,100\n20,charHandCast4,480,210,120,100,120,100\n21,castEffectFire,0,310,120,100,120,100\n22,castEffectFrost,120,310,120,100,120,100\n23,castEffectArcane,240,310,120,100,120,100\n24,projectileFire,0,220,70,70,65,65\n25,projectileFrost,70,220,70,70,65,65\n26,projectileArcane,140,220,70,70,65,65\n27,skillEffectFire,0,290,160,160,155,155\n28,skillEffectFrost,160,290,160,160,155,155\n29,skillEffectArcane,320,290,160,160,155,155\n30,ranker1,455,5,60,60,60,60\n31,ranker2,515,5,60,60,60,60\n32,ranker3,575,5,60,60,60,60\n100,projectileSkillArrow,0,410,240,80,240,80\n101,objTreeLarge,210,0,210,210,225,225\n102,objTreeMedium,210,0,210,210,185,185\n103,objTreeSmall,210,0,210,210,145,145\n104,objTreeInside,420,0,210,210,0,0\n105,objStoneLarge,0,0,210,210,165,165\n106,objStoneMedium,0,0,210,210,125,125\n107,objStoneSmall,0,0,210,210,85,85\n108,objChest1,0,210,90,90,85,85\n109,objChest2,90,210,90,90,85,85\n110,objChest3,180,210,90,90,85,85\n111,objChest4,270,210,90,90,85,85\n112,objChest5,360,210,90,90,85,85\n113,objChestGround,450,210,90,90,85,85\n200,objGold,0,300,70,70,65,65\n201,objJewel,70,300,70,70,65,65\n202,objSkillFire,0,370,70,70,65,65\n203,objSkillFrost,70,370,70,70,65,65\n204,objSkillArcane,140,370,70,70,65,65\n205,objBox,140,300,70,70,65,65\n1001,conditionEffectFreeze,0,0,80,80,75,75\n1002,conditionEffectChill,80,0,80,80,75,75\n1003,conditionEffectImmortal,160,0,80,80,75,75\n1004,conditionEffectSilence,240,0,80,80,75,75\n1005,conditionEffectIgnite1,0,80,60,60,55,55\n1006,conditionEffectIgnite2,60,80,60,60,55,55\n1007,conditionEffectIgnite3,120,80,60,60,55,55\n1008,conditionEffectIgnite4,180,80,60,60,55,55\n1009,conditionEffectIgnite5,240,80,60,60,55,55\n1010,conditionEffectIgnite6,300,80,60,60,55,55\n1011,fireHitEffect,210,220,70,70,65,65\n1012,frostHitEffect,280,220,70,70,65,65\n1013,arcaneHitEffect,350,220,70,70,65,65\n1014,blankImg,0,450,60,60,55,55\n1015,passiveEffectFire1,60,450,60,60,60,60\n1016,passiveEffectFire2,120,450,60,60,65,65\n1017,passiveEffectFire3,180,450,60,60,70,70\n1018,passiveEffectFire4,240,450,60,60,75,75\n1019,passiveEffectFire5,300,450,60,60,80,80\n1020,passiveEffectFire6,360,450,60,60,85,85\n1021,passiveEffectFire7,420,450,60,60,90,90\n1022,passiveEffectFrost1,0,510,60,60,60,60\n1023,passiveEffectFrost2,60,510,60,60,65,65\n1024,passiveEffectFrost3,120,510,60,60,70,70\n1025,passiveEffectFrost4,180,510,60,60,75,75\n1026,passiveEffectFrost5,240,510,60,60,80,80\n1027,passiveEffectFrost6,300,510,60,60,85,85\n1028,passiveEffectFrost7,360,510,60,60,90,90\n1029,passiveEffectArcane1,480,450,60,60,60,60\n1030,passiveEffectArcane2,420,510,60,60,65,65\n1031,passiveEffectArcane3,480,510,60,60,70,70\n1032,passiveEffectArcane4,540,510,60,60,75,75\n1033,passiveEffectArcane5,600,510,60,60,80,80\n1034,passiveEffectArcane6,660,510,60,60,85,85\n1035,passiveEffectArcane7,720,510,60,60,90,90\n1036,fireSkillEffectInnerFire,0,140,80,80,80,80\n1037,fireSkillEffectFury1,80,140,80,80,80,80\n1038,fireSkillEffectFury2,80,140,80,80,83,83\n1039,fireSkillEffectFury3,80,140,80,80,86,86\n1040,fireSkillEffectFury4,80,140,80,80,90,90\n1041,fireSkillEffectFury5,80,140,80,80,85,88\n1042,frostSkillEffectPurify,160,140,80,80,70,70\n1043,frostSkillEffectIceBlock,240,140,80,80,90,90\n1044,arcaneSkillEffectCloak,320,140,80,80,90,90\n1045,arcaneSkillEffectHaste1,400,140,80,80,80,80\n1046,arcaneSkillEffectHaste2,400,140,80,80,83,83\n1047,arcaneSkillEffectHaste3,400,140,80,80,86,86\n1048,arcaneSkillEffectHaste4,400,140,80,80,90,90\n1049,arcaneSkillEffectHaste5,400,140,80,80,85,88\n1050,fireProjectileRollingFire,480,290,90,90,90,90\n1051,frostProjectileFrostOrb,570,290,90,90,90,90\n1052,arcaneSkillNoDamageExplosion,660,290,90,90,90,90\n1053,regenHP1,360,80,60,60,55,55\n1054,regenHP2,420,80,60,60,55,55\n1055,regenHP3,480,80,60,60,55,55\n1056,regenHP4,540,80,60,60,55,55\n1057,regenHP5,600,80,60,60,55,55\n1058,regenMP1,360,20,60,60,55,55\n1059,regenMP2,420,20,60,60,55,55\n1060,regenMP3,480,20,60,60,55,55\n1061,regenMP4,540,20,60,60,55,55\n1062,regenMP5,600,20,60,60,55,55\n1063,purifyAndHeal1,660,20,60,60,55,55\n1064,purifyAndHeal2,720,20,60,60,55,55\n1065,dispel1,480,140,60,60,55,55\n1066,dispel2,540,140,60,60,55,55\n1067,dispel3,600,140,60,60,55,55\n1068,dispel4,660,140,60,60,55,55\n1069,levelUp1,160,0,80,80,64,64\n1070,levelUp2,160,0,80,80,66,66\n1071,levelUp3,160,0,80,80,68,68\n1072,levelUp4,160,0,80,80,70,70\n1073,levelUp5,160,0,80,80,72,72\n",
   "iconResourceData" :
   "index,name,top,right,bottom,left\n1,Pyro Attack,0,72,72,0\n2,Fire Bolt,0,144,72,72\n3,Burning Soul,0,216,72,144\n4,Fire Ball,0,288,72,216\n5,Inner Fire,0,360,72,288\n6,Rolling Fire,0,432,72,360\n7,Fury,0,504,72,432\n8,Explosion,0,576,72,504\n9,Pyromaniac,0,648,72,576\n101,Froster Attack,72,72,144,0\n102,Ice Bolt,72,144,144,72\n103,Healing,72,216,144,144\n104,Frozen Soul,72,288,144,216\n105,Purify,72,360,144,288\n106,Ice Block,72,432,144,360\n107,Vortex,72,504,144,432\n108,Frozen Orb,72,576,144,504\n109,Freezer,72,648,144,576\n201,Myster Attack,144,72,216,0\n202,Arcane Bolt,144,144,216,72\n203,Arcane Cloak,144,216,216,144\n204,Arcane Missile,144,288,216,216\n205,Silence,144,360,216,288\n206,Dispel,144,432,216,360\n207,Blink,144,504,216,432\n208,Arcane Blast,144,576,216,504\n209,Haste,144,648,216,576\n210,Mystic,144,720,216,648\n501,Buff_Burning Soul,360,72,432,0\n502,Buff_Inner Fire,360,144,432,72\n503,Buff_Fury,360,216,432,144\n504,Buff_Pyromaniac,360,288,432,216\n505,Buff_Frozen Soul,360,360,432,288\n506,Buff_Purify,360,432,432,360\n507,Buff_Ice Block,360,504,432,432\n508,Buff_Freezer,360,576,432,504\n509,Buff_Arcane Cloak,432,72,504,0\n510,Buff_Haste,432,144,504,72\n511,Buff_Mystic,432,216,504,144\n512,Buff_Immortal,432,288,504,216\n513,Debuff_Ignite,288,72,360,0\n514,Debuff_Chill,288,144,360,72\n515,Debuff_Freeze,288,216,360,144\n516,Debuff_Silence,288,288,360,216\n517,Debuff_Dispel,288,360,360,288\n1001,blankImg,216,72,288,0\n1002,whiteBlankImg,216,144,288,72\n",
   "effectGroupData" :
@@ -4977,6 +5042,7 @@ module.exports={
   "MAX_PING_LIMIT" : 2000,
   "INTERVAL" : 60,
   "FPS" : 60,
+  "MAX_FIND_AVAILABLE_SERVER_TIME" : 20000,
 
   "RESOURCES_COUNT" : 4,
   "RESOURCE_SRC_CHARACTER" : "../images/Character.png",
@@ -5003,6 +5069,9 @@ module.exports={
   "RISE_TEXT_LIFE_TIME" : 3000,
   "PROJECTILE_EFFECT_CHANGE_TIME" : 150,
   "CHAT_MESSAGE_TIME" : 5000,
+
+  "USER_NICK_NAME_LENGTH" : 10,
+  "CHAT_MESSAGE_LENGTH" : 25,
 
   "DEAD_SCENE_TEXT_ANI_PLAY_DELAY_TIME" : 1000,
   "DEAD_SCENE_PLAY_TIME" : 5000,
@@ -5139,6 +5208,10 @@ module.exports={
   "RESOURCE_INDEX_SKILL_EFFECT_FROST" : 28,
   "RESOURCE_INDEX_SKILL_EFFECT_ARCANE" : 29,
 
+  "RESOURCE_INDEX_RANK_1" : 30,
+  "RESOURCE_INDEX_RANK_2" : 31,
+  "RESOURCE_INDEX_RANK_3" : 32,
+
   "RESOURCE_INDEX_PROJECTILE_SKILL_ARROW" : 100,
 
   "RESOURCE_INDEX_OBSTACLE_TREE_INSIDE" : 104,
@@ -5162,7 +5235,7 @@ module.exports={
   "STAT_CALC_FACTOR_POWER_TO_HP" : 25,
   "STAT_CALC_FACTOR_POWER_TO_HP_REGEN" : 0.05,
 
-  "STAT_CALC_FACTOR_MAGIC_TO_RESISTANCE" : 0.5,
+  "STAT_CALC_FACTOR_MAGIC_TO_RESISTANCE" : 0.25,
   "STAT_CALC_FACTOR_MAGIC_TO_MP" : 15,
   "STAT_CALC_FACTOR_MAGIC_TO_MP_REGEN" : 0.03,
 
@@ -5171,7 +5244,7 @@ module.exports={
 
   "KILL_FEEDBACK_LEVEL_0" : 1,
   "KILL_FEEDBACK_LEVEL_1" : 2,
-  "KILL_FEEDBACK_LEVEL_1_PREFIX" : "Outstanding",
+  "KILL_FEEDBACK_LEVEL_1_PREFIX" : "Gorgeous",
   "KILL_FEEDBACK_LEVEL_1_COLOR" : "#f5ebb6",
   "KILL_FEEDBACK_LEVEL_2" : 3,
   "KILL_FEEDBACK_LEVEL_2_PREFIX" : "Amazing",
@@ -5958,15 +6031,6 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 
 
 },{}],11:[function(require,module,exports){
-module.exports={
-  "NORTH AMERICA" : { "IP" : "" },
-  "ASIA" : { "IP" : "" },
-  "ASIA 2" : { "IP" : "localhost" },
-  "ASIA 1" : { "IP" : "52.68.95.222" },
-  "EUROPE" : { "IP" : "" }
-}
-
-},{}],12:[function(require,module,exports){
 var gameConfig = require('./gameConfig.json');
 var radianFactor = Math.PI/180;
 var objectAssign = require('../../modules/public/objectAssign.js');
@@ -6742,8 +6806,8 @@ exports.setImgCssStyle = function(imgDiv, iconData, expandRate){
     imgDiv.style.height = (gameConfig.IMAGE_SOURCE_SIZE.height) + "px";
   }
 };
-exports.processMessage = function(msg){
-  return msg.replace(/(<([^>]+)>)/ig, '').substring(0,25);
+exports.processMessage = function(msg, stringLength){
+  return msg.replace(/(<([^>]+)>)/ig, '').substring(0,stringLength);
 };
 exports.createDomSelectOption = function(text, value, isDisabled, parentNode){
   var option = document.createElement("option");
@@ -6769,7 +6833,7 @@ exports.createRequest = function(){
   return request;
 }
 
-},{"../../modules/public/objectAssign.js":9,"./gameConfig.json":8}],13:[function(require,module,exports){
+},{"../../modules/public/objectAssign.js":9,"./gameConfig.json":8}],12:[function(require,module,exports){
 // inner Modules
 var util = require('../../modules/public/util.js');
 var User = require('../../modules/client/CUser.js');
@@ -6822,6 +6886,7 @@ var objGoldImgData, objJewelImgData, objBoxImgData, objSkillFireImgData, objSkil
 var castFireImgData, castFrostImgData, castArcaneImgData;
 var projectileFireImgData, projectileFrostImgData, projectileArcaneImgData;
 var skillFireImgData, skillFrostImgData, skillArcaneImgData;
+var rank1ImgData, rank2ImgData, rank3ImgData;
 var projectileSkillArrowImgData;
 var hittedChest = [];
 // var conditionFreezeImgData, conditionChillImgData, conditionImmortalImgData, conditionSilenceImgData,
@@ -6867,6 +6932,8 @@ var possessSkills = [];
 var killUser = null;
 var loseResource = {gold : 0, jewel : 0};
 var isLostSkill = false;
+
+var rankers = [];
 //state changer
 function changeState(newState){
   clearInterval(drawInterval);
@@ -6962,7 +7029,7 @@ function stateFuncStandby(){
   drawStartScene();
 };
 //if start button clicked, setting game before start game
-//setup socket here!!! now changestates in socket response functions
+//setup socket here!!! now changestate in socket response functions
 function stateFuncStart(){
   UIManager.disableStartButton();
 
@@ -6976,14 +7043,21 @@ function stateFuncCheckServer(){
     if(isServerConditionGood){
       isConnectSocket = true;
       var url = UIManager.getSelectedServer();
-      setupSocket(url);
-      userName = UIManager.getStartUserName();
-      socket.emit('reqStartGame', characterType, userName);
-      userPingCheckTime = Date.now();
-      socket.emit('firePing', userPingCheckTime);
+      if(url){
+        setupSocket(url);
+        userName = UIManager.getStartUserName();
+        socket.emit('reqStartGame', characterType, userName);
+        userPingCheckTime = Date.now();
+        socket.emit('firePing', userPingCheckTime);
+      }else{
+        isConnectSocket = false;
+        UIManager.enableStartButton();
+        changeState(gameConfig.GAME_STATE_START_SCENE);
+      }
     }else{
       isConnectSocket = false;
       UIManager.enableStartButton();
+      changeState(gameConfig.GAME_STATE_START_SCENE);
     }
   }
 };
@@ -7048,9 +7122,12 @@ function setBaseSetting(){
 
   canvas.onfocusout = function(e){
     alert('focusout');
-  }
+  };
 
   UIManager = new CUIManager(skillTable, buffGroupTable, iconResourceTable, userStatTable);
+  UIManager.onSetRankers = function(rankList){
+    rankers = rankList;
+  };
   UIManager.onLoadCompleteServerList = function(){
     isLoadServerList = true;
   };
@@ -7216,6 +7293,10 @@ function setBaseSetting(){
   skillFrostImgData = objectAssign({}, util.findData(resourceTable, 'index', gameConfig.RESOURCE_INDEX_SKILL_EFFECT_FROST));
   skillArcaneImgData = objectAssign({}, util.findData(resourceTable, 'index', gameConfig.RESOURCE_INDEX_SKILL_EFFECT_ARCANE));
 
+  rank1ImgData = objectAssign({}, util.findData(resourceTable, 'index', gameConfig.RESOURCE_INDEX_RANK_1));
+  rank2ImgData = objectAssign({}, util.findData(resourceTable, 'index', gameConfig.RESOURCE_INDEX_RANK_2));
+  rank3ImgData = objectAssign({}, util.findData(resourceTable, 'index', gameConfig.RESOURCE_INDEX_RANK_3));
+
   projectileSkillArrowImgData = objectAssign({}, util.findData(resourceTable, 'index', gameConfig.RESOURCE_INDEX_PROJECTILE_SKILL_ARROW));
   // conditionFreezeImgData = objectAssign({}, util.findData(resourceTable, 'index', gameConfig.RESOURCE_INDEX_CONDITION_FREEZE));
   // conditionChillImgData = objectAssign({}, util.findData(resourceTable, 'index', gameConfig.RESOURCE_INDEX_CONDITION_CHILL));
@@ -7364,7 +7445,7 @@ function setupSocket(url){
   });
 
   //change state game on
-  socket.on('resStartGame', function(userDatas, buffDatas, objDatas, chestDatas){
+  socket.on('resStartGame', function(userDatas, buffDatas, objDatas, chestDatas, rankDatas){
     Manager.start(userStatTable, resourceTable, obstacleTable);
     Manager.setUsers(userDatas);
     for(var i=0; i<buffDatas.length; i++){
@@ -7381,7 +7462,7 @@ function setupSocket(url){
     }
     var chestLocationDatas = objectAssign({}, util.findAllDatas(obstacleTable, 'type', gameConfig.OBJ_TYPE_CHEST_GROUND));
 
-    UIManager.setBoard(userDatas, gameConfig.userID);
+    UIManager.setBoard(rankDatas, gameConfig.userID);
     UIManager.setMiniMapChests(chestDatas, chestLocationDatas);
     // console.log(Manager.users);
 
@@ -7968,6 +8049,7 @@ function drawUsers(){
     // }else{
     //   ctx.globalAlpha = 1;
     // }
+
     ctx.save();
     // ctx.setTransform(1,0,0,1,0,0);
     var center = util.worldToLocalPosition(Manager.users[index].center, gameConfig.userOffset, gameConfig.scaleFactor);
@@ -8078,8 +8160,43 @@ function drawUsers(){
         }
       }
       ctx.restore();
-      //draw User Chatting
+
+      //draw rankIcon
+      //check isRanker
       var pos = util.worldToLocalPosition(Manager.users[index].position, gameConfig.userOffset, gameConfig.scaleFactor);
+
+      var rank = false;
+      for(var i=0; i<rankers.length; i++){
+        if(rankers[i] === index){
+          rank = i + 1;
+        }
+      }
+      var rankImgData = undefined;
+      if(rank){
+        switch (rank) {
+          case 1:
+            rankImgData = rank1ImgData;
+            break;
+          case 2:
+            rankImgData = rank2ImgData;
+            break;
+          case 3:
+            rankImgData = rank3ImgData;
+            break;
+        }
+        ctx.drawImage(resourceCharacter, rankImgData.srcPosX, rankImgData.srcPosY, rankImgData.srcWidth, rankImgData.srcHeight,
+                      center.x - 15 * gameConfig.scaleFactor, center.y - 90 * gameConfig.scaleFactor, 30 * gameConfig.scaleFactor, 30* gameConfig.scaleFactor);
+      }
+
+      //draw User Level and Name
+      ctx.beginPath();
+      ctx.textAlign = "center";
+      ctx.fillStyle = "black";
+      ctx.font = "bold 15px Arial";
+      ctx.fillText("Lv." + Manager.users[index].level + " " + Manager.users[index].name, center.x, pos.y - 15 * gameConfig.scaleFactor);
+      ctx.closePath();
+
+      //draw User Chatting
 
       if(Manager.users[index].chatMessageTimeout){
         ctx.beginPath();
@@ -8095,7 +8212,7 @@ function drawUsers(){
         ctx.fill();
 
         ctx.textAlign = "center";
-		    ctx.font = "20px Comic Sans MS";
+		    ctx.font = "20px normal";
         ctx.fillText(Manager.users[index].chatMessage, center.x, pos.y - 10.5 * gameConfig.scaleFactor);
 
         ctx.closePath();
@@ -8106,17 +8223,17 @@ function drawUsers(){
 
       ctx.fillStyle = "#ff0000";
       var posX = pos.x - 7 * gameConfig.scaleFactor;
-      var width = Manager.users[index].HP / Manager.users[index].maxHP * 79 * gameConfig.scaleFactor;
+      var width = Manager.users[index].HP / Manager.users[index].maxHP * 78 * gameConfig.scaleFactor;
       var height = 7 * gameConfig.scaleFactor;
       ctx.fillRect(posX, pos.y + 80 * gameConfig.scaleFactor, width, height);
 
       ctx.fillStyle = "#0000ff";
-      width = Manager.users[index].MP / Manager.users[index].maxMP * 79 * gameConfig.scaleFactor;
+      width = Manager.users[index].MP / Manager.users[index].maxMP * 78 * gameConfig.scaleFactor;
       height = 4 * gameConfig.scaleFactor;
       ctx.fillRect(posX, pos.y + 87 * gameConfig.scaleFactor, width, height);
 
       ctx.strokeStyle = "rgb(15,15,15)";
-      width = 79 * gameConfig.scaleFactor;
+      width = 78 * gameConfig.scaleFactor;
       height = 10 * gameConfig.scaleFactor;
       ctx.lineJoin = "round";
 
@@ -8504,6 +8621,7 @@ var documentKeyDownEventHandler = function(e){
     }
   }
   if(keyCode === 27){
+    //case esc
     if(drawMode === gameConfig.DRAW_MODE_SKILL_RANGE){
       changeDrawMode(gameConfig.DRAW_MODE_NORMAL);
     }
@@ -8512,6 +8630,13 @@ var documentKeyDownEventHandler = function(e){
       UIManager.disableChatInput();
     }
   }
+  if(keyCode === 83){
+    //case s
+    Manager.stopUser();
+    var userData = Manager.processUserData();
+    userDataLastUpdateTime = Date.now();
+    socket.emit('userStop', userData);
+  }
   //for chatting
   if(keyCode === 13){
     if(!isChattingOn){
@@ -8519,7 +8644,7 @@ var documentKeyDownEventHandler = function(e){
       UIManager.showChatInput();
     }else{
       isChattingOn = false;
-      var chatMessage = util.processMessage(UIManager.getChatMessage());
+      var chatMessage = util.processMessage(UIManager.getChatMessage(), gameConfig.CHAT_MESSAGE_LENGTH);
       UIManager.disableChatInput();
       UIManager.clearChatInput();
       if(chatMessage){
@@ -8760,4 +8885,4 @@ setInterval(function(){
   }
 }, gameConfig.LONG_TIME_INTERVAL);
 
-},{"../../modules/client/CManager.js":1,"../../modules/client/CUIManager.js":4,"../../modules/client/CUser.js":5,"../../modules/public/csvjson.js":6,"../../modules/public/data.json":7,"../../modules/public/gameConfig.json":8,"../../modules/public/objectAssign.js":9,"../../modules/public/util.js":12}]},{},[13]);
+},{"../../modules/client/CManager.js":1,"../../modules/client/CUIManager.js":4,"../../modules/client/CUser.js":5,"../../modules/public/csvjson.js":6,"../../modules/public/data.json":7,"../../modules/public/gameConfig.json":8,"../../modules/public/objectAssign.js":9,"../../modules/public/util.js":11}]},{},[12]);

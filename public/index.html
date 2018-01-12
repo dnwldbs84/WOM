@@ -5,6 +5,15 @@
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>WOM.io</title>
   <link rel="stylesheet" type="text/css" href="/css/main.css">
+  <script>
+    var serverList = {
+      "NORTH AMERICA" : { "IP" : "" },
+      "ASIA" : { "IP" : "" },
+      "ASIA 1" : { "IP" : "52.68.95.222" },
+      "ASIA 2" : { "IP" : "localhost" },
+      "EUROPE" : { "IP" : "" }
+    }
+  </script>
 </head>
 <body>
   <div id="gameScene" class="disable">
@@ -291,14 +300,6 @@
           <button id="restartButton"><span>Start</span><img class="disable" src="/images/buttonLoading.gif" /></button>
         </div>
         <div class="standingSceneHudCenterRight">
-          <div class="standingSceneHudCenterRightServerSelect">
-            <h3>Server</h3>
-            <select>
-              <option value="server1">server1</option>
-              <option value="server2">server2</option>
-              <option value="server3">server3</option>
-            </select>
-          </div>
           <div class="standingSceneHudCenterRightHowToPlay">
             <h3>How to play</h3>
             <p>blablablablablablablablablablablabla</p>

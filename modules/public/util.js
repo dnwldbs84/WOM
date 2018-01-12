@@ -773,8 +773,8 @@ exports.setImgCssStyle = function(imgDiv, iconData, expandRate){
     imgDiv.style.height = (gameConfig.IMAGE_SOURCE_SIZE.height) + "px";
   }
 };
-exports.processMessage = function(msg){
-  return msg.replace(/(<([^>]+)>)/ig, '').substring(0,25);
+exports.processMessage = function(msg, stringLength){
+  return msg.replace(/(<([^>]+)>)/ig, '').substring(0,stringLength);
 };
 exports.createDomSelectOption = function(text, value, isDisabled, parentNode){
   var option = document.createElement("option");
