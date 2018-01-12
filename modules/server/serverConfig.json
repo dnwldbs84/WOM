@@ -1,5 +1,5 @@
 {
-  "MAX_USER_COUNT" : 1,
+  "MAX_USER_COUNT" : 50,
 
   "INTERVAL" : 30,
   "USER_REGEN_TIMER" : 100,
