@@ -1215,6 +1215,21 @@ GameManager.prototype.checkSkillPossession = function(userID, skillIndex){
     return this.users[userID].checkSkillPossession(skillIndex);
   }
 };
+GameManager.prototype.checkSkillCondition = function(userID, skillData){
+  if(userID in this.users){
+    if(Object.keys(skillData).length){
+      if(!this.users[userID].conditions[gameConfig.USER_CONDITION_FREEZE] ||
+         !this.users[userID].conditions[gameConfig.USER_CONDITION_SILENCE] ||
+         this.users[userID].MP >= skillData.consumeMP){
+           return true;
+       }else{
+         return false;
+       }
+    }else{
+      return false;
+    }
+  }
+};
 GameManager.prototype.cancelBlur = function(userID){
   if(userID in this.users){
     this.users[userID].cancelBlur();

@@ -321,6 +321,11 @@ CManager.prototype = {
 
 		this.user.changeState(gameConfig.OBJECT_STATE_IDLE);
 	},
+	setUserInitState : function(objID){
+		if(objID in this.users){
+			this.users[objID].changeState(gameConfig.OBJECT_STATE_IDLE);
+		}
+	},
 	iamDead : function(){
 		this.user.hitImgDataList = [];
 		this.user.buffImgDataList = [];
@@ -332,7 +337,7 @@ CManager.prototype = {
 		if(!(objID in this.users)){
 			console.log("user already out");
 		}else{
-			this.users[objID].stop();
+			this.users[objID].changeState(gameConfig.OBJECT_STATE_DEATH);
 			delete this.users[objID];
 		}
 	},
@@ -585,6 +590,7 @@ CManager.prototype = {
 
 			//apply maxSpeed
 			this.users[userData.objectID].setSpeed();
+
 			if(this.users[userData.objectID].currentState === gameConfig.OBJECT_STATE_CAST &&
 				 this.users[userData.objectID].currentSkill){
 				var consumeMP = this.users[userData.objectID].currentSkill.consumeMP;
@@ -606,8 +612,24 @@ CManager.prototype = {
 			this.users[userID].updateSkillPossessions(possessSkills);
 		}
 	},
-	updateUserData : function(userData){
+	setUserData : function(userData){
 		if(userData.objectID in this.users){
+			this.users[userData.objectID].position = userData.position;
+			this.users[userData.objectID].targetPosition = userData.targetPosition;
+
+			this.users[userData.objectID].direction = userData.direction;
+			this.users[userData.objectID].maxSpeed = userData.maxSpeed;
+			this.users[userData.objectID].rotateSpeed = userData.rotateSpeed;
+
+			this.users[userData.objectID].setCenter();
+			this.users[userData.objectID].setTargetDirection();
+			this.users[userData.objectID].setSpeed();
+
+			this.users[userData.objectID].changeState(userData.currentState);
+		}
+	},
+	updateUserData : function(userData){
+		if(userData.objectID in this.users && this.users[userData.objectID].currentState !== gameConfig.OBJECT_STATE_DEATH){
 			this.users[userData.objectID].position = userData.position;
 			this.users[userData.objectID].targetPosition = userData.targetPosition;
 
@@ -1450,6 +1472,13 @@ UIManager.prototype = {
       restartButton.getElementsByTagName('img')[0].classList.add('disable');
     }, 1000);
 
+    userStandingNickName.select();
+    userStandingNickName.onkeydown = function(e){
+      if(e.keyCode ===13 || e.which === 13){
+        restartButton.onclick();
+      }
+    }
+
     if(userName !== 'NoName'){
       userStandingNickName.value = userName;
     }
@@ -1504,7 +1533,6 @@ UIManager.prototype = {
 
     standingSceneSkillSettingBtn.onclick = function(){
       clearSelectedPanel();
-      this.onPopUpSkillChangeClick();
 
       popChange(popUpSkillChange);
       if(!isClearTutorial){
@@ -1730,6 +1758,14 @@ UIManager.prototype = {
     setTimeout(function(){
       startSceneHudContent.classList.remove('appearSmoothAni');
     }, 1000);
+
+    var userStartNickName = document.getElementById('userStartNickName');
+    userStartNickName.select();
+    userStartNickName.onkeydown = function(e){
+      if(e.keyCode ===13 || e.which === 13){
+        startButton.onclick();
+      }
+    }
   },
   drawStartScene : function(){
     // var loadingImgContainer = document.getElementById('loadingImgContainer');
@@ -2107,6 +2143,23 @@ UIManager.prototype = {
         return isEquipSkill4CooldownOff;
       default:
     }
+  },
+  clearCooltime : function(){
+    isEquipSkill1CooldownOff = true;
+    hudEquipSkill1Mask.classList.remove("cooldownMaskAni");
+    hudEquipSkill1Mask.style.opacity = 0;
+
+    isEquipSkill2CooldownOff = true;
+    hudEquipSkill2Mask.classList.remove("cooldownMaskAni");
+    hudEquipSkill2Mask.style.opacity = 0;
+
+    isEquipSkill3CooldownOff = true;
+    hudEquipSkill3Mask.classList.remove("cooldownMaskAni");
+    hudEquipSkill3Mask.style.opacity = 0;
+
+    isEquipSkill4CooldownOff = true;
+    hudEquipSkill4Mask.classList.remove("cooldownMaskAni");
+    hudEquipSkill4Mask.style.opacity = 0;
   },
   setHUDSkills : function(){
     var rate = 60 / 72;
@@ -2984,7 +3037,7 @@ UIManager.prototype = {
     }
     if(attackUserInfo.userID === deadUserInfo.userID){
       output += '&nbsp; <span class=' + attackUserColor + '>' + attackUserName + '</span>';
-      output += '&nbsp; kill oneself'
+      output += '&nbsp; commit suicide'
     }else if(attackUserInfo.feedBackLevel){
       switch (attackUserInfo.feedBackLevel) {
         case gameConfig.KILL_FEEDBACK_LEVEL_0:
@@ -4345,11 +4398,15 @@ var User = function(userData){
   this.setSpeed();
   this.setTargetDirection();
 
-  this.chatMessage = "";
+  this.chatMessage1 = "";
+  this.chatMessage2 = "";
+  this.chatMessage1StartTime = Date.now();
+  this.chatMessage2StartTime = Date.now();
+  // this.chatMessage = "";
 
   this.updateInterval = false;
   this.imgHandTimeout = false;
-  this.chatMessageTimeout = false;
+  // this.chatMessageTimeout = false;
 
   this.updateFunction = null;
 
@@ -4366,10 +4423,10 @@ var User = function(userData){
 };
 
 User.prototype = {
-  changeState : function(newState){
+  changeState : function(newState, where){
     this.currentState = newState;
 
-    this.stop();
+    this.stop(where);
     switch (this.currentState) {
       case gameConfig.OBJECT_STATE_IDLE:
         this.updateFunction = this.idle.bind(this);
@@ -4447,6 +4504,15 @@ User.prototype = {
         this.hitImgDataList.splice(i, 1);
       }
     }
+
+    //chatMessage
+    if(Date.now() - this.chatMessage1StartTime >= gameConfig.CHAT_MESSAGE_TIME){
+      this.chatMessage1 = this.chatMessage2;
+      this.chatMessage1StartTime = this.chatMessage2StartTime;
+
+      this.chatMessage2 = "";
+      this.chatMessage2StartTime = Date.now();
+    }
   },
   updateBuffImgData : function(buffImgDataList){
     this.buffImgDataList = [];
@@ -4467,7 +4533,7 @@ User.prototype = {
 
     this.setCenter();
   },
-  stop : function(){
+  stop : function(where){
     if(this.updateInterval){
       clearInterval(this.updateInterval);
       this.updateInterval = false;
@@ -4475,6 +4541,8 @@ User.prototype = {
     if(this.currentSkill){
       this.currentSkill.destroy();
       this.currentSkill = undefined;
+      console.log('inStop');
+      console.log(where);
       this.isExecutedSkill = false;
       this.skillCastEffectPlay = false;
     }
@@ -4503,6 +4571,7 @@ User.prototype = {
   },
   setSkill : function(skillInstance){
     this.currentSkill = skillInstance;
+    console.log('setSkill');
   },
   executeSkill : function(){
     if(!this.isExecutedSkill){
@@ -4530,27 +4599,41 @@ User.prototype = {
     this.setCenter();
   },
   setChatMsg : function(msg){
-    if(this.chatMessageTimeout){
-      clearTimeout(this.chatMessageTimeout);
-      this.chatMessageTimeout = false;
+    if(this.chatMessage2){
+      this.chatMessage1 = this.chatMessage2;
+      this.chatMessage1StartTime = this.chatMessage2StartTime;
+
+      this.chatMessage2 = msg;
+      this.chatMessage2StartTime = Date.now();
+    }else if(this.chatMessage1){
+      this.chatMessage2 = msg;
+      this.chatMessage2StartTime = Date.now();
+    }else{
+      this.chatMessage1 = msg;
+      this.chatMessage1StartTime = Date.now();
     }
-    this.chatMessage = msg;
-    var thisUser = this;
-    this.chatMessageTimeout = setTimeout(function(){
-      thisUser.chatMessageTimeout = false;
-      thisUser.chatMessage = "";
-    }, gameConfig.CHAT_MESSAGE_TIME);
+    // if(this.chatMessageTimeout){
+    //   clearTimeout(this.chatMessageTimeout);
+    //   this.chatMessageTimeout = false;
+    // }
+    // this.chatMessage = msg;
+    // var thisUser = this;
+    // this.chatMessageTimeout = setTimeout(function(){
+    //   thisUser.chatMessageTimeout = false;
+    //   thisUser.chatMessage = "";
+    // }, gameConfig.CHAT_MESSAGE_TIME);
   }
 };
 
 function onTimeOverHandler(skillInstance){
   skillInstance.destroy();
+  console.log('onTimeOverHandler');
   this.currentSkill = undefined;
   this.isExecutedSkill = false;
   this.skillCastEffectPlay = false;
 
   this.castingEndTime = false;
-  this.changeState(gameConfig.OBJECT_STATE_IDLE);
+  this.changeState(gameConfig.OBJECT_STATE_IDLE, 'onTimeOverHandler');
 };
 function onCastSkillHandler(skillInstance, userAniTime){
   var tickTime = userAniTime/5;
@@ -7035,8 +7118,9 @@ function stateFuncStart(){
 
   var url = UIManager.getSelectedServer();
   // UIManager.disableStartScene();
-  UIManager.checkServerCondition(url);
-
+  if(url){
+    UIManager.checkServerCondition(url);
+  }
 };
 function stateFuncCheckServer(){
   if(!isConnectSocket){
@@ -7050,14 +7134,17 @@ function stateFuncCheckServer(){
         userPingCheckTime = Date.now();
         socket.emit('firePing', userPingCheckTime);
       }else{
+        alert("Select available server.");
         isConnectSocket = false;
         UIManager.enableStartButton();
         changeState(gameConfig.GAME_STATE_START_SCENE);
       }
     }else{
-      isConnectSocket = false;
-      UIManager.enableStartButton();
-      changeState(gameConfig.GAME_STATE_START_SCENE);
+      if(isConnectSocket){
+        isConnectSocket = false;
+        UIManager.enableStartButton();
+        changeState(gameConfig.GAME_STATE_START_SCENE);
+      }
     }
   }
 };
@@ -7100,6 +7187,7 @@ function stateFuncEnd(){
   setTimeout(function(){
     UIManager.closePopUpSkillChange();
     UIManager.disableDeadScene();
+    UIManager.clearCooltime();
 
     UIManager.initStandingScene(characterType, userName);
     UIManager.setPopUpSkillChange(true);
@@ -7474,7 +7562,7 @@ function setupSocket(url){
   });
   socket.on('resRestartGame', function(userData, rankDatas){
     Manager.iamRestart(userData);
-    Manager.updateUserData(userData);
+    Manager.setUserData(userData);
     Manager.changeUserStat(userData, true);
     UIManager.updateCondition(userData.conditions);
     UIManager.updateMP(userData)
@@ -7527,12 +7615,14 @@ function setupSocket(url){
     UIManager.updateMP(userData);
 
     changeState(gameConfig.GAME_STATE_GAME_ON);
+    Manager.setUserInitState(gameConfig.userID);
     userDataUpdateInterval = setInterval(updateUserDataHandler, INTERVAL_TIMER);
   });
   socket.on('userJoined', function(data, rankDatas){
     data.imgData = Manager.setImgData(data);
     Manager.setUser(data);
     UIManager.updateBoard(rankDatas, gameConfig.userID);
+    Manager.setUserInitState(data.objectID);
     console.log('user joined ' + data.objectID);
   });
   socket.on('userDataUpdate', function(userData){
@@ -8197,10 +8287,35 @@ function drawUsers(){
       ctx.closePath();
 
       //draw User Chatting
-
-      if(Manager.users[index].chatMessageTimeout){
+      if(Manager.users[index].chatMessage2){
         ctx.beginPath();
-        var width = (Manager.users[index].chatMessage.length * 12 + 20) * gameConfig.scaleFactor;
+        ctx.textAlign = "center";
+        ctx.font = "20px normal";
+        ctx.strokeStyle = "#000000";
+
+        var width = (Manager.users[index].chatMessage1.length * 12 + 20) * gameConfig.scaleFactor;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(center.x - width/2, pos.y - 55 * gameConfig.scaleFactor, width, 25 * gameConfig.scaleFactor);
+        ctx.strokeRect(center.x - width/2, pos.y - 55 * gameConfig.scaleFactor, width, 25 * gameConfig.scaleFactor);
+        ctx.fillStyle = "#000000";
+        ctx.fillText(Manager.users[index].chatMessage1, center.x, pos.y - 35.5 * gameConfig.scaleFactor);
+
+        width = (Manager.users[index].chatMessage2.length * 12 + 20) * gameConfig.scaleFactor;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(center.x - width/2, pos.y - 30 * gameConfig.scaleFactor, width, 25 * gameConfig.scaleFactor);
+        ctx.strokeRect(center.x - width/2, pos.y - 30 * gameConfig.scaleFactor, width, 25 * gameConfig.scaleFactor);
+        ctx.fillStyle = "#000000";
+        ctx.fillText(Manager.users[index].chatMessage2, center.x, pos.y - 10.5 * gameConfig.scaleFactor);
+
+        ctx.moveTo(center.x - 8, pos.y - 5 * gameConfig.scaleFactor);
+        ctx.lineTo(center.x + 8, pos.y - 5 * gameConfig.scaleFactor);
+        ctx.lineTo(center.x, pos.y);
+        ctx.fill();
+
+        ctx.closePath();
+      }else if(Manager.users[index].chatMessage1){
+        ctx.beginPath();
+        var width = (Manager.users[index].chatMessage1.length * 12 + 20) * gameConfig.scaleFactor;
         ctx.strokeStyle = "#000000";
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(center.x - width/2, pos.y - 30 * gameConfig.scaleFactor, width, 25 * gameConfig.scaleFactor);
@@ -8212,11 +8327,30 @@ function drawUsers(){
         ctx.fill();
 
         ctx.textAlign = "center";
-		    ctx.font = "20px normal";
-        ctx.fillText(Manager.users[index].chatMessage, center.x, pos.y - 10.5 * gameConfig.scaleFactor);
+        ctx.font = "20px normal";
+        ctx.fillText(Manager.users[index].chatMessage1, center.x, pos.y - 10.5 * gameConfig.scaleFactor);
 
         ctx.closePath();
       }
+      // if(Manager.users[index].chatMessageTimeout){
+      //   ctx.beginPath();
+      //   var width = (Manager.users[index].chatMessage.length * 12 + 20) * gameConfig.scaleFactor;
+      //   ctx.strokeStyle = "#000000";
+      //   ctx.fillStyle = "#ffffff";
+      //   ctx.fillRect(center.x - width/2, pos.y - 30 * gameConfig.scaleFactor, width, 25 * gameConfig.scaleFactor);
+      //   ctx.strokeRect(center.x - width/2, pos.y - 30 * gameConfig.scaleFactor, width, 25 * gameConfig.scaleFactor);
+      //   ctx.fillStyle = "#000000";
+      //   ctx.moveTo(center.x - 8, pos.y - 5 * gameConfig.scaleFactor);
+      //   ctx.lineTo(center.x + 8, pos.y - 5 * gameConfig.scaleFactor);
+      //   ctx.lineTo(center.x, pos.y);
+      //   ctx.fill();
+      //
+      //   ctx.textAlign = "center";
+		  //   ctx.font = "20px normal";
+      //   ctx.fillText(Manager.users[index].chatMessage, center.x, pos.y - 10.5 * gameConfig.scaleFactor);
+      //
+      //   ctx.closePath();
+      // }
       //draw HP, MP gauge
       ctx.beginPath();
       // var pos = util.worldToLocalPosition(Manager.users[index].position, gameConfig.userOffset, gameConfig.scaleFactor);
@@ -8540,7 +8674,7 @@ var canvasEventHandler = function(e){
   }
   var timeDelay = 0;
   if(Manager.user.castingEndTime){
-    timeDelay = Manager.user.castingEndTime - Date.now();
+    timeDelay = Manager.user.castingEndTime - Date.now() + 30;
   }
   userCastingTimeHandler = setTimeout(function(){
     var clickPosition ={
@@ -8550,13 +8684,15 @@ var canvasEventHandler = function(e){
     var worldClickPosition = util.localToWorldPosition(clickPosition, gameConfig.userOffset);
 
     if(drawMode === gameConfig.DRAW_MODE_NORMAL){
-      var targetPosition = util.setTargetPosition(worldClickPosition, Manager.users[gameConfig.userID]);
-      Manager.moveUser(targetPosition);
+      if(Manager.users[gameConfig.userID]){
+        var targetPosition = util.setTargetPosition(worldClickPosition, Manager.users[gameConfig.userID]);
+        Manager.moveUser(targetPosition);
 
-      var userData = Manager.processUserData();
-      userData.targetPosition = targetPosition;
-      userDataLastUpdateTime = Date.now();
-      socket.emit('userMoveStart', userData);
+        var userData = Manager.processUserData();
+        userData.targetPosition = targetPosition;
+        userDataLastUpdateTime = Date.now();
+        socket.emit('userMoveStart', userData);
+      }
     }else if(drawMode === gameConfig.DRAW_MODE_SKILL_RANGE){
       if(currentSkillData.index === baseSkill){
         //case A
@@ -8587,7 +8723,7 @@ var canvasEventHandler = function(e){
 };
 var documentKeyDownEventHandler = function(e){
   userLastActionTime = Date.now();
-  var keyCode = e.keyCode;
+  var keyCode = e.keyCode || e.which || 0;
   if(drawMode === gameConfig.DRAW_MODE_NORMAL && !isChattingOn){
     if(keyCode === 69 || keyCode === 32){
       // if(UIManager.checkCooltime(gameConfig.SKILL_BASIC_INDEX)){
@@ -8683,7 +8819,7 @@ function checkSkillConditionAndUse(skillData){
   }
   var timeDelay = 0;
   if(Manager.user.castingEndTime){
-    timeDelay = Manager.user.castingEndTime - Date.now();
+    timeDelay = Manager.user.castingEndTime - Date.now() + 30;
   }
   userCastingTimeHandler = setTimeout(function(){
     if(skillData && skillData.hasOwnProperty('index')){
@@ -8820,7 +8956,30 @@ function updateSkills(changeSkills){
         if(equipSkillDatas[i].groupIndex === skillData.groupIndex){
           equipSkills.splice(i, 1, skillData.index);
           equipSkillDatas.splice(i, 1, skillData);
-          break;
+        }
+      }
+      if(pyroEquipSkills[i]){
+        var possessSkillData = objectAssign({}, util.findData(skillTable, 'index', pyroEquipSkills[i]));
+        if(possessSkillData.groupIndex === skillData.groupIndex){
+          pyroEquipSkills.splice(i, 1, skillData.index);
+          console.log('pyroEquipSkillsChanged');
+          console.log(pyroEquipSkills);
+        }
+      }
+      if(frosterEquipSkills[i]){
+        var possessSkillData = objectAssign({}, util.findData(skillTable, 'index', frosterEquipSkills[i]));
+        if(possessSkillData.groupIndex === skillData.groupIndex){
+          frosterEquipSkills.splice(i, 1, skillData.index);
+          console.log('frosterEquipSkillsChanged');
+          console.log(frosterEquipSkills);
+        }
+      }
+      if(mysterEquipSkills[i]){
+        var possessSkillData = objectAssign({}, util.findData(skillTable, 'index', mysterEquipSkills[i]));
+        if(possessSkillData.groupIndex === skillData.groupIndex){
+          mysterEquipSkills.splice(i, 1, skillData.index);
+          console.log('mysterEquipSkillsChanged');
+          console.log(mysterEquipSkills);
         }
       }
     }
