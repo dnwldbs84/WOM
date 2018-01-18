@@ -845,6 +845,7 @@ User.prototype.exchangePassive = function(beforeBuffGID, afterBuffGID){
   this.onBuffExchange(this);
 }
 User.prototype.equipPassives = function(buffGroupIndexList){
+  this.passiveList = [];
   for(var i=0; i<buffGroupIndexList.length; i++){
     var isDuplicate = false;
     for(var j=0; j<this.passiveList.length; j++){
@@ -1422,6 +1423,8 @@ function getSkillScoreFactor(tier){
       return serverConfig.SCORE_FACTOR_SKILL_TIER_3;
     case 4:
       return serverConfig.SCORE_FACTOR_SKILL_TIER_4;
+    case 5:
+      return serverConfig.SCORE_FACTOR_SKILL_TIER_5;
     default:
   }
 };

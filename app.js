@@ -270,12 +270,12 @@ io.on('connection', function(socket){
         var inherentPassiveSkill = userBase.basePassiveSkill;
 
         // add all skills
-        // possessSkills.push(31); possessSkills.push(41); possessSkills.push(51);
-        // possessSkills.push(61); possessSkills.push(71); possessSkills.push(81);
-        // possessSkills.push(1021); possessSkills.push(1031); possessSkills.push(1041);
-        // possessSkills.push(1051); possessSkills.push(1061); possessSkills.push(1071);
-        // possessSkills.push(2021); possessSkills.push(2031); possessSkills.push(2041);
-        // possessSkills.push(2051); possessSkills.push(2061); possessSkills.push(2071); possessSkills.push(2081);
+        possessSkills.push(31); possessSkills.push(41); possessSkills.push(51);
+        possessSkills.push(61); possessSkills.push(71); possessSkills.push(81);
+        possessSkills.push(1021); possessSkills.push(1031); possessSkills.push(1041);
+        possessSkills.push(1051); possessSkills.push(1061); possessSkills.push(1071);
+        possessSkills.push(2021); possessSkills.push(2031); possessSkills.push(2041);
+        possessSkills.push(2051); possessSkills.push(2061); possessSkills.push(2071); possessSkills.push(2081);
 
         // user init and join game
         GM.initializeUser(user, baseSkill, possessSkills, inherentPassiveSkill);
@@ -552,23 +552,25 @@ io.on('connection', function(socket){
     try {
       if(GM.checkSkillPossession(user.objectID, data.skillIndex)){
         var skillData = objectAssign({}, util.findData(skillTable, 'index', data.skillIndex));
-        skillData.targetPosition = data.skillTargetPosition;
+        if(GM.checkSkillCondition(user.objectID, skillData)){
+          skillData.targetPosition = data.skillTargetPosition;
 
-        var serverSyncFireTime = data.syncFireTime + GM.getUserTimeDiff(user.objectID);
-        data.syncFireTime = serverSyncFireTime;
-        // skillData.buffsToSelf = util.findAndSetBuffs(skillData, buffTable, 'buffToSelf', 3, user.objectID);
-        // skillData.buffsToTarget = util.findAndSetBuffs(skillData, buffTable, 'buffToTarget', 3, user.objectID);
-        var timeoutTime = serverSyncFireTime - Date.now();
-        if(timeoutTime < serverConfig.MINIMUM_LATENCY){
-          timeoutTime = serverConfig.MINIMUM_LATENCY;
+          var serverSyncFireTime = data.syncFireTime + GM.getUserTimeDiff(user.objectID);
+          data.syncFireTime = serverSyncFireTime;
+          // skillData.buffsToSelf = util.findAndSetBuffs(skillData, buffTable, 'buffToSelf', 3, user.objectID);
+          // skillData.buffsToTarget = util.findAndSetBuffs(skillData, buffTable, 'buffToTarget', 3, user.objectID);
+          var timeoutTime = serverSyncFireTime - Date.now();
+          if(timeoutTime < serverConfig.MINIMUM_LATENCY){
+            timeoutTime = serverConfig.MINIMUM_LATENCY;
+          }
+          if(skillData.effectLastTime && util.isNumeric(skillData.effectLastTime)){
+            timeoutTime += skillData.effectLastTime / 2;
+          }
+          setTimeout(function(){
+            GM.applySkill(user.objectID, skillData);
+          }, timeoutTime);
+          io.sockets.emit('skillFired', data, user.objectID);
         }
-        if(skillData.effectLastTime && util.isNumeric(skillData.effectLastTime)){
-          timeoutTime += skillData.effectLastTime / 2;
-        }
-        setTimeout(function(){
-          GM.applySkill(user.objectID, skillData);
-        }, timeoutTime);
-        io.sockets.emit('skillFired', data, user.objectID);
       }
     } catch (e) {
       if(user){
@@ -592,26 +594,29 @@ io.on('connection', function(socket){
   socket.on('projectilesFired', function(datas, syncFireTime){
     try {
       if(GM.checkSkillPossession(user.objectID, datas[0].skillIndex)){
-        var serverSyncFireTime = syncFireTime + GM.getUserTimeDiff(user.objectID);
-        var timeoutTime = serverSyncFireTime - Date.now();
-        if(timeoutTime <serverConfig.MINIMUM_LATENCY){
-          timeoutTime = serverConfig.MINIMUM_LATENCY;
-        }
-        setTimeout(function(){
-          var projectiles = [];
-          for(var i=0; i<datas.length; i++){
-            var projectileData = objectAssign({}, util.findData(skillTable, 'index', datas[i].skillIndex));
-
-            projectileData.objectID = datas[i].objectID;
-            projectileData.position = datas[i].position;
-            projectileData.speed = datas[i].speed;
-            projectileData.startTime = Date.now();
-
-            projectiles.push(projectileData);
+        var skillData = objectAssign({}, util.findData(skillTable, 'index', datas[0].skillIndex));
+        if(GM.checkSkillCondition(user.objectID, skillData)){
+          var serverSyncFireTime = syncFireTime + GM.getUserTimeDiff(user.objectID);
+          var timeoutTime = serverSyncFireTime - Date.now();
+          if(timeoutTime <serverConfig.MINIMUM_LATENCY){
+            timeoutTime = serverConfig.MINIMUM_LATENCY;
           }
-          GM.applyProjectile(user.objectID, projectiles);
-        }, timeoutTime);
-        io.sockets.emit('projectilesFired', datas, serverSyncFireTime, user.objectID);
+          setTimeout(function(){
+            var projectiles = [];
+            for(var i=0; i<datas.length; i++){
+              var projectileData = objectAssign({}, util.findData(skillTable, 'index', datas[i].skillIndex));
+
+              projectileData.objectID = datas[i].objectID;
+              projectileData.position = datas[i].position;
+              projectileData.speed = datas[i].speed;
+              projectileData.startTime = Date.now();
+
+              projectiles.push(projectileData);
+            }
+            GM.applyProjectile(user.objectID, projectiles);
+          }, timeoutTime);
+          io.sockets.emit('projectilesFired', datas, serverSyncFireTime, user.objectID);
+        }
       }
     } catch (e) {
       if(user){

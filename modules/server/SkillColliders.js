@@ -106,11 +106,11 @@ ProjectileCollider.prototype = {
 
 function setDamage(user, skillData){
   if(skillData.property === gameConfig.SKILL_PROPERTY_FIRE){
-    this.fireDamage = (skillData.fireDamage + user.fireDamage) * user.fireDamageRate/100;
+    this.fireDamage = (skillData.fireDamage + user.fireDamage) * user.damageRate/100 * user.fireDamageRate/100;
   }else if(skillData.property === gameConfig.SKILL_PROPERTY_FROST){
-    this.frostDamage = (skillData.frostDamage + user.frostDamage) * user.frostDamageRate/100;
+    this.frostDamage = (skillData.frostDamage + user.frostDamage) * user.damageRate/100 * user.frostDamageRate/100;
   }else if(skillData.property === gameConfig.SKILL_PROPERTY_ARCANE){
-    this.arcaneDamage = (skillData.arcaneDamage + user.arcaneDamage) * user.arcaneDamageRate/100;
+    this.arcaneDamage = (skillData.arcaneDamage + user.arcaneDamage) * user.damageRate/100 * user.arcaneDamageRate/100;
     if(skillData.doDamageToMP){
       this.damageToMP = this.arcaneDamage * skillData.damageToMPRate/100;
     }
