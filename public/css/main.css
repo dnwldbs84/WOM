@@ -482,23 +482,85 @@ button:hover{
   left : 30px;
   width : 350px;
   height : 100px;
-
-  background: rgba(70, 70, 70, 0.6);
+  /* background: rgba(70, 70, 70, 0.6); */
+  /* border-radius: 2px; */
+  /* border: 10px solid rgba(255, 255, 255, 0.75); */
+  /* pointer-events: none; */
+}
+.startSceneHudSocial, .standingSceneHudSocial{
+  position: absolute;
+  bottom: 0;
+}
+.moreIOBtn{
+  position: absolute;
+  width: 160px;
+  text-align: center;
+  line-height: 40px;
+  background: #9d8af7;
+  color: white;
+  text-decoration: none;
   border-radius: 2px;
-  border: 10px solid rgba(255, 255, 255, 0.75);
-  pointer-events: none;
+}
+.moreIOBtn:hover{
+  background: #8a79d8;
+}
+.socialBtn{
+  display: block;
+  float: left;
+  margin-right: 10px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-size: 40px;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+.facebookBtn{
+  background-image: url(../images/facebook.png);
+  background-color: #4267b2;
+}
+.facebookBtn:hover{
+  background-color: #3055a0;
+}
+.twitterBtn{
+  background-image: url(../images/twitter.png);
+  background-color: #1b95e0;
+}
+.twitterBtn:hover{
+  background-color: #0983ce;
+}
+.discordBtn{
+  background-image: url(../images/discord.png);
+  background-color: #7289da;
+}
+.discordBtn:hover{
+  background-color: #5a6db0;
+}
+.redditBtn{
+  background-image: url(../images/reddit.png);
+  background-color: #FF6666;
+}
+.redditBtn:hover{
+  background-color: #DD4444;
 }
 .startSceneHudBottomRight, .standingSceneHudBottomRight{
-  position : absolute;
-  right : 30px;
-  width : 350px;
-  height : 100px;
-
-  background: rgba(70, 70, 70, 0.6);
-  border-radius: 2px;
-  border: 10px solid rgba(255, 255, 255, 0.75);
-
-  pointer-events: none;
+  position: absolute;
+  right: 30px;
+  width: 375px;
+  height: 150px;
+  bottom: 0px;
+  color: white;
+  text-shadow: 1px 1px 1px black;
+}
+.startSceneHudBottomRight a, .standingSceneHudBottomRight a{
+  text-shadow: none;
+  bottom: 3px;
+  position: absolute;
+  right: 10px;
+}
+.changelogText{
+  position: absolute;
+  bottom: 5px;
 }
 .standingSceneHudBottomRight .standingSceneBtnSkillChange{
   position : absolute;
@@ -2056,7 +2118,7 @@ td{
   overflow: visible;
 }
 .bottomTooltip .red, .bottomTooltip .blue, .bottomTooltip .purple{
-  text-shadow: 0 0 .5px white;
+  text-shadow: 0 0 .25px white;
 }
 .bottomTooltip > .titleLabel{
   position: absolute;

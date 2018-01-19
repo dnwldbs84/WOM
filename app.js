@@ -51,6 +51,12 @@ app.get('/', function(req, res){
     res.end(data);
   });
 });
+app.get('/changelog', function(req, res){
+  fs.readFile('html/changelog.html', 'utf8', function(err, data){
+    res.writeHead(200, {'Content-Type': 'text/html'});
+    res.end(data);
+  });
+});
 app.get('/error', function(req, res){
   fs.readFile('html/error.html', 'utf8', function(err, data){
     res.writeHead(200, {'Content-Type': 'text/html'});
