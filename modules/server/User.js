@@ -706,7 +706,7 @@ User.prototype.getSkill = function(index){
         this.jewel += jewelAmount;
       }
       this.onSkillChangeToResource(this, index);
-  }
+    }
     // if(possessSkill.nextSkillIndex !== -1){
     //   var changeSkillIndex = this.possessSkills.indexOf(possessSkill.index);
     //   if(changeSkillIndex === -1){
@@ -723,6 +723,7 @@ User.prototype.getSkill = function(index){
     //   //do nothing
     //   console.log('skill reach max level');
     // }
+    this.calcUserScore();
   }
 };
 User.prototype.upgradeSkill = function(skillIndex){
@@ -778,9 +779,10 @@ User.prototype.upgradeSkill = function(skillIndex){
           console.log('cheating!!!');
         }
       }else{
-        console.log('skill reach max level');
+        // console.log('skill reach max level');
       }
     }else{
+      //upgrade other type skill on standing scene
       if(nextSkillIndex !== -1){
         if(this.gold >= skillData.upgradeGoldAmount && this.jewel >= skillData.upgradeJewelAmount){
           if(this.pyroBaseSkill === skillIndex){
@@ -821,10 +823,11 @@ User.prototype.upgradeSkill = function(skillIndex){
           console.log('cheating!!!');
         }
       }else if(nextSkillIndex === -1){
-        console.log('skill reach max level');
+        // console.log('skill reach max level');
       }
     }
     this.onBuffExchange(this);
+    this.calcUserScore();
   }
 };
 User.prototype.exchangePassive = function(beforeBuffGID, afterBuffGID){
@@ -1096,20 +1099,48 @@ User.prototype.lossSkills = function(lossRate){
       lossSkillCount = lossSkillCount > skillListOverLevel2.length ? skillListOverLevel2.length : lossSkillCount;
       if(lossSkillCount && skillListOverLevel2.length){
         var beforeSkills = [];
+        var lossSkillList = [];
         var repeatCount = 1;
         for(var i=0; i<lossSkillCount; i++){
-          var randomIndex = Math.floor(Math.random() * lossSkillCount);
+          var randomIndex = Math.floor(Math.random() * skillListOverLevel2.length);
 
           var beforeSkill = skillListOverLevel2[randomIndex];
           if(beforeSkill.level !== 1){
-            if(randomIndex !== 0 && randomIndex !== 1){
-              //except base and passive skill
-              beforeSkills.push(beforeSkill);
+            var wasLossSkill = false;
+            var doLoss = true;
+            for(var j=0; j<lossSkillList.length; j++){
+              if(lossSkillList[j].groupIndex === beforeSkill.groupIndex){
+                wasLossSkill = true;
+              }
             }
-            var afterSkill = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', beforeSkill.groupIndex, 'nextSkillIndex', beforeSkill.index));
-            skillListOverLevel2.splice(randomIndex, 1, afterSkill);
+            if(wasLossSkill){
+              var randForLoss = Math.floor(Math.random() * 100);
+              if(randForLoss > serverConfig.SKILL_DUPLICATE_LOSS_RATE){
+                doLoss = false;
+              }
+            }
+
+            if(doLoss){
+              // if(randomIndex !== 0 && randomIndex !== 1){
+              if(beforeSkill.groupIndex !== baseSkillData.groupIndex && beforeSkill.groupIndex !== inherentPassiveSkillData.groupIndex){
+                //except base and passive skill
+                beforeSkills.push(beforeSkill);
+              }
+              lossSkillList.push(beforeSkill);
+
+              var afterSkill = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', beforeSkill.groupIndex, 'nextSkillIndex', beforeSkill.index));
+              skillListOverLevel2.splice(randomIndex, 1, afterSkill);
+            }else{
+              //if dont decrease, repeat tenTimes
+              if(repeatCount > 10){
+                repeatCount = 1;
+              }else{
+                i--;
+                repeatCount++;
+              }
+            }
           }else{
-            //if dont decrease, repeat fiveTimes
+            //if dont decrease, repeat tenTimes
             if(repeatCount > 10){
               repeatCount = 1;
             }else{
@@ -1149,10 +1180,16 @@ User.prototype.lossSkills = function(lossRate){
           var attackUserSkillIndex = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', attackUserSkillData.groupIndex, 'level', 1)).index;
         }
 
+        var lossSkills = [];
+        for(var i=0; i<lossSkillList.length; i++){
+          lossSkills.push(lossSkillList[i].index);
+        }
+
         return {
           baseSkill : this.baseSkill,
           inherentPassiveSkill : this.inherentPassiveSkill,
           possessSkills : this.possessSkills,
+          lostSkills : lossSkills,
 
           attackUserSkill : attackUserSkillIndex || 0
         };
@@ -1179,7 +1216,7 @@ User.prototype.getExp = function(exp, killScore, chestScore){
   if(!this.isDead){
     var userLevelData = objectAssign({}, util.findDataWithTwoColumns(userStatTable, 'type', this.type, 'level', this.level));
     if(userLevelData.needExp === -1){
-      console.log('user reach max level');
+      // console.log('user reach max level');
     }else{
       this.exp += exp;
       this.onGetExp(this, {type : gameConfig.GET_RESOURCE_TYPE_EXP, amount : exp});
@@ -1206,12 +1243,14 @@ User.prototype.getGold = function(goldAmount){
   if(util.isNumeric(goldAmount)){
     this.gold += goldAmount;
   }
+  // this.calcUserScore();
   this.onGetResource(this, {type : gameConfig.GET_RESOURCE_TYPE_GOLD, amount : goldAmount});
 };
 User.prototype.getJewel = function(jewelAmount){
   if(util.isNumeric(jewelAmount)){
     this.jewel += jewelAmount;
   }
+  this.calcUserScore();
   this.onGetResource(this, {type : gameConfig.GET_RESOURCE_TYPE_JEWEL, amount : jewelAmount});
 };
 User.prototype.levelUp = function(){

@@ -1131,7 +1131,7 @@ var cooldownSkills = [], standbyEquipPassiveList = [];
 var hudBaseSkillMask, hudEquipSkill1Mask, hudEquipSkill2Mask, hudEquipSkill3Mask, hudEquipSkill4Mask;
 var hudBaseSkillBlockMask, hudEquipSkill1BlockMask, hudEquipSkill2BlockMask, hudEquipSkill3BlockMask, hudEquipSkill4BlockMask, hudPassiveSkillBlockMask;
 var hudBaseSkillConditionBlockMask, hudEquipSkill1ConditionBlockMask, hudEquipSkill2ConditionBlockMask, hudEquipSkill3ConditionBlockMask, hudEquipSkill4ConditionBlockMask;
-var gameSceneCharNameAndLevel, userStatOffence, userStatDefence, userStatPowerContainer, userStatMagicContainer, userStatSpeedContainer;
+var gameSceneHudBottomRightCenter, gameSceneCharNameAndLevel, userStatOffence, userStatDefence, userStatPowerContainer, userStatMagicContainer, userStatSpeedContainer;
 var gameSceneHudTopLeft, gameSceneHudTopCenter, selectSkillIcon, selectSkillInfo, btnSelectSkillCancel;
 var goldContainer, jewelContainer, gameBoardRank, gameBoardName, gameBoardLevel, gameBoardKillScore, gameBoardTotalScore;
 var gameSceneDeadScene, deadSceneBackground, deadSceneTextContainer, deadSceneText, deadSceneToLevel, deadSceneLoseGold, deadSceneLoseJewel;
@@ -1139,7 +1139,7 @@ var chatInputContainer, chatInput;
 
 var flashMessageContainer, risingMessageContainer;
 var beforeRisingMessageTime = Date.now();
-var killBoardDisableTimeout = false;
+// var killBoardDisableTimeout = false;
 
 var isClearTutorial = false, isPlayingTutorial = false;
 
@@ -1153,6 +1153,7 @@ var standingSceneSelectedCharName, standingSceneSelectedCharStatPower, standingS
     standingSceneSkillSettingBtn, userStandingNickName;
 
 var miniMapUser, miniMapChest1, miniMapChest2, miniMapChest3, miniMapChest4, miniMapChest5, miniMapChest6, miniMapChest7, miniMapChest8, miniMapChest9;
+var gameSceneFpsText, gameScenePingText;
 
 var selectedPanel = null;
 var selectedDiv = null;
@@ -1313,10 +1314,11 @@ UIManager.prototype = {
     var optionIndex = 0;
     for(var index in serverList){
       if(!serverList[index].IP){
-        util.createDomSelectOption(index,"", true, servers);
+        util.createDomSelectOptGroup(index, servers, false);
       }else{
         var ip = 'http://' + serverList[index].IP;
-        util.createDomSelectOption(index, ip, true, servers);
+        var parentNode = servers.querySelectorAll('[label="' + serverList[index].SERVER + '"]')[0];
+        util.createDomSelectOption(index, ip, true, parentNode);
         try {
           (function tryAjax(){
             var req = util.createRequest();
@@ -1358,12 +1360,12 @@ UIManager.prototype = {
             // req.send({ip : ip});
             req.send('ip=' + ip + '&startTime=' + Date.now() + '&optionIndex=' + optionIndex);
           })();
+          optionIndex++;
         } catch (e) {
           console.log(e.message);
           console.log(ip + ' in not response');
         }
       }
-      optionIndex++;
     }
   },
   getSelectedServer : function(){
@@ -1535,7 +1537,7 @@ UIManager.prototype = {
     standingSceneSkillSettingBtn.onclick = function(){
       clearSelectedPanel();
 
-      popChange(popUpSkillChange);
+      popChange(popUpSkillChange, true);
       popUpSortBtn.onclick();
 
       if(!isClearTutorial){
@@ -1679,6 +1681,7 @@ UIManager.prototype = {
     hudEquipSkill3ConditionBlockMask = document.getElementById('hudEquipSkill3ConditionBlockMask');
     hudEquipSkill4ConditionBlockMask = document.getElementById('hudEquipSkill4ConditionBlockMask');
 
+    gameSceneHudBottomRightCenter = document.getElementById('gameSceneHudBottomRightCenter');
     gameSceneCharNameAndLevel = document.getElementById('gameSceneCharNameAndLevel');
     userStatOffence = document.getElementById('userStatOffence');
     userStatDefence = document.getElementById('userStatDefence');
@@ -1697,6 +1700,9 @@ UIManager.prototype = {
     miniMapChest7 = document.getElementById('miniMapChest7');
     miniMapChest8 = document.getElementById('miniMapChest8');
     miniMapChest9 = document.getElementById('miniMapChest9');
+
+    gameSceneFpsText = document.getElementById('gameSceneFpsText');
+    gameScenePingText = document.getElementById('gameScenePingText');
 
     gameSceneHudTopLeft = document.getElementById('gameSceneHudTopLeft');
     gameSceneHudTopCenter = document.getElementById('gameSceneHudTopCenter');
@@ -1790,33 +1796,25 @@ UIManager.prototype = {
   drawRestartScene : function(){
     startScene.classList.add('disable');
     gameScene.classList.add('disable');
-    // standingScene.classList.add('enable');
-    // startScene.classList.add('disable');
-    // startScene.classList.remove('enable');
-    // gameScene.classList.add('disappearSmoothAni');
-    // gameScene.classList.remove('enable');
-    // setTimeout(function(){
-    //   gameScene.classList.add('disable');
-    //   gameScene.classList.remove('disappearSmoothAni');
-    // }, 1000);
-
-    // standingScene.classList.add('appearSmoothAni');
-    // standingScene.classList.remove('disable');
-    // setTimeout(function(){
-    //   standingScene.classList.add('enable');
-    //   standingScene.classList.remove('appearSmoothAni');
-    // }, 1000);
-    // gameScene.classList.add('disable');
-    // gameScene.classList.remove('enable');
-    // standingScene.classList.add('enable');
-    // standingScene.classList.remove('disable');
+  },
+  drawFPSAndPing : function(fps, ping){
+    if(fps < 40){
+      gameSceneFpsText.innerHTML = 'FPS : <span class="red">' + fps + '</span>';
+    }else{
+      gameSceneFpsText.innerHTML = 'FPS : <span class="green">' + fps + '</span>';
+    }
+    if(ping > 500){
+      gameScenePingText.innerHTML = 'PING : <span class="red">' + ping + 'ms</span>';
+    }else{
+      gameScenePingText.innerHTML = 'PING : <span class="green">' + ping + 'ms</span>';
+    }
   },
   enableSelectSkillInfo : function(skillData){
     // selectSkillIcon.src = skillData.skillIcon;
     var img = document.createElement('img');
     var iconData = objectAssign({}, util.findData(iconResourceTable, 'index', skillData.skillIcon));
     img.src = resourceUI;
-    var rate = 80/72;
+    var rate = 1;
     img.style.clip = util.makeCssClipStyle(iconData, rate);
     util.setImgCssStyle(img, iconData, rate);
     selectSkillImgContainer.appendChild(img);
@@ -1838,7 +1836,7 @@ UIManager.prototype = {
     selectSkillInfo.getElementsByTagName('h4')[0].innerHTML = "<span class='yellow'>Lv " + skillData.level + " </span><span class='" + color + "'>" + skillData.clientName + "</span>";
     selectSkillInfo.getElementsByTagName('div')[0].innerHTML = "<span class='yellow'>Damage : </span>" + "<span class='" + color + "'>" + (skillData.fireDamage + skillData.frostDamage + skillData.arcaneDamage) + "</span>";
     selectSkillInfo.getElementsByTagName('div')[1].innerHTML = "<span class='yellow'>ManaCost : </span>" + (skillData.consumeMP);
-    selectSkillInfo.getElementsByTagName('div')[2].innerHTML = skillData.clientDesc;
+    selectSkillInfo.getElementsByTagName('div')[2].innerHTML = skillData.clientDesc.replace(/&nbsp;/g, '<br>');;
 
     gameSceneHudTopCenter.classList.add('enable');
     gameSceneHudTopCenter.classList.remove('disable');
@@ -2171,7 +2169,7 @@ UIManager.prototype = {
     hudEquipSkill4Mask.style.opacity = 0;
   },
   setHUDSkills : function(){
-    var rate = 60 / 72;
+    var rate = 48 / 72;
     if(baseSkillData){
       var iconData = objectAssign({}, util.findData(iconResourceTable, 'index', baseSkillData.skillIcon));
       hudBaseSkillImg.style.clip = util.makeCssClipStyle(iconData, rate);
@@ -2188,7 +2186,7 @@ UIManager.prototype = {
       hudPassiveSkillImg.style.clip = util.makeCssClipStyle(blankFrameData, rate);
       util.setImgCssStyle(hudPassiveSkillImg, blankFrameData, rate);
     }
-    rate = 80 / 72;
+    rate = 64 / 72;
     if(equipSkillDatas[0]){
       var iconData = objectAssign({}, util.findData(iconResourceTable, 'index', equipSkillDatas[0].skillIcon));
       hudEquipSkill1Img.style.clip = util.makeCssClipStyle(iconData, rate);
@@ -2290,6 +2288,7 @@ UIManager.prototype = {
     //     disablePopUpTutorial();
     //   }
     // }
+
     popUpBackground.onclick = function(){
       clearSelectedPanel();
       popChange(popUpSkillChange);
@@ -2297,7 +2296,23 @@ UIManager.prototype = {
     }
   },
   popChangeWithKey : function(){
+    clearSelectedPanel();
     popChange(popUpSkillChange);
+    popUpSortBtn.onclick();
+    hudBtnSkillChange.classList.add('clicked');
+    setTimeout(function(){
+      hudBtnSkillChange.classList.remove('clicked');
+    }, 250);
+  },
+  popCloseWithKey : function(){
+    if(!popUpSkillChange.classList.contains('disable')){
+      this.closePopUpSkillChange();
+      hudBtnSkillChange.classList.add('clicked');
+
+      setTimeout(function(){
+        hudBtnSkillChange.classList.remove('clicked');
+      }, 250);
+    }
   },
   setSkillIconResource : function(resource){
     resourceUI = resource.src;
@@ -2437,7 +2452,7 @@ UIManager.prototype = {
       gameSceneBuffsContainer.removeChild(gameSceneBuffsContainer.firstChild);
     }
     gameSceneBuffsContainer.innerHTML = '';
-    var rate = 45 / 72;
+    var rate = 36 / 72;
     if(inherentPassiveSkillData){
       var buffGroupData = objectAssign({}, util.findData(buffGroupTable, 'index', inherentPassiveSkillData.buffToSelf));
       var div = document.createElement('div');
@@ -2693,7 +2708,7 @@ UIManager.prototype = {
     var baseImg = document.createElement('img');
     // baseImg.src = baseSkillData.skillIcon;
     baseImg.src = resourceUI;
-    var rate = 75 / 72;
+    var rate = 60 / 72;
     var iconData = objectAssign({}, util.findData(iconResourceTable, 'index', baseSkillData.skillIcon));
     baseImg.style.clip = util.makeCssClipStyle(iconData, rate);
     util.setImgCssStyle(baseImg, iconData, rate);
@@ -2717,7 +2732,7 @@ UIManager.prototype = {
     popUpEquipPassiveSkill.appendChild(imgContainer);
     popUpEquipPassiveSkill.onclick = changeEquipSkillHandler.bind(this, popUpEquipPassiveSkill, gameConfig.SKILL_CHANGE_PANEL_EQUIP, dontUpdateEquip);
 
-    rate = 85 / 72;
+    rate = 75 / 72;
     if(equipSkillDatas[0]){
       var equipSkills1 = document.createElement('img');
       var imgContainer = document.createElement('div');
@@ -2799,13 +2814,13 @@ UIManager.prototype = {
       var skillData = objectAssign({}, util.findData(skillTable, 'index', skillIndex));
       var skillImg = document.createElement('img');
 
-      var output = makeSkillTooltipString(skillData);
+      var output = makeSkillTooltipString(skillData).replace(/&nbsp;/g, '<br>');
       popUpSkillInfoDesc.innerHTML = output;
 
       // skillImg.src = skillData.skillIcon;
       skillImg.src = resourceUI;
       var iconData = objectAssign({}, util.findData(iconResourceTable, 'index', skillData.skillIcon));
-      var rate = 85/72;
+      var rate = 75/72;
       skillImg.style.clip = util.makeCssClipStyle(iconData, rate);
       util.setImgCssStyle(skillImg, iconData, rate);
 
@@ -2957,12 +2972,12 @@ UIManager.prototype = {
     this.setBoard(userDatas, userID);
   },
   updateKillBoard : function(attackUserInfo, deadUserInfo){
-    gameSceneHudTopLeft.classList.remove('disappearSmoothAni');
-    gameSceneHudTopLeft.classList.remove('disable');
+    // gameSceneHudTopLeft.classList.remove('disappearSmoothAni');
+    // gameSceneHudTopLeft.classList.remove('disable');
 
-    if(killBoardDisableTimeout){
-      clearTimeout(killBoardDisableTimeout);
-    }
+    // if(killBoardDisableTimeout){
+    //   clearTimeout(killBoardDisableTimeout);
+    // }
     var spanEle = document.createElement('span');
     spanEle.classList.add('killFeedBack');
 
@@ -3074,13 +3089,14 @@ UIManager.prototype = {
       gameSceneHudTopLeft.removeChild(spans[0]);
     }
     gameSceneHudTopLeft.appendChild(spanEle);
-    killBoardDisableTimeout = setTimeout(function(){
-      gameSceneHudTopLeft.classList.add('disappearSmoothAni');
+    // killBoardDisableTimeout =
+    setTimeout(function(){
+      spanEle.classList.add('disappearSmoothAni');
       setTimeout(function(){
-        if(gameSceneHudTopLeft.classList.contains('disappearSmoothAni')){
-          gameSceneHudTopLeft.classList.remove('disappearSmoothAni');
-          gameSceneHudTopLeft.classList.add('disable');
-        }
+        // if(spanEle.classList.contains('disappearSmoothAni')){
+        spanEle.classList.remove('disappearSmoothAni');
+        spanEle.classList.add('disable');
+        // }
       }, 1000);
     }, 5000);
   },
@@ -3275,22 +3291,30 @@ UIManager.prototype = {
       gameScene.classList.remove('disappearSmoothAni');
     }, 1000);
   },
-  // getUserGold : function(){
-  //   return parseInt(goldContainer.innerHTML);
-  // },
-  // getUserJewel : function(){
-  //   return parseInt(jewelContainer.innerHTML);
-  // }
+  bottomToRight : function(){
+    gameSceneHudBottomRightCenter.classList.add('bottomRightCenterToRight');
+  },
+  rightToBottom : function(){
+    gameSceneHudBottomRightCenter.classList.remove('bottomRightCenterToRight');
+  }
 };
-function popChange(popWindow){
+function popChange(popWindow, isCenter){
   if(popWindow.classList.contains('disable')){
     popWindow.classList.add('enable');
     popWindow.classList.remove('disable');
-    popUpBackground.classList.add('enable');
-    popUpBackground.classList.remove('disable');
+    if(isCenter){
+      popWindow.classList.add('popToCenter');
+
+      popUpBackground.classList.add('enable');
+      popUpBackground.classList.remove('disable');
+    }else{
+      popWindow.classList.remove('popToCenter');
+    }
   }else if(popWindow.classList.contains('enable')){
     popWindow.classList.add('disable');
     popWindow.classList.remove('enable');
+
+    popWindow.classList.remove('popToCenter');
     popUpBackground.classList.add('disable')
     popUpBackground.classList.remove('enable');
   }
@@ -3311,7 +3335,7 @@ function changeEquipSkillHandler(selectDiv, selectPanel, dontUpdateEquip){
   this.onPopUpSkillChangeClick();
   clearPopSkillChangeClass();
   var selectEquipIndex = null;
-  var rate = 85 / 72;
+  var rate = 75 / 72;
   var equipSlot = null;
 
   if(selectPanel === gameConfig.SKILL_CHANGE_PANEL_EQUIP){
@@ -3688,7 +3712,7 @@ function changeEquipSkillHandler(selectDiv, selectPanel, dontUpdateEquip){
     this.updateSelectedPanel();
   }else{
     this.updateSelectedPanel(selectedSkillIndex);
-    if(selectPanel === gameConfig.SKILL_CHANGE_PANEL_EQUIP && !skillIndex){
+    if(selectPanel === gameConfig.SKILL_CHANGE_PANEL_EQUIP && !skillIndex && selectDiv.classList.contains('selected')){
       popUpCancelSkillSelectBtn.classList.remove('disable');
     }
   }
@@ -3799,6 +3823,8 @@ function clearSelectedPanel(){
   selectedDiv = null;
   selectedEquipIndex = null;
 
+  popUpSkillUpgradeBtn.getElementsByTagName('span')[0].innerHTML = " ";
+  skillUpgradeBlockMask.classList.remove('disable');
   popUpCancelSkillSelectBtn.classList.add('disable');
   skillUpgradeEffect.classList.remove('skillUpgradeEffectAni');
 
@@ -3976,7 +4002,7 @@ function onSelectSkillCancelBtnClickHandler(){
 //   }, 5000);
 // };
 function updateCharInfoSelectedPanelSkillImage(){
-  var rate = 45/72;
+  var rate = 40/72;
   var iconData = objectAssign({}, util.findData(iconResourceTable, 'index', baseSkillData.skillIcon));
   standingSceneSelectedCharBaseSkill.getElementsByTagName('img')[0].style.clip = util.makeCssClipStyle(iconData, rate);
   standingSceneSelectedCharBaseSkill.setAttribute('skillIndex', baseSkillData.index);
@@ -3987,7 +4013,7 @@ function updateCharInfoSelectedPanelSkillImage(){
   standingSceneSelectedCharPassiveSkill.setAttribute('skillIndex', inherentPassiveSkillData.index);
   util.setImgCssStyle(standingSceneSelectedCharPassiveSkill.getElementsByTagName('img')[0], iconData, rate);
 
-  rate = 55/72;
+  rate = 50/72;
   if(equipSkillDatas[0]){
     iconData = objectAssign({}, util.findData(iconResourceTable, 'index', equipSkillDatas[0].skillIcon));
     standingSceneSelectedCharEquipSkill1.getElementsByTagName('img')[0].style.clip = util.makeCssClipStyle(iconData, rate);
@@ -4047,7 +4073,7 @@ function makeSkillTooltipString(skillData){
   }
 
   output += "<h4 class='" + color + "'><span class='yellow'>Lv " + skillData.level + "</span> " + skillData.clientName + "</h4><hr>";
-  output += "<div class='tierLavel'><span class='green'>Tier : </span>" + skillData.tier + "</span></div>";
+  output += "<div class='tierLabel'><span class='green'>Tier : </span>" + skillData.tier + "</span></div>";
   if(skillData.type !== gameConfig.SKILL_TYPE_PASSIVE){
     output += "<div class='titleLabel'><span class='green'>Active</span></div>"
     switch (skillData.type) {
@@ -4366,7 +4392,7 @@ function popUpSortBtnClickHandler(dontUpdateEquip){
     equipSkillIndexes.push(equipSkills[i]);
   }
 
-  var rate = 85 / 72;
+  var rate = 75 / 72;
   for(var i=0; i<possessSkills.length; i++){
     var isEquipSkill = false;
     // if(equipSkillIndexes.includes(possessSkills[i])){
@@ -5183,8 +5209,8 @@ function _csvToArray(text, delimit, quote) {
 },{}],7:[function(require,module,exports){
 module.exports={
   "userStatData" : "index,level,needExp,type,power,magic,speed,imgData\n1,1,225,1,22,14,19,1\n2,2,330,1,24,15,21,1\n3,3,450,1,27,17,23,1\n4,4,550,1,29,18,25,1\n5,5,675,1,32,20,27,1\n6,6,825,1,34,21,29,2\n7,7,975,1,37,23,31,2\n8,8,1125,1,39,24,33,2\n9,9,1275,1,42,26,35,2\n10,10,1425,1,44,27,37,2\n11,11,1575,1,47,29,39,3\n12,12,1725,1,49,30,41,3\n13,13,1950,1,52,32,43,3\n14,14,2175,1,54,33,45,3\n15,15,2400,1,57,35,47,3\n16,16,2625,1,59,36,49,4\n17,17,2850,1,62,38,51,4\n18,18,3075,1,64,39,53,4\n19,19,3300,1,67,41,55,4\n20,20,-1,1,69,42,57,5\n101,1,225,2,17,21,17,6\n102,2,330,2,19,23,18,6\n103,3,450,2,21,26,20,6\n104,4,550,2,23,28,21,6\n105,5,675,2,25,31,23,6\n106,6,825,2,27,33,24,7\n107,7,975,2,29,36,26,7\n108,8,1125,2,31,38,27,7\n109,9,1275,2,33,41,29,7\n110,10,1425,2,35,43,30,7\n111,11,1575,2,37,46,32,8\n112,12,1725,2,39,48,33,8\n113,13,1950,2,41,51,35,8\n114,14,2175,2,43,53,36,8\n115,15,2400,2,45,56,38,8\n116,16,2625,2,47,58,39,9\n117,17,2850,2,49,61,41,9\n118,18,3075,2,51,63,42,9\n119,19,3300,2,53,66,44,9\n120,20,-1,2,55,68,45,10\n201,1,225,3,18,15,22,11\n202,2,330,3,20,16,24,11\n203,3,450,3,22,18,27,11\n204,4,550,3,24,19,29,11\n205,5,675,3,26,21,32,11\n206,6,825,3,28,22,34,12\n207,7,975,3,30,24,37,12\n208,8,1125,3,32,25,39,12\n209,9,1275,3,34,27,42,12\n210,10,1425,3,36,28,44,12\n211,11,1575,3,38,30,47,13\n212,12,1725,3,40,31,49,13\n213,13,1950,3,42,33,52,13\n214,14,2175,3,44,34,54,13\n215,15,2400,3,46,36,57,13\n216,16,2625,3,48,37,59,14\n217,17,2850,3,50,39,62,14\n218,18,3075,3,52,40,64,14\n219,19,3300,3,54,42,67,14\n220,20,-1,3,56,43,69,15\n",
-  "skillData" : "index,name,level,type,property,tier,groupIndex,nextSkillIndex,totalTime,fireTime,cooldown,range,explosionRadius,explosionDamageRate,consumeMP,fireDamage,frostDamage,arcaneDamage,doDamageToMP,damageToMPRate,doDamageToSelf,damageToSelfRate,healHP,healHPRate,healMP,healMPRate,repeatLifeTime,repeatTime,buffToSelf,buffToTarget,projectileCount,radius,maxSpeed,lifeTime,tickTime,upgradeGoldAmount,upgradeJewelAmount,clientName,clientDesc,effectLastTime,skillIcon,hitEffectGroup,explosionEffectGroup,projectileEffectGroup,exchangeToGold,exchangeToJewel\n11,PyroBaseAttack1,1,1,1,1,10,12,600,400,150,60,45,0,0,100,0,0,0,0,0,0,0,0,0,0,0,0,,1,0,0,0,0,0,500,0,Pyro Attack,◈ Damage near front &nbsp;◈ Ignite enemy(20%),300,1,6,,,200,\n12,PyroBaseAttack2,2,1,1,1,10,13,600,400,150,60,47,0,0,125,0,0,0,0,0,0,0,0,0,0,0,0,,1,0,0,0,0,0,1000,0,Pyro Attack,◈ Damage near front &nbsp;◈ Ignite enemy(20%),300,1,6,,,200,\n13,PyroBaseAttack3,3,1,1,1,10,14,600,400,150,60,49,0,0,150,0,0,0,0,0,0,0,0,0,0,0,0,,2,0,0,0,0,0,1500,1,Pyro Attack,◈ Damage near front &nbsp;◈ Ignite enemy(30%),300,1,6,,,200,\n14,PyroBaseAttack4,4,1,1,1,10,15,600,400,150,60,51,0,0,175,0,0,0,0,0,0,0,0,0,0,0,0,,2,0,0,0,0,0,2000,2,Pyro Attack,◈ Damage near front &nbsp;◈ Ignite enemy(30%),300,1,6,,,200,\n15,PyroBaseAttack5,5,1,1,1,10,-1,600,400,150,60,53,0,0,200,0,0,0,0,0,0,0,0,0,0,0,0,,3,0,0,0,0,0,0,0,Pyro Attack,◈ Damage near front &nbsp;◈ Ignite enemy(40%),300,1,6,,,200,\n21,FireBolt1,1,3,1,1,20,22,500,300,2500,0,0,0,40,300,0,0,0,0,0,0,0,0,0,0,0,0,,1,1,30,650,2000,0,500,0,Fire Bolt,◈ Fire projectile &nbsp;◈ Ignite enemy(20%),0,2,6,,,200,\n22,FireBolt2,2,3,1,1,20,23,500,300,2500,0,0,0,50,350,0,0,0,0,0,0,0,0,0,0,0,0,,1,1,30,650,2000,0,1000,0,Fire Bolt,◈ Fire projectile &nbsp;◈ Ignite enemy(20%),0,2,6,,,200,\n23,FireBolt3,3,3,1,1,20,24,500,300,2500,0,0,0,60,400,0,0,0,0,0,0,0,0,0,0,0,0,,2,1,30,650,2000,0,1500,1,Fire Bolt,◈ Fire projectile &nbsp;◈ Ignite enemy(30%),0,2,6,,,200,\n24,FireBolt4,4,3,1,1,20,25,500,300,2500,0,0,0,70,450,0,0,0,0,0,0,0,0,0,0,0,0,,2,1,30,650,2000,0,2000,2,Fire Bolt,◈ Fire projectile &nbsp;◈ Ignite enemy(30%),0,2,6,,,200,\n25,FireBolt5,5,3,1,1,20,-1,500,300,2500,0,0,0,80,500,0,0,0,0,0,0,0,0,0,0,0,0,,3,1,30,650,2000,0,0,0,Fire Bolt,◈ Fire projectile &nbsp;◈ Ignite enemy(40%),0,2,6,,,200,\n31,BurningSoul1,1,11,1,1,30,32,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,,0,0,0,0,0,500,0,Burning Soul,◈ +4 HP regen,0,3,,,,200,\n32,BurningSoul2,2,11,1,1,30,33,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,,0,0,0,0,0,1000,0,Burning Soul,◈ +6 HP regen,0,3,,,,200,\n33,BurningSoul3,3,11,1,1,30,34,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,7,,0,0,0,0,0,1500,1,Burning Soul,◈ +8 HP regen,0,3,,,,200,\n34,BurningSoul4,4,11,1,1,30,35,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,,0,0,0,0,0,2000,2,Burning Soul,◈ +10 HP regen,0,3,,,,200,\n35,BurningSoul5,5,11,1,1,30,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,9,,0,0,0,0,0,0,0,Burning Soul,◈ +12 HP regen,0,3,,,,200,\n41,FireBall1,1,4,1,2,40,42,800,600,8000,0,110,0,100,350,0,0,0,0,0,0,0,0,0,0,0,0,,1,1,35,550,2000,0,1000,0,Fire Ball,◈ Fire explosive projectile &nbsp;◈ Ignite enemy(20%),300,4,6,,,400,\n42,FireBall2,2,4,1,2,40,43,800,600,8000,0,115,0,120,400,0,0,0,0,0,0,0,0,0,0,0,0,,1,1,35,550,2000,0,1500,1,Fire Ball,◈ Fire explosive projectile &nbsp;◈ Ignite enemy(20%),300,4,6,,,400,\n43,FireBall3,3,4,1,2,40,44,800,600,8000,0,120,0,140,450,0,0,0,0,0,0,0,0,0,0,0,0,,2,1,35,550,2000,0,2000,2,Fire Ball,◈ Fire explosive projectile &nbsp;◈ Ignite enemy(30%),300,4,6,,,400,\n44,FireBall4,4,4,1,2,40,45,800,600,8000,0,125,0,160,500,0,0,0,0,0,0,0,0,0,0,0,0,,2,1,35,550,2000,0,2500,3,Fire Ball,◈ Fire explosive projectile &nbsp;◈ Ignite enemy(30%),300,4,6,,,400,\n45,FireBall5,5,4,1,2,40,-1,800,600,8000,0,130,0,180,550,0,0,0,0,0,0,0,0,0,0,0,0,,3,1,35,550,2000,0,0,0,Fire Ball,◈ Fire explosive projectile &nbsp;◈ Ignite enemy(40%),300,4,6,,,400,\n51,InnerFire1,1,8,1,2,50,52,500,300,30000,0,0,0,100,0,0,0,0,0,1,100,0,0,0,0,0,0,10,15,0,0,0,0,0,1000,0,Inner Fire,◈ +15% Damage rate &nbsp;◈ Make Ignite oneself,0,5,,,,400,\n52,InnerFire2,2,8,1,2,50,53,500,300,30000,0,0,0,120,0,0,0,0,0,1,100,0,0,0,0,0,0,11,15,0,0,0,0,0,1500,1,Inner Fire,◈ +22% Damage rate &nbsp;◈ Make Ignite oneself,0,5,,,,400,\n53,InnerFire3,3,8,1,2,50,54,500,300,30000,0,0,0,140,0,0,0,0,0,1,100,0,0,0,0,0,0,12,15,0,0,0,0,0,2000,2,Inner Fire,◈ +30% Damage rate &nbsp;◈ Make Ignite oneself,0,5,,,,400,\n54,InnerFire4,4,8,1,2,50,55,500,300,30000,0,0,0,160,0,0,0,0,0,1,100,0,0,0,0,0,0,13,15,0,0,0,0,0,2500,3,Inner Fire,◈ +37% Damage rate &nbsp;◈ Make Ignite oneself,0,5,,,,400,\n55,InnerFire5,5,8,1,2,50,-1,500,300,30000,0,0,0,180,0,0,0,0,0,1,100,0,0,0,0,0,0,14,15,0,0,0,0,0,0,0,Inner Fire,◈ +45% Damage rate &nbsp;◈ Make Ignite oneself,0,5,,,,400,\n61,RollingFire1,1,5,1,3,60,62,800,600,15000,0,0,0,130,50,0,0,0,0,0,0,0,0,0,0,0,0,,1,1,51,280,3000,60,1500,1,Rolling Fire,◈ Fire rolling projectile &nbsp;◈ Ignite enemy(20%),0,6,6,,1007,,1\n62,RollingFire2,2,5,1,3,60,63,800,600,15000,0,0,0,160,60,0,0,0,0,0,0,0,0,0,0,0,0,,1,1,52,280,3000,60,2000,2,Rolling Fire,◈ Fire rolling projectile &nbsp;◈ Ignite enemy(20%),0,6,6,,1007,,1\n63,RollingFire3,3,5,1,3,60,64,800,600,15000,0,0,0,190,70,0,0,0,0,0,0,0,0,0,0,0,0,,2,1,53,280,3000,60,2500,3,Rolling Fire,◈ Fire rolling projectile &nbsp;◈ Ignite enemy(30%),0,6,6,,1007,,1\n64,RollingFire4,4,5,1,3,60,65,800,600,15000,0,0,0,220,85,0,0,0,0,0,0,0,0,0,0,0,0,,2,1,54,280,3000,60,3000,4,Rolling Fire,◈ Fire rolling projectile &nbsp;◈ Ignite enemy(30%),0,6,6,,1007,,1\n65,RollingFire5,5,5,1,3,60,-1,800,600,15000,0,0,0,250,100,0,0,0,0,0,0,0,0,0,0,0,0,,3,1,55,280,3000,60,0,0,Rolling Fire,◈ Fire rolling projectile &nbsp;◈ Ignite enemy(40%),0,6,6,,1007,,1\n71,Fury1,1,11,1,3,70,72,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,16,,0,0,0,0,0,1500,1,Fury,◈ +10% Move and Cast speed &nbsp;◈ If ignite additional +10% Move and Cast speed,0,7,,,,,1\n72,Fury2,2,11,1,3,70,73,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,,0,0,0,0,0,2000,2,Fury,◈ +12% Move and Cast speed &nbsp;◈ If ignite additional +12% Move and Cast speed,0,7,,,,,1\n73,Fury3,3,11,1,3,70,74,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,18,,0,0,0,0,0,2500,3,Fury,◈ +15% Move and Cast speed &nbsp;◈ If ignite additional +15% Move and Cast speed,0,7,,,,,1\n74,Fury4,4,11,1,3,70,75,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,19,,0,0,0,0,0,3000,4,Fury,◈ +17% Move and Cast speed &nbsp;◈ If ignite additional +17% Move and Cast speed,0,7,,,,,1\n75,Fury5,5,11,1,3,70,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,20,,0,0,0,0,0,0,0,Fury,◈ +20% Move and Cast speed &nbsp;◈ If ignite additional +20% Move and Cast speed,0,7,,,,,1\n81,Explosion1,1,9,1,4,80,82,1300,1100,20000,0,260,0,130,450,0,0,0,0,1,50,0,0,0,0,0,0,,4,0,0,0,0,0,2000,2,Explosion,◈ Damage near position &nbsp;◈ Ignite enemy and oneself(100%) &nbsp;◈Damage to self(50%),300,8,6,,,,2\n82,Explosion2,2,9,1,4,80,83,1300,1100,20000,0,270,0,160,500,0,0,0,0,1,45,0,0,0,0,0,0,,4,0,0,0,0,0,2500,3,Explosion,◈ Damage near position &nbsp;◈ Ignite enemy and oneself(100%) &nbsp;◈Damage to self(45%),300,8,6,,,,2\n83,Explosion3,3,9,1,4,80,84,1300,1100,20000,0,280,0,190,550,0,0,0,0,1,40,0,0,0,0,0,0,,4,0,0,0,0,0,3000,4,Explosion,◈ Damage near position &nbsp;◈ Ignite enemy and oneself(100%) &nbsp;◈Damage to self(40%),300,8,6,,,,2\n84,Explosion4,4,9,1,4,80,85,1300,1100,20000,0,290,0,220,600,0,0,0,0,1,35,0,0,0,0,0,0,,4,0,0,0,0,0,3500,5,Explosion,◈ Damage near position &nbsp;◈ Ignite enemy and oneself(100%) &nbsp;◈Damage to self(35%),300,8,6,,,,2\n85,Explosion5,5,9,1,4,80,-1,1300,1100,20000,0,300,0,250,650,0,0,0,0,1,25,0,0,0,0,0,0,,4,0,0,0,0,0,0,0,Explosion,◈ Damage near position &nbsp;◈ Ignite enemy and oneself(100%) &nbsp;◈Damage to self(25%),300,8,6,,,,2\n91,Pyromaniac1,1,11,1,5,90,92,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,21,,0,0,0,0,0,2000,2,Pyromaniac,◈ +5 Power &nbsp;  ◈ +10% Fire Damage rate,0,9,,,,,2\n92,Pyromaniac2,2,11,1,5,90,93,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,22,,0,0,0,0,0,2500,3,Pyromaniac,◈ +8 Power &nbsp;  ◈ +14% Fire Damage rate,0,9,,,,,2\n93,Pyromaniac3,3,11,1,5,90,94,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,23,,0,0,0,0,0,3000,4,Pyromaniac,◈ +10 Power &nbsp;  ◈ +17% Fire Damage rate &nbsp; ◈ 2% Damage Rate Per 10% Life Loss,0,9,,,,,2\n94,Pyromaniac4,4,11,1,5,90,95,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,24,,0,0,0,0,0,3500,5,Pyromaniac,◈ +13 Power &nbsp;  ◈ +21% Fire Damage rate &nbsp; ◈ 3% Damage Rate Per 10% Life Loss,0,9,,,,,2\n95,Pyromaniac5,5,11,1,5,90,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,24,,0,0,0,0,0,0,0,Pyromaniac,◈ +15 Power &nbsp;  ◈ +25% Fire Damage rate &nbsp; ◈ +15% Cast Speed &nbsp; ◈ +4% Damage Rate Per 10% Life Loss,0,9,,,,,2\n1001,FrosterBaseAttack1,1,1,2,1,1000,1002,600,400,150,60,45,0,0,0,80,0,0,0,0,0,0,0,0,0,0,0,,101,0,0,0,0,0,500,0,Froster Attack,◈ Damage near front &nbsp;◈ Chill enemy(20%),300,101,7,,,200,\n1002,FrosterBaseAttack2,2,1,2,1,1000,1003,600,400,150,60,47,0,0,0,100,0,0,0,0,0,0,0,0,0,0,0,,101,0,0,0,0,0,1000,0,Froster Attack,◈ Damage near front &nbsp;◈ Chill enemy(20%),300,101,7,,,200,\n1003,FrosterBaseAttack3,3,1,2,1,1000,1004,600,400,150,60,49,0,0,0,125,0,0,0,0,0,0,0,0,0,0,0,,102,0,0,0,0,0,1500,1,Froster Attack,◈ Damage near front &nbsp;◈ Chill enemy(25%),300,101,7,,,200,\n1004,FrosterBaseAttack4,4,1,2,1,1000,1005,600,400,150,60,51,0,0,0,150,0,0,0,0,0,0,0,0,0,0,0,,102,0,0,0,0,0,2000,2,Froster Attack,◈ Damage near front &nbsp;◈ Chill enemy(25%),300,101,7,,,200,\n1005,FrosterBaseAttack5,5,1,2,1,1000,-1,600,400,150,60,53,0,0,0,175,0,0,0,0,0,0,0,0,0,0,0,,103,0,0,0,0,0,0,0,Froster Attack,◈ Damage near front &nbsp;◈ Chill enemy(30%),300,101,7,,,200,\n1011,IceBolt1,1,3,2,1,1010,1012,500,300,2500,0,0,0,50,0,300,0,0,0,0,0,0,0,0,0,0,0,,101,1,30,650,2000,0,500,0,Ice Bolt,◈ Fire projectile &nbsp;◈ Chill enemy(20%),300,102,7,,,200,\n1012,IceBolt2,2,3,2,1,1010,1013,500,300,2500,0,0,0,60,0,350,0,0,0,0,0,0,0,0,0,0,0,,101,1,30,650,2000,0,1000,0,Ice Bolt,◈ Fire projectile &nbsp;◈ Chill enemy(20%),300,102,7,,,200,\n1013,IceBolt3,3,3,2,1,1010,1014,500,300,2500,0,0,0,70,0,400,0,0,0,0,0,0,0,0,0,0,0,,102,1,30,650,2000,0,1500,1,Ice Bolt,◈ Fire projectile &nbsp;◈ Chill enemy(25%),300,102,7,,,200,\n1014,IceBolt4,4,3,2,1,1010,1015,500,300,2500,0,0,0,80,0,450,0,0,0,0,0,0,0,0,0,0,0,,102,1,30,650,2000,0,2000,2,Ice Bolt,◈ Fire projectile &nbsp;◈ Chill enemy(25%),300,102,7,,,200,\n1015,IceBolt5,5,3,2,1,1010,-1,500,300,2500,0,0,0,90,0,500,0,0,0,0,0,0,0,0,0,0,0,,103,1,30,650,2000,0,0,0,Ice Bolt,◈ Fire projectile &nbsp;◈ Chill enemy(30%),300,102,7,,,200,\n1021,Healing1,1,8,2,1,1020,1022,500,300,9000,0,0,0,80,0,0,0,0,0,0,0,300,0,0,0,0,0,2000,,0,0,0,0,0,500,0,Healing,◈ Heal 500 HP,300,103,,,,200,\n1022,Healing2,2,8,2,1,1020,1023,500,300,9000,0,0,0,95,0,0,0,0,0,0,0,400,0,0,0,0,0,2000,,0,0,0,0,0,1000,0,Healing,◈ Heal 600 HP,300,103,,,,200,\n1023,Healing3,3,8,2,1,1020,1024,500,300,9000,0,0,0,110,0,0,0,0,0,0,0,500,0,0,0,0,0,2000,,0,0,0,0,0,1500,1,Healing,◈ Heal 750 HP,300,103,,,,200,\n1024,Healing4,4,8,2,1,1020,1025,500,300,9000,0,0,0,125,0,0,0,0,0,0,0,600,0,0,0,0,0,2000,,0,0,0,0,0,2000,2,Healing,◈ Heal 850 HP,300,103,,,,200,\n1025,Healing5,5,8,2,1,1020,-1,500,300,9000,0,0,0,140,0,0,0,0,0,0,0,700,0,0,0,0,0,2000,,0,0,0,0,0,0,0,Healing,◈ Heal 1000 HP,300,103,,,,200,\n1031,FrozenSoul1,1,11,2,1,1030,1032,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,107,,0,0,0,0,0,500,0,Frozen Soul,◈ +4 MP regen,300,104,,,,200,\n1032,FrozenSoul2,2,11,2,1,1030,1033,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,108,,0,0,0,0,0,1000,0,Frozen Soul,◈ +5 MP regen,300,104,,,,200,\n1033,FrozenSoul3,3,11,2,1,1030,1034,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,109,,0,0,0,0,0,1500,1,Frozen Soul,◈ +7 MP regen,300,104,,,,200,\n1034,FrozenSoul4,4,11,2,1,1030,1035,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,110,,0,0,0,0,0,2000,2,Frozen Soul,◈ +8 MP regen,300,104,,,,200,\n1035,FrozenSoul5,5,11,2,1,1030,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,111,,0,0,0,0,0,0,0,Frozen Soul,◈ +10 MP regen,300,104,,,,200,\n1041,Purify1,1,8,2,2,1040,1042,500,300,20000,0,0,0,80,0,0,0,0,0,0,0,0,0,0,0,0,0,112,,0,0,0,0,0,1000,0,Purify,◈ Every second Dispel oneself &nbsp;◈ Every second +1% HP Regen,300,105,,,,400,\n1042,Purify2,2,8,2,2,1040,1043,500,300,20000,0,0,0,95,0,0,0,0,0,0,0,0,0,0,0,0,0,113,,0,0,0,0,0,1500,1,Purify,◈ Every second Dispel oneself &nbsp;◈ Every second +2% HP Regen,300,105,,,,400,\n1043,Purify3,3,8,2,2,1040,1044,500,300,20000,0,0,0,110,0,0,0,0,0,0,0,0,0,0,0,0,0,114,,0,0,0,0,0,2000,2,Purify,◈ Every second Dispel oneself &nbsp;◈ Every second +3% HP Regen,300,105,,,,400,\n1044,Purify4,4,8,2,2,1040,1045,500,300,20000,0,0,0,125,0,0,0,0,0,0,0,0,0,0,0,0,0,115,,0,0,0,0,0,2500,3,Purify,◈ Every second Dispel oneself &nbsp;◈ Every second +4% HP Regen,300,105,,,,400,\n1045,Purify5,5,8,2,2,1040,-1,500,300,20000,0,0,0,140,0,0,0,0,0,0,0,0,0,0,0,0,0,116,,0,0,0,0,0,0,0,Purify,◈ Every second Dispel oneself &nbsp;◈ Every second +5% HP Regen,300,105,,,,400,\n1051,IceBlock1,1,8,2,2,1050,1052,500,300,20000,0,0,0,80,0,0,0,0,0,1,100,0,0,0,0,0,0,117,130,0,0,0,0,0,1000,0,Ice Block,◈ Make Immortal and Freeze oneself &nbsp;◈ Every second +5% HP and MP Regen,300,106,,,,400,\n1052,IceBlock2,2,8,2,2,1050,1053,500,300,20000,0,0,0,95,0,0,0,0,0,1,100,0,0,0,0,0,0,118,130,0,0,0,0,0,1500,1,Ice Block,◈ Make Immortal and Freeze oneself &nbsp;◈ Every second +7% HP and MP Regen,300,106,,,,400,\n1053,IceBlock3,3,8,2,2,1050,1054,500,300,20000,0,0,0,110,0,0,0,0,0,1,100,0,0,0,0,0,0,119,130,0,0,0,0,0,2000,2,Ice Block,◈ Make Immortal and Freeze oneself &nbsp;◈ Every second +10% HP and MP Regen,300,106,,,,400,\n1054,IceBlock4,4,8,2,2,1050,1055,500,300,20000,0,0,0,125,0,0,0,0,0,1,100,0,0,0,0,0,0,120,130,0,0,0,0,0,2500,3,Ice Block,◈ Make Immortal and Freeze oneself &nbsp;◈ Every second +12% HP and MP Regen,300,106,,,,400,\n1055,IceBlock5,5,8,2,2,1050,-1,500,300,20000,0,0,0,140,0,0,0,0,0,1,100,0,0,0,0,0,0,121,130,0,0,0,0,0,0,0,Ice Block,◈ Make Immortal and Freeze oneself &nbsp;◈ Every second +15% HP and MP Regen,300,106,,,,400,\n1061,ColdSnap1,1,7,2,3,1060,1062,800,600,15000,370,120,0,140,0,200,0,0,0,0,0,0,0,0,0,0,0,,104,0,0,0,0,0,1500,1,Cold Snap,◈ Damage target area &nbsp;◈ Chill enemy(70%),300,107,7,,,,1\n1062,ColdSnap2,2,7,2,3,1060,1063,800,600,15000,390,125,0,160,0,250,0,0,0,0,0,0,0,0,0,0,0,,104,0,0,0,0,0,2000,2,Cold Snap,◈ Damage target area &nbsp;◈ Chill enemy(70%),300,107,7,,,,1\n1063,ColdSnap3,3,7,2,3,1060,1064,800,600,15000,410,130,0,180,0,300,0,0,0,0,0,0,0,0,0,0,0,,105,0,0,0,0,0,2500,3,Cold Snap,◈ Damage target area &nbsp;◈ Chill enemy(85%),300,107,7,,,,1\n1064,ColdSnap4,4,7,2,3,1060,1065,800,600,15000,430,135,0,200,0,350,0,0,0,0,0,0,0,0,0,0,0,,105,0,0,0,0,0,3000,4,Cold Snap,◈ Damage target area &nbsp;◈ Chill enemy(85%),300,107,7,,,,1\n1065,ColdSnap5,5,7,2,3,1060,-1,800,600,15000,450,140,0,220,0,400,0,0,0,0,0,0,0,0,0,0,0,,106,0,0,0,0,0,0,0,Cold Snap,◈ Damage target area &nbsp;◈ Chill enemy(100%),300,107,7,,,,1\n1071,FrozenOrb1,1,6,2,4,1070,1072,800,600,20000,0,110,800,160,0,40,0,0,0,0,0,0,0,0,0,0,0,,101,1,51,280,2500,60,2000,2,Frozen Orb,◈ Fire rolling explosive projectile &nbsp;◈ Chill enemy(20%),300,108,7,1008,1008,,2\n1072,FrozenOrb2,2,6,2,4,1070,1073,800,600,20000,0,115,800,180,0,50,0,0,0,0,0,0,0,0,0,0,0,,101,1,52,280,2500,60,2500,3,Frozen Orb,◈ Fire rolling explosive projectile &nbsp;◈ Chill enemy(20%),300,108,7,1008,1008,,2\n1073,FrozenOrb3,3,6,2,4,1070,1074,800,600,20000,0,120,800,200,0,60,0,0,0,0,0,0,0,0,0,0,0,,102,1,53,280,2500,60,3000,4,Frozen Orb,◈ Fire rolling explosive projectile &nbsp;◈ Chill enemy(25%),300,108,7,1008,1008,,2\n1074,FrozenOrb4,4,6,2,4,1070,1075,800,600,20000,0,125,800,220,0,75,0,0,0,0,0,0,0,0,0,0,0,,102,1,54,280,2500,60,3500,5,Frozen Orb,◈ Fire rolling explosive projectile &nbsp;◈ Chill enemy(25%),300,108,7,1008,1008,,2\n1075,FrozenOrb5,5,6,2,4,1070,-1,800,600,20000,0,130,800,240,0,90,0,0,0,0,0,0,0,0,0,0,0,,103,1,55,280,2500,60,0,0,Frozen Orb,◈ Fire rolling explosive projectile &nbsp;◈ Chill enemy(30%),300,108,7,1008,1008,,2\n1081,Freezer1,1,11,2,5,1080,1082,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,122,,0,0,0,0,0,2000,2,Freezer,◈ +5 Magic &nbsp;  ◈ +10% Frost Damage rate,0,109,,,,,2\n1082,Freezer2,2,11,2,5,1080,1083,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,123,,0,0,0,0,0,2500,3,Freezer,◈ +8 Magic &nbsp;  ◈ +14% Frost Damage rate,0,109,,,,,2\n1083,Freezer3,3,11,2,5,1080,1084,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,124,,0,0,0,0,0,3000,4,Freezer,◈ +10 Magic &nbsp;  ◈ +17% Frost Damage rate &nbsp; ◈ Can Make Freezing When Hit Chill Enemy(15%),0,109,,,,,2\n1084,Freezer4,4,11,2,5,1080,1085,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,125,,0,0,0,0,0,3500,5,Freezer,◈ +13 Magic &nbsp;  ◈ +21% Frost Damage rate &nbsp; ◈ Can Make Freezing When Hit Chill Enemy(20%),0,109,,,,,2\n1085,Freezer5,5,11,2,5,1080,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,126,,0,0,0,0,0,0,0,Freezer,◈ +15 Magic &nbsp;  ◈ +25% Frost Damage rate &nbsp; ◈ +15% Move Speed &nbsp; ◈ Can Make Freezing When Hit Chill Enemy(25%),0,109,,,,,2\n2001,MysterBaseAttack1,1,1,3,1,2000,2002,600,400,150,60,45,0,0,0,0,100,1,30,0,0,0,0,0,0,0,0,,,0,0,0,0,0,500,0,Myster Attack,◈ Damage near front &nbsp;◈ Burn enemy MP(30%),300,201,8,,,200,\n2002,MysterBaseAttack2,2,1,3,1,2000,2003,600,400,150,60,47,0,0,0,0,125,1,30,0,0,0,0,0,0,0,0,,,0,0,0,0,0,1000,0,Myster Attack,◈ Damage near front &nbsp;◈ Burn enemy MP(30%),300,201,8,,,200,\n2003,MysterBaseAttack3,3,1,3,1,2000,2004,600,400,150,60,49,0,0,0,0,150,1,40,0,0,0,0,0,0,0,0,,,0,0,0,0,0,1500,1,Myster Attack,◈ Damage near front &nbsp;◈ Burn enemy MP(40%),300,201,8,,,200,\n2004,MysterBaseAttack4,4,1,3,1,2000,2005,600,400,150,60,51,0,0,0,0,175,1,40,0,0,0,0,0,0,0,0,,,0,0,0,0,0,2000,2,Myster Attack,◈ Damage near front &nbsp;◈ Burn enemy MP(40%),300,201,8,,,200,\n2005,MysterBaseAttack5,5,1,3,1,2000,-1,600,400,150,60,53,0,0,0,0,200,1,50,0,0,0,0,0,0,0,0,,,0,0,0,0,0,0,0,Myster Attack,◈ Damage near front &nbsp;◈ Burn enemy MP(50%),300,201,8,,,200,\n2011,ArcaneBolt1,1,3,3,1,2010,2012,500,300,2500,0,0,0,40,0,0,300,1,30,0,0,0,0,0,0,0,0,,,1,30,650,2000,0,500,0,Arcane Bolt,◈ Fire projectile &nbsp;◈ Burn enemy MP(30%),300,202,8,,,200,\n2012,ArcaneBolt2,2,3,3,1,2010,2013,500,300,2500,0,0,0,50,0,0,350,1,30,0,0,0,0,0,0,0,0,,,1,30,650,2000,0,1000,0,Arcane Bolt,◈ Fire projectile &nbsp;◈ Burn enemy MP(30%),300,202,8,,,200,\n2013,ArcaneBolt3,3,3,3,1,2010,2014,500,300,2500,0,0,0,60,0,0,400,1,40,0,0,0,0,0,0,0,0,,,1,30,650,2000,0,1500,1,Arcane Bolt,◈ Fire projectile &nbsp;◈ Burn enemy MP(40%),300,202,8,,,200,\n2014,ArcaneBolt4,4,3,3,1,2010,2015,500,300,2500,0,0,0,70,0,0,450,1,40,0,0,0,0,0,0,0,0,,,1,30,650,2000,0,2000,2,Arcane Bolt,◈ Fire projectile &nbsp;◈ Burn enemy MP(40%),300,202,8,,,200,\n2015,ArcaneBolt5,5,3,3,1,2010,-1,500,300,2500,0,0,0,80,0,0,500,1,50,0,0,0,0,0,0,0,0,,,1,30,650,2000,0,0,0,Arcane Bolt,◈ Fire projectile &nbsp;◈ Burn enemy MP(50%),300,202,8,,,200,\n2021,ArcaneCloak1,1,11,3,1,2020,2022,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,201,,0,0,0,0,0,500,0,Arcane Cloak,◈ +15% All Resistance,0,203,,,,200,\n2022,ArcaneCloak2,2,11,3,1,2020,2023,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,202,,0,0,0,0,0,1000,0,Arcane Cloak,◈ +17% All Resistance,0,203,,,,200,\n2023,ArcaneCloak3,3,11,3,1,2020,2024,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,203,,0,0,0,0,0,1500,1,Arcane Cloak,◈ +20% All Resistance,0,203,,,,200,\n2024,ArcaneCloak4,4,11,3,1,2020,2025,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,204,,0,0,0,0,0,2000,2,Arcane Cloak,◈ +22% All Resistance,0,203,,,,200,\n2025,ArcaneCloak5,5,11,3,1,2020,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,205,,0,0,0,0,0,0,0,Arcane Cloak,◈ +25% All Resistance,0,203,,,,200,\n2031,ArcaneMissile1,1,3,3,2,2030,2032,500,300,8000,0,0,0,100,0,0,160,1,30,0,0,0,0,0,0,0,0,,,3,25,500,2000,0,1000,0,Arcane Missile,◈ Fire three projectile &nbsp;◈ Burn enemy MP(30%),300,204,8,,,400,\n2032,ArcaneMissile2,2,3,3,2,2030,2033,500,300,8000,0,0,0,120,0,0,180,1,30,0,0,0,0,0,0,0,0,,,3,25,500,2000,0,1500,1,Arcane Missile,◈ Fire three projectile &nbsp;◈ Burn enemy MP(30%),300,204,8,,,400,\n2033,ArcaneMissile3,3,3,3,2,2030,2034,500,300,8000,0,0,0,140,0,0,200,1,30,0,0,0,0,0,0,0,0,,,4,25,500,2000,0,2000,2,Arcane Missile,◈ Fire four projectile &nbsp;◈ Burn enemy MP(30%),300,204,8,,,400,\n2034,ArcaneMissile4,4,3,3,2,2030,2035,500,300,8000,0,0,0,160,0,0,225,1,30,0,0,0,0,0,0,0,0,,,4,25,500,2000,0,2500,3,Arcane Missile,◈ Fire four projectile &nbsp;◈ Burn enemy MP(30%),300,204,8,,,400,\n2035,ArcaneMissile5,5,3,3,2,2030,-1,500,300,8000,0,0,0,180,0,0,250,1,30,0,0,0,0,0,0,0,0,,,5,25,500,2000,0,0,0,Arcane Missile,◈ Fire five projectile &nbsp;◈ Burn enemy MP(30%),300,204,8,,,400,\n2041,Silence1,1,7,3,2,2040,2042,500,300,10000,320,110,0,100,0,0,0,0,0,0,0,0,0,0,0,0,0,,206,0,0,0,0,0,1000,0,Silence,◈ Silence enemy,300,205,,1009,,400,\n2042,Silence2,2,7,3,2,2040,2043,500,300,10000,340,115,0,120,0,0,0,0,0,0,0,0,0,0,0,0,0,,207,0,0,0,0,0,1500,1,Silence,◈ Silence enemy,300,205,,1009,,400,\n2043,Silence3,3,7,3,2,2040,2044,500,300,10000,360,120,0,140,0,0,0,0,0,0,0,0,0,0,0,0,0,,208,0,0,0,0,0,2000,2,Silence,◈ Silence enemy,300,205,,1009,,400,\n2044,Silence4,4,7,3,2,2040,2045,500,300,10000,380,125,0,160,0,0,0,0,0,0,0,0,0,0,0,0,0,,209,0,0,0,0,0,2500,3,Silence,◈ Silence enemy,300,205,,1009,,400,\n2045,Silence5,5,7,3,2,2040,-1,500,300,10000,400,130,0,180,0,0,0,0,0,0,0,0,0,0,0,0,0,,210,0,0,0,0,0,0,0,Silence,◈ Silence enemy,300,205,,1009,,400,\n2051,Dispel1,1,7,3,2,2050,2052,500,300,8000,320,110,0,100,0,0,0,0,0,0,0,0,0,0,0,0,0,212,211,0,0,0,0,0,1000,0,Dispel,◈ Dispel[Buff] target area &nbsp;◈ Dispel oneself[Debuff],300,206,,1009,,400,\n2052,Dispel2,2,7,3,2,2050,2053,500,300,8000,340,115,0,90,0,0,0,0,0,0,0,0,0,0,0,0,0,212,211,0,0,0,0,0,1500,1,Dispel,◈ Dispel[Buff] target area &nbsp;◈ Dispel oneself[Debuff],300,206,,1009,,400,\n2053,Dispel3,3,7,3,2,2050,2054,500,300,8000,360,120,0,80,0,0,0,0,0,0,0,0,0,0,0,0,0,212,211,0,0,0,0,0,2000,2,Dispel,◈ Dispel[Buff] target area &nbsp;◈ Dispel oneself[Debuff],300,206,,1009,,400,\n2054,Dispel4,4,7,3,2,2050,2055,500,300,8000,380,125,0,70,0,0,0,0,0,0,0,0,0,0,0,0,0,212,211,0,0,0,0,0,2500,3,Dispel,◈ Dispel[Buff] target area &nbsp;◈ Dispel oneself[Debuff],300,206,,1009,,400,\n2055,Dispel5,5,7,3,2,2050,-1,500,300,8000,400,130,0,60,0,0,0,0,0,0,0,0,0,0,0,0,0,212,211,0,0,0,0,0,0,0,Dispel,◈ Dispel[Buff] target area &nbsp;◈ Dispel oneself[Debuff],300,206,,1009,,400,\n2061,Blink1,1,10,3,3,2060,2062,500,300,8000,320,40,0,50,0,0,0,0,0,0,0,0,0,0,0,0,0,,,0,0,0,0,0,1500,1,Blink,◈ Move direct to target position,300,207,,,,,1\n2062,Blink2,2,10,3,3,2060,2063,500,300,7500,340,40,0,60,0,0,0,0,0,0,0,0,0,0,0,0,0,,,0,0,0,0,0,2000,2,Blink,◈ Move direct to target position,300,207,,,,,1\n2063,Blink3,3,10,3,3,2060,2064,500,300,7000,360,40,0,70,0,0,0,0,0,0,0,0,0,0,0,0,0,,,0,0,0,0,0,2500,3,Blink,◈ Move direct to target position,300,207,,,,,1\n2064,Blink4,4,10,3,3,2060,2065,500,300,6500,380,40,0,80,0,0,0,0,0,0,0,0,0,0,0,0,0,,,0,0,0,0,0,3000,4,Blink,◈ Move direct to target position,300,207,,,,,1\n2065,Blink5,5,10,3,3,2060,-1,500,300,6000,400,40,0,90,0,0,0,0,0,0,0,0,0,0,0,0,0,,,0,0,0,0,0,0,0,Blink,◈ Move direct to target position,300,207,,,,,1\n2071,ArcaneBlast1,1,7,3,3,2070,2072,800,600,15000,370,120,0,100,0,0,350,1,50,0,0,0,0,0,0,0,0,,,0,0,0,0,0,1500,1,Arcane Blast,◈ Damage target area &nbsp;◈ Burn enemy MP(50%),300,208,8,,,,1\n2072,ArcaneBlast2,2,7,3,3,2070,2073,800,600,15000,390,125,0,125,0,0,400,1,50,0,0,0,0,0,0,0,0,,,0,0,0,0,0,2000,2,Arcane Blast,◈ Damage target area &nbsp;◈ Burn enemy MP(50%),300,208,8,,,,1\n2073,ArcaneBlast3,3,7,3,3,2070,2074,800,600,15000,410,130,0,150,0,0,450,1,65,0,0,0,0,0,0,0,0,,,0,0,0,0,0,2500,3,Arcane Blast,◈ Damage target area &nbsp;◈ Burn enemy MP(65%),300,208,8,,,,1\n2074,ArcaneBlast4,4,7,3,3,2070,2075,800,600,15000,430,135,0,175,0,0,500,1,65,0,0,0,0,0,0,0,0,,,0,0,0,0,0,3000,4,Arcane Blast,◈ Damage target area &nbsp;◈ Burn enemy MP(65%),300,208,8,,,,1\n2075,ArcaneBlast5,5,7,3,3,2070,-1,800,600,15000,450,140,0,200,0,0,550,1,80,0,0,0,0,0,0,0,0,,,0,0,0,0,0,0,0,Arcane Blast,◈ Damage target area &nbsp;◈ Burn enemy MP(80%),300,208,8,,,,1\n2081,Haste1,1,8,3,3,2080,2082,500,300,30000,0,0,0,100,0,0,0,0,0,0,0,0,0,0,0,0,0,213,,0,0,0,0,0,1500,1,Haste,◈ +14% Move and Cast speed,300,209,,,,,1\n2082,Haste2,2,8,3,3,2080,2083,500,300,30000,0,0,0,125,0,0,0,0,0,0,0,0,0,0,0,0,0,214,,0,0,0,0,0,2000,2,Haste,◈ +18% Move and Cast speed,300,209,,,,,1\n2083,Haste3,3,8,3,3,2080,2084,500,300,30000,0,0,0,150,0,0,0,0,0,0,0,0,0,0,0,0,0,215,,0,0,0,0,0,2500,3,Haste,◈ +22% Move and Cast speed,300,209,,,,,1\n2084,Haste4,4,8,3,3,2080,2085,500,300,30000,0,0,0,175,0,0,0,0,0,0,0,0,0,0,0,0,0,216,,0,0,0,0,0,3000,4,Haste,◈ +26% Move and Cast speed,300,209,,,,,1\n2085,Haste5,5,8,3,3,2080,-1,500,300,30000,0,0,0,200,0,0,0,0,0,0,0,0,0,0,0,0,0,217,,0,0,0,0,0,0,0,Haste,◈ +30% Move and Cast speed,300,209,,,,,1\n2091,Mystic1,1,11,3,5,2090,2092,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,218,,0,0,0,0,0,2000,2,Mystic,◈ +2 All Stat &nbsp;  ◈ +10% All Damage rate,0,210,,,,,2\n2092,Mystic2,2,11,3,5,2090,2093,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,219,,0,0,0,0,0,2500,3,Mystic,◈ +4 All Stat &nbsp;  ◈ +13% All Damage rate,0,210,,,,,2\n2093,Mystic3,3,11,3,5,2090,2094,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,220,,0,0,0,0,0,3000,4,Mystic,◈ +5 All Stat &nbsp;  ◈ +15% All Damage rate &nbsp; ◈ Add Random Buff When Use Arcane Spell ,0,210,,,,,2\n2094,Mystic4,4,11,3,5,2090,2095,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,221,,0,0,0,0,0,3500,5,Mystic,◈ +7 All Stat &nbsp;  ◈ +18% All Damage rate &nbsp; ◈ Add Random Buff When Use Arcane Spell,0,210,,,,,2\n2095,Mystic5,5,11,3,5,2090,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,222,,0,0,0,0,0,0,0,Mystic,◈ +8 All Stat &nbsp;  ◈ +20% All Damage rate &nbsp; ◈ +15% Cooldown Reduce rate &nbsp; ◈ Add Random Buff When Use Arcane Spell,0,210,,,,,2\n",
-  "buffGroupData" : "index,name,clientName,clientDesc,isBuff,buff1,buff2,buff3,buff4,buff5,buff6,buff7,buff8,buff9,buff10,buffLifeTime,buffApplyRate,buffIcon,buffEffectGroup\n1,Ignite20,Ignite,◈ Damage 4% of Max HP,0,1,,,,,,,,,,5000,20,514,5\n2,Ignite30,Ignite,◈ Damage 4% of Max HP,0,1,,,,,,,,,,5000,30,514,5\n3,Ignite40,Ignite,◈ Damage 4% of Max HP,0,1,,,,,,,,,,5000,40,514,5\n4,Ignite100,Ignite,◈ Damage 4% of Max HP,0,1,,,,,,,,,,5000,100,514,5\n5,BurningSoul1,BurningSoul,◈ +4 HP regen,1,17,,,,,,,,,,0,100,501,1010\n6,BurningSoul2,BurningSoul,◈ +6 HP regen,1,18,,,,,,,,,,0,100,501,1010\n7,BurningSoul3,BurningSoul,◈ +8 HP regen,1,19,,,,,,,,,,0,100,501,1010\n8,BurningSoul4,BurningSoul,◈ +10 HP regen,1,20,,,,,,,,,,0,100,501,1010\n9,BurningSoul5,BurningSoul,◈ +12 HP regen,1,21,,,,,,,,,,0,100,501,1010\n10,InnerFire1,InnerFire,◈ +15% Damage rate ,1,80,,,,,,,,,,15000,100,502,1001\n11,InnerFire2,InnerFire,◈ +22% Damage rate ,1,83,,,,,,,,,,15000,100,502,1001\n12,InnerFire3,InnerFire,◈ +30% Damage rate ,1,84,,,,,,,,,,15000,100,502,1001\n13,InnerFire4,InnerFire,◈ +37% Damage rate ,1,85,,,,,,,,,,15000,100,502,1001\n14,InnerFire5,InnerFire,◈ +45% Damage rate ,1,86,,,,,,,,,,15000,100,502,1001\n15,InnerFireIgnite,Ignite,◈ Damage 4% of Max HP,0,1,,,,,,,,,,15000,100,514,5\n16,Fury1,Fury,◈ +10% Move and Cast speed &nbsp;◈ If ignite additional +10% Move and Cast speed,1,27,37,47,52,,,,,,,0,100,503,1002\n17,Fury2,Fury,◈ +12% Move and Cast speed &nbsp;◈ If ignite additional +12% Move and Cast speed,1,28,38,48,53,,,,,,,0,100,503,1002\n18,Fury3,Fury,◈ +15% Move and Cast speed &nbsp;◈ If ignite additional +15% Move and Cast speed,1,30,40,49,54,,,,,,,0,100,503,1002\n19,Fury4,Fury,◈ +17% Move and Cast speed &nbsp;◈ If ignite additional +17% Move and Cast speed,1,31,41,50,55,,,,,,,0,100,503,1002\n20,Fury5,Fury,◈ +20% Move and Cast speed &nbsp;◈ If ignite additional +20% Move and Cast speed,1,33,43,51,56,,,,,,,0,100,503,1002\n21,Pyromaniac1,Pyromaniac,◈ +5 Power &nbsp;  ◈ +10% Fire Damage rate,1,59,87,,,,,,,,,0,100,504,101\n22,Pyromaniac2,Pyromaniac,◈ +8 Power &nbsp;  ◈ +14% Fire Damage rate,1,61,88,,,,,,,,,0,100,504,101\n23,Pyromaniac3,Pyromaniac,◈ +10 Power &nbsp;  ◈ +17% Fire Damage rate &nbsp; ◈ 2% Damage Rate Per 10% Life Loss,1,62,89,97,,,,,,,,0,100,504,101\n24,Pyromaniac4,Pyromaniac,◈ +13 Power &nbsp;  ◈ +21% Fire Damage rate &nbsp; ◈ 3% Damage Rate Per 10% Life Loss,1,63,90,98,,,,,,,,0,100,504,101\n24,Pyromaniac5,Pyromaniac,◈ +15 Power &nbsp;  ◈ +25% Fire Damage rate &nbsp; ◈ +15% Cast Speed &nbsp; ◈ +4% Damage Rate Per 10% Life Loss,1,64,91,99,40,,,,,,,0,100,504,101\n101,Chill20,Chill,◈ Decrease 30% Move and Cast Speed,0,2,,,,,,,,,,3000,20,515,2\n102,Chill25,Chill,◈ Decrease 30% Move and Cast Speed,0,2,,,,,,,,,,3000,25,515,2\n103,Chill30,Chill,◈ Decrease 30% Move and Cast Speed,0,2,,,,,,,,,,3000,30,515,2\n104,Chill70,Chill,◈ Decrease 30% Move and Cast Speed,0,2,,,,,,,,,,3000,70,515,2\n105,Chill85,Chill,◈ Decrease 30% Move and Cast Speed,0,2,,,,,,,,,,3000,85,515,2\n106,Chill100,Chill,◈ Decrease 30% Move and Cast Speed,0,2,,,,,,,,,,3000,100,515,2\n107,FrozenSoul1,FrozenSoul,◈ +4 MP regen,1,22,,,,,,,,,,0,100,505,1011\n108,FrozenSoul2,FrozenSoul,◈ +5 MP regen,1,23,,,,,,,,,,0,100,505,1011\n109,FrozenSoul3,FrozenSoul,◈ +7 MP regen,1,24,,,,,,,,,,0,100,505,1011\n110,FrozenSoul4,FrozenSoul,◈ +8 MP regen,1,25,,,,,,,,,,0,100,505,1011\n111,FrozenSoul5,FrozenSoul,◈ +10 MP regen,1,26,,,,,,,,,,0,100,505,1011\n112,Purify1,Purify,◈ Purify oneself &nbsp;◈ +1% HP Regen,1,3,105,,,,,,,,,5000,100,506,1012\n113,Purify2,Purify,◈ Purify oneself &nbsp;◈ +2% HP Regen,1,4,105,,,,,,,,,5000,100,506,1012\n114,Purify3,Purify,◈ Purify oneself &nbsp;◈ +3% HP Regen,1,5,105,,,,,,,,,5000,100,506,1012\n115,Purify4,Purify,◈ Purify oneself &nbsp;◈ +4% HP Regen,1,6,105,,,,,,,,,5000,100,506,1012\n116,Purify5,Purify,◈ Purify oneself &nbsp;◈ +5% HP Regen,1,7,105,,,,,,,,,5000,100,506,1012\n117,IceBlock1,IceBlock,◈ Immortal &nbsp;◈ +5% HP and MP Regen,1,130,7,12,,,,,,,,3000,100,507,1\n118,IceBlock2,IceBlock,◈ Immortal &nbsp;◈ +7% HP and MP Regen,1,130,8,13,,,,,,,,3000,100,507,1\n119,IceBlock3,IceBlock,◈ Immortal &nbsp;◈ +10% HP and MP Regen,1,130,9,14,,,,,,,,3000,100,507,1\n120,IceBlock4,IceBlock,◈ Immortal &nbsp;◈ +12% HP and MP Regen,1,130,10,15,,,,,,,,3000,100,507,1\n121,IceBlock5,IceBlock,◈ Immortal &nbsp;◈ +15% HP and MP Regen,1,130,11,16,,,,,,,,3000,100,507,1\n122,Freezer1,Freezer,◈ +5 Magic &nbsp;  ◈ +10% Frost Damage rate,1,67,92,,,,,,,,,0,100,508,102\n123,Freezer2,Freezer,◈ +8 Magic &nbsp;  ◈ +14% Frost Damage rate,1,69,93,,,,,,,,,0,100,508,102\n124,Freezer3,Freezer,◈ +10 Magic &nbsp;  ◈ +17% Frost Damage rate &nbsp; ◈ Can Make Freezing When Hit Chill Enemy(15%),1,70,94,100,,,,,,,,0,100,508,102\n125,Freezer4,Freezer,◈ +13 Magic &nbsp;  ◈ +21% Frost Damage rate &nbsp; ◈ Can Make Freezing When Hit Chill Enemy(20%),1,71,95,101,,,,,,,,0,100,508,102\n126,Freezer5,Freezer,◈ +15 Magic &nbsp;  ◈ +25% Frost Damage rate &nbsp; ◈ +15% Move Speed &nbsp; ◈ Can Make Freezing When Hit Chill Enemy(25%),1,72,96,102,30,,,,,,,0,100,508,102\n127,Freeze1,Freeze,◈ Frozen &nbsp;◈ Can`t do anything!!!,0,103,,,,,,,,,,1000,15,516,3\n128,Freeze2,Freeze,◈ Frozen &nbsp;◈ Can`t do anything!!!,0,103,,,,,,,,,,1000,20,516,3\n129,Freeze3,Freeze,◈ Frozen &nbsp;◈ Can`t do anything!!!,0,103,,,,,,,,,,1000,25,516,3\n130,IceBlockFreeze,Freeze,◈ Frozen &nbsp;◈ Can`t do anything!!!,0,104,,,,,,,,,,3000,100,516,3\n201,ArcaneCloak1,ArcaneCloak,◈ +15% All Resistance,1,109,,,,,,,,,,0,100,509,1005\n202,ArcaneCloak2,ArcaneCloak,◈ +17% All Resistance,1,110,,,,,,,,,,0,100,509,1005\n203,ArcaneCloak3,ArcaneCloak,◈ +20% All Resistance,1,111,,,,,,,,,,0,100,509,1005\n204,ArcaneCloak4,ArcaneCloak,◈ +22% All Resistance,1,112,,,,,,,,,,0,100,509,1005\n205,ArcaneCloak5,ArcaneCloak,◈ +25% All Resistance,1,113,,,,,,,,,,0,100,509,1005\n206,Silence1,Silence,◈ Silenced &nbsp;◈ Can`t cast spell!!!,0,114,,,,,,,,,,2000,100,517,4\n207,Silence2,Silence,◈ Silenced &nbsp;◈ Can`t cast spell!!!,0,114,,,,,,,,,,2500,100,517,4\n208,Silence3,Silence,◈ Silenced &nbsp;◈ Can`t cast spell!!!,0,114,,,,,,,,,,3000,100,517,4\n209,Silence4,Silence,◈ Silenced &nbsp;◈ Can`t cast spell!!!,0,114,,,,,,,,,,3500,100,517,4\n210,Silence5,Silence,◈ Silenced &nbsp;◈ Can`t cast spell!!!,0,114,,,,,,,,,,4000,100,517,4\n211,Dispel,Dispel,◈ Dispel Buff,0,107,,,,,,,,,,500,100,518,1013\n212,DispelSelf,Dispel,◈ Dispel Debuff,0,106,,,,,,,,,,500,100,513,1013\n213,Haste1,Haste,◈ +14% Move and Cast speed,1,29,39,,,,,,,,,20000,100,510,1006\n214,Haste2,Haste,◈ +18% Move and Cast speed,1,32,42,,,,,,,,,20000,100,510,1006\n215,Haste3,Haste,◈ +22% Move and Cast speed,1,34,44,,,,,,,,,20000,100,510,1006\n216,Haste4,Haste,◈ +26% Move and Cast speed,1,35,45,,,,,,,,,20000,100,510,1006\n217,Haste5,Haste,◈ +30% Move and Cast speed,1,36,46,,,,,,,,,20000,100,510,1006\n218,Mystic1,Mystic,◈ +2 All Stat &nbsp;  ◈ +10% All Damage rate,1,57,65,73,78,,,,,,,0,100,511,103\n219,Mystic2,Mystic,◈ +4 All Stat &nbsp;  ◈ +13% All Damage rate,1,58,66,74,79,,,,,,,0,100,511,103\n220,Mystic3,Mystic,◈ +5 All Stat &nbsp;  ◈ +15% All Damage rate &nbsp; ◈ Add Random Buff When Use Arcane Spell ,1,59,67,75,80,115,,,,,,0,100,511,103\n221,Mystic4,Mystic,◈ +7 All Stat &nbsp;  ◈ +18% All Damage rate &nbsp; ◈ Add Random Buff When Use Arcane Spell,1,60,68,76,81,116,,,,,,0,100,511,103\n222,Mystic5,Mystic,◈ +8 All Stat &nbsp;  ◈ +20% All Damage rate &nbsp; ◈ +15% Cooldown Reduce rate &nbsp; ◈ Add Random Buff When Use Arcane Spell,1,61,69,77,82,117,108,,,,,0,100,511,103\n223,RandomBuff1-1,MysticBuff1,◈ +50 HP,1,118,,,,,,,,,,7000,100,511,1014\n224,RandomBuff1-2,MysticBuff1,◈ +30 MP,1,119,,,,,,,,,,7000,100,511,1015\n225,RandomBuff1-3,MysticBuff1,◈ +20% Damage Rate,1,120,,,,,,,,,,7000,100,511,1016\n226,RandomBuff1-4,MysticBuff1,◈ +10% All Resistance,1,121,,,,,,,,,,7000,100,511,1017\n227,RandomBuff1-5,MysticBuff1,◈ +10% Move and Cast speed,1,27,37,,,,,,,,,7000,100,511,1018\n228,RandomBuff2-1,MysticBuff2,◈ +75 HP,1,122,,,,,,,,,,8500,100,511,1014\n229,RandomBuff2-2,MysticBuff2,◈ +40 MP,1,123,,,,,,,,,,8500,100,511,1015\n230,RandomBuff2-3,MysticBuff2,◈ +35% Damage Rate,1,124,,,,,,,,,,8500,100,511,1016\n231,RandomBuff2-4,MysticBuff2,◈ +15% All Resistance,1,125,,,,,,,,,,8500,100,511,1017\n232,RandomBuff2-5,MysticBuff2,◈ +15% Move and Cast speed,1,28,38,,,,,,,,,8500,100,511,1018\n233,RandomBuff3-1,MysticBuff3,◈ +100 HP,1,126,,,,,,,,,,10000,100,511,1014\n234,RandomBuff3-2,MysticBuff3,◈ +50 MP,1,127,,,,,,,,,,10000,100,511,1015\n235,RandomBuff3-3,MysticBuff3,◈ +50% Damage Rate,1,128,,,,,,,,,,10000,100,511,1016\n236,RandomBuff3-4,MysticBuff3,◈ +20% All Resistance,1,129,,,,,,,,,,10000,100,511,1017\n237,RandomBuff3-5,MysticBuff3,◈ +20% Move and Cast speed,1,30,40,,,,,,,,,10000,100,511,1018\n1000,StartBuff,Immortal,◈ Immortal ,1,130,,,,,,,,,,5000,100,512,1\n1001,LevelUPBuff,LevelUp,◈ Level Up!!! ,1,131,132,,,,,,,,,1000,100,512,1019\n2000,onlyForEffect,,,1,133,,,,,,,,,,500,100,1002,1012\n",
+  "skillData" : "index,name,level,type,property,tier,groupIndex,nextSkillIndex,totalTime,fireTime,cooldown,range,explosionRadius,explosionDamageRate,consumeMP,fireDamage,frostDamage,arcaneDamage,doDamageToMP,damageToMPRate,doDamageToSelf,damageToSelfRate,healHP,healHPRate,healMP,healMPRate,repeatLifeTime,repeatTime,buffToSelf,buffToTarget,projectileCount,radius,maxSpeed,lifeTime,tickTime,upgradeGoldAmount,upgradeJewelAmount,clientName,clientDesc,effectLastTime,skillIcon,hitEffectGroup,explosionEffectGroup,projectileEffectGroup,exchangeToGold,exchangeToJewel\n11,PyroBaseAttack1,1,1,1,1,10,12,600,400,150,60,45,0,0,100,0,0,0,0,0,0,0,0,0,0,0,0,,1,0,0,0,0,0,500,0,Pyro Attack,◈ Damage to near front &nbsp;◈ Ignite enemy(20%),300,1,6,,,200,\n12,PyroBaseAttack2,2,1,1,1,10,13,600,400,150,60,47,0,0,125,0,0,0,0,0,0,0,0,0,0,0,0,,1,0,0,0,0,0,1000,0,Pyro Attack,◈ Damage to near front &nbsp;◈ Ignite enemy(20%),300,1,6,,,200,\n13,PyroBaseAttack3,3,1,1,1,10,14,600,400,150,60,49,0,0,150,0,0,0,0,0,0,0,0,0,0,0,0,,2,0,0,0,0,0,1500,1,Pyro Attack,◈ Damage to near front &nbsp;◈ Ignite enemy(30%),300,1,6,,,200,\n14,PyroBaseAttack4,4,1,1,1,10,15,600,400,150,60,51,0,0,175,0,0,0,0,0,0,0,0,0,0,0,0,,2,0,0,0,0,0,2000,2,Pyro Attack,◈ Damage to near front &nbsp;◈ Ignite enemy(30%),300,1,6,,,200,\n15,PyroBaseAttack5,5,1,1,1,10,-1,600,400,150,60,53,0,0,200,0,0,0,0,0,0,0,0,0,0,0,0,,3,0,0,0,0,0,0,0,Pyro Attack,◈ Damage to near front &nbsp;◈ Ignite enemy(40%),300,1,6,,,200,\n21,FireBolt1,1,3,1,1,20,22,500,300,2500,0,0,0,40,300,0,0,0,0,0,0,0,0,0,0,0,0,,1,1,30,650,2000,0,500,0,Fire Bolt,◈ Fire projectile &nbsp;◈ Ignite enemy(20%),0,2,6,,,200,\n22,FireBolt2,2,3,1,1,20,23,500,300,2500,0,0,0,50,350,0,0,0,0,0,0,0,0,0,0,0,0,,1,1,30,650,2000,0,1000,0,Fire Bolt,◈ Fire projectile &nbsp;◈ Ignite enemy(20%),0,2,6,,,200,\n23,FireBolt3,3,3,1,1,20,24,500,300,2500,0,0,0,60,400,0,0,0,0,0,0,0,0,0,0,0,0,,2,1,30,650,2000,0,1500,1,Fire Bolt,◈ Fire projectile &nbsp;◈ Ignite enemy(30%),0,2,6,,,200,\n24,FireBolt4,4,3,1,1,20,25,500,300,2500,0,0,0,70,450,0,0,0,0,0,0,0,0,0,0,0,0,,2,1,30,650,2000,0,2000,2,Fire Bolt,◈ Fire projectile &nbsp;◈ Ignite enemy(30%),0,2,6,,,200,\n25,FireBolt5,5,3,1,1,20,-1,500,300,2500,0,0,0,80,500,0,0,0,0,0,0,0,0,0,0,0,0,,3,1,30,650,2000,0,0,0,Fire Bolt,◈ Fire projectile &nbsp;◈ Ignite enemy(40%),0,2,6,,,200,\n31,BurningSoul1,1,11,1,1,30,32,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,,0,0,0,0,0,500,0,Burning Soul,◈ +4 HP regen,0,3,,,,200,\n32,BurningSoul2,2,11,1,1,30,33,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,,0,0,0,0,0,1000,0,Burning Soul,◈ +6 HP regen,0,3,,,,200,\n33,BurningSoul3,3,11,1,1,30,34,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,7,,0,0,0,0,0,1500,1,Burning Soul,◈ +8 HP regen,0,3,,,,200,\n34,BurningSoul4,4,11,1,1,30,35,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,,0,0,0,0,0,2000,2,Burning Soul,◈ +10 HP regen,0,3,,,,200,\n35,BurningSoul5,5,11,1,1,30,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,9,,0,0,0,0,0,0,0,Burning Soul,◈ +12 HP regen,0,3,,,,200,\n41,FireBall1,1,4,1,2,40,42,800,600,8000,0,110,0,100,350,0,0,0,0,0,0,0,0,0,0,0,0,,1,1,35,550,2000,0,1000,0,Fire Ball,◈ Fire explosive projectile &nbsp;◈ Ignite enemy(20%),300,4,6,,,400,\n42,FireBall2,2,4,1,2,40,43,800,600,8000,0,115,0,120,400,0,0,0,0,0,0,0,0,0,0,0,0,,1,1,35,550,2000,0,1500,1,Fire Ball,◈ Fire explosive projectile &nbsp;◈ Ignite enemy(20%),300,4,6,,,400,\n43,FireBall3,3,4,1,2,40,44,800,600,8000,0,120,0,140,450,0,0,0,0,0,0,0,0,0,0,0,0,,2,1,35,550,2000,0,2000,2,Fire Ball,◈ Fire explosive projectile &nbsp;◈ Ignite enemy(30%),300,4,6,,,400,\n44,FireBall4,4,4,1,2,40,45,800,600,8000,0,125,0,160,500,0,0,0,0,0,0,0,0,0,0,0,0,,2,1,35,550,2000,0,2500,3,Fire Ball,◈ Fire explosive projectile &nbsp;◈ Ignite enemy(30%),300,4,6,,,400,\n45,FireBall5,5,4,1,2,40,-1,800,600,8000,0,130,0,180,550,0,0,0,0,0,0,0,0,0,0,0,0,,3,1,35,550,2000,0,0,0,Fire Ball,◈ Fire explosive projectile &nbsp;◈ Ignite enemy(40%),300,4,6,,,400,\n51,InnerFire1,1,8,1,2,50,52,500,300,30000,0,0,0,100,0,0,0,0,0,1,100,0,0,0,0,0,0,10,15,0,0,0,0,0,1000,0,Inner Fire,◈ +15% Damage rate &nbsp;◈ Make Ignite oneself,0,5,,,,400,\n52,InnerFire2,2,8,1,2,50,53,500,300,30000,0,0,0,120,0,0,0,0,0,1,100,0,0,0,0,0,0,11,15,0,0,0,0,0,1500,1,Inner Fire,◈ +22% Damage rate &nbsp;◈ Make Ignite oneself,0,5,,,,400,\n53,InnerFire3,3,8,1,2,50,54,500,300,30000,0,0,0,140,0,0,0,0,0,1,100,0,0,0,0,0,0,12,15,0,0,0,0,0,2000,2,Inner Fire,◈ +30% Damage rate &nbsp;◈ Make Ignite oneself,0,5,,,,400,\n54,InnerFire4,4,8,1,2,50,55,500,300,30000,0,0,0,160,0,0,0,0,0,1,100,0,0,0,0,0,0,13,15,0,0,0,0,0,2500,3,Inner Fire,◈ +37% Damage rate &nbsp;◈ Make Ignite oneself,0,5,,,,400,\n55,InnerFire5,5,8,1,2,50,-1,500,300,30000,0,0,0,180,0,0,0,0,0,1,100,0,0,0,0,0,0,14,15,0,0,0,0,0,0,0,Inner Fire,◈ +45% Damage rate &nbsp;◈ Make Ignite oneself,0,5,,,,400,\n61,RollingFire1,1,5,1,3,60,62,800,600,15000,0,0,0,130,50,0,0,0,0,0,0,0,0,0,0,0,0,,1,1,51,280,3000,60,1500,1,Rolling Fire,◈ Fire rolling projectile &nbsp;◈ Ignite enemy(20%),0,6,6,,1007,,1\n62,RollingFire2,2,5,1,3,60,63,800,600,15000,0,0,0,160,60,0,0,0,0,0,0,0,0,0,0,0,0,,1,1,52,280,3000,60,2000,2,Rolling Fire,◈ Fire rolling projectile &nbsp;◈ Ignite enemy(20%),0,6,6,,1007,,1\n63,RollingFire3,3,5,1,3,60,64,800,600,15000,0,0,0,190,70,0,0,0,0,0,0,0,0,0,0,0,0,,2,1,53,280,3000,60,2500,3,Rolling Fire,◈ Fire rolling projectile &nbsp;◈ Ignite enemy(30%),0,6,6,,1007,,1\n64,RollingFire4,4,5,1,3,60,65,800,600,15000,0,0,0,220,85,0,0,0,0,0,0,0,0,0,0,0,0,,2,1,54,280,3000,60,3000,4,Rolling Fire,◈ Fire rolling projectile &nbsp;◈ Ignite enemy(30%),0,6,6,,1007,,1\n65,RollingFire5,5,5,1,3,60,-1,800,600,15000,0,0,0,250,100,0,0,0,0,0,0,0,0,0,0,0,0,,3,1,55,280,3000,60,0,0,Rolling Fire,◈ Fire rolling projectile &nbsp;◈ Ignite enemy(40%),0,6,6,,1007,,1\n71,Fury1,1,11,1,3,70,72,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,16,,0,0,0,0,0,1500,1,Fury,◈ +10% Move and Cast speed &nbsp;◈ If ignite additional +10% Move and Cast speed,0,7,,,,,1\n72,Fury2,2,11,1,3,70,73,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,,0,0,0,0,0,2000,2,Fury,◈ +12% Move and Cast speed &nbsp;◈ If ignite additional +12% Move and Cast speed,0,7,,,,,1\n73,Fury3,3,11,1,3,70,74,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,18,,0,0,0,0,0,2500,3,Fury,◈ +15% Move and Cast speed &nbsp;◈ If ignite additional +15% Move and Cast speed,0,7,,,,,1\n74,Fury4,4,11,1,3,70,75,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,19,,0,0,0,0,0,3000,4,Fury,◈ +17% Move and Cast speed &nbsp;◈ If ignite additional +17% Move and Cast speed,0,7,,,,,1\n75,Fury5,5,11,1,3,70,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,20,,0,0,0,0,0,0,0,Fury,◈ +20% Move and Cast speed &nbsp;◈ If ignite additional +20% Move and Cast speed,0,7,,,,,1\n81,Explosion1,1,9,1,4,80,82,1300,1100,20000,0,260,0,130,450,0,0,0,0,1,50,0,0,0,0,0,0,,4,0,0,0,0,0,2000,2,Explosion,◈ Damage to near position &nbsp;◈ Ignite enemy and oneself(100%) &nbsp;◈Damage to self(50%),300,8,6,,,,2\n82,Explosion2,2,9,1,4,80,83,1300,1100,20000,0,270,0,160,500,0,0,0,0,1,45,0,0,0,0,0,0,,4,0,0,0,0,0,2500,3,Explosion,◈ Damage to near position &nbsp;◈ Ignite enemy and oneself(100%) &nbsp;◈Damage to self(45%),300,8,6,,,,2\n83,Explosion3,3,9,1,4,80,84,1300,1100,20000,0,280,0,190,550,0,0,0,0,1,40,0,0,0,0,0,0,,4,0,0,0,0,0,3000,4,Explosion,◈ Damage to near position &nbsp;◈ Ignite enemy and oneself(100%) &nbsp;◈Damage to self(40%),300,8,6,,,,2\n84,Explosion4,4,9,1,4,80,85,1300,1100,20000,0,290,0,220,600,0,0,0,0,1,35,0,0,0,0,0,0,,4,0,0,0,0,0,3500,5,Explosion,◈ Damage to near position &nbsp;◈ Ignite enemy and oneself(100%) &nbsp;◈Damage to self(35%),300,8,6,,,,2\n85,Explosion5,5,9,1,4,80,-1,1300,1100,20000,0,300,0,250,650,0,0,0,0,1,25,0,0,0,0,0,0,,4,0,0,0,0,0,0,0,Explosion,◈ Damage to near position &nbsp;◈ Ignite enemy and oneself(100%) &nbsp;◈Damage to self(25%),300,8,6,,,,2\n91,Pyromaniac1,1,11,1,5,90,92,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,21,,0,0,0,0,0,2000,2,Pyromaniac,◈ +5 Power &nbsp;  ◈ +10% Fire Damage rate,0,9,,,,,2\n92,Pyromaniac2,2,11,1,5,90,93,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,22,,0,0,0,0,0,2500,3,Pyromaniac,◈ +8 Power &nbsp;  ◈ +14% Fire Damage rate,0,9,,,,,2\n93,Pyromaniac3,3,11,1,5,90,94,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,23,,0,0,0,0,0,3000,4,Pyromaniac,◈ +10 Power &nbsp;  ◈ +17% Fire Damage rate &nbsp; ◈ 2% Damage Rate Per 10% Life Loss,0,9,,,,,2\n94,Pyromaniac4,4,11,1,5,90,95,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,24,,0,0,0,0,0,3500,5,Pyromaniac,◈ +13 Power &nbsp;  ◈ +21% Fire Damage rate &nbsp; ◈ 3% Damage Rate Per 10% Life Loss,0,9,,,,,2\n95,Pyromaniac5,5,11,1,5,90,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,25,,0,0,0,0,0,0,0,Pyromaniac,◈ +15 Power &nbsp;  ◈ +25% Fire Damage rate &nbsp; ◈ +15% Cast Speed &nbsp; ◈ +4% Damage Rate Per 10% Life Loss,0,9,,,,,2\n1001,FrosterBaseAttack1,1,1,2,1,1000,1002,600,400,150,60,45,0,0,0,80,0,0,0,0,0,0,0,0,0,0,0,,101,0,0,0,0,0,500,0,Froster Attack,◈ Damage to near front &nbsp;◈ Chill enemy(20%),300,101,7,,,200,\n1002,FrosterBaseAttack2,2,1,2,1,1000,1003,600,400,150,60,47,0,0,0,100,0,0,0,0,0,0,0,0,0,0,0,,101,0,0,0,0,0,1000,0,Froster Attack,◈ Damage to near front &nbsp;◈ Chill enemy(20%),300,101,7,,,200,\n1003,FrosterBaseAttack3,3,1,2,1,1000,1004,600,400,150,60,49,0,0,0,125,0,0,0,0,0,0,0,0,0,0,0,,102,0,0,0,0,0,1500,1,Froster Attack,◈ Damage to near front &nbsp;◈ Chill enemy(25%),300,101,7,,,200,\n1004,FrosterBaseAttack4,4,1,2,1,1000,1005,600,400,150,60,51,0,0,0,150,0,0,0,0,0,0,0,0,0,0,0,,102,0,0,0,0,0,2000,2,Froster Attack,◈ Damage to near front &nbsp;◈ Chill enemy(25%),300,101,7,,,200,\n1005,FrosterBaseAttack5,5,1,2,1,1000,-1,600,400,150,60,53,0,0,0,175,0,0,0,0,0,0,0,0,0,0,0,,103,0,0,0,0,0,0,0,Froster Attack,◈ Damage to near front &nbsp;◈ Chill enemy(30%),300,101,7,,,200,\n1011,IceBolt1,1,3,2,1,1010,1012,500,300,2500,0,0,0,50,0,300,0,0,0,0,0,0,0,0,0,0,0,,101,1,30,650,2000,0,500,0,Ice Bolt,◈ Fire projectile &nbsp;◈ Chill enemy(20%),300,102,7,,,200,\n1012,IceBolt2,2,3,2,1,1010,1013,500,300,2500,0,0,0,60,0,350,0,0,0,0,0,0,0,0,0,0,0,,101,1,30,650,2000,0,1000,0,Ice Bolt,◈ Fire projectile &nbsp;◈ Chill enemy(20%),300,102,7,,,200,\n1013,IceBolt3,3,3,2,1,1010,1014,500,300,2500,0,0,0,70,0,400,0,0,0,0,0,0,0,0,0,0,0,,102,1,30,650,2000,0,1500,1,Ice Bolt,◈ Fire projectile &nbsp;◈ Chill enemy(25%),300,102,7,,,200,\n1014,IceBolt4,4,3,2,1,1010,1015,500,300,2500,0,0,0,80,0,450,0,0,0,0,0,0,0,0,0,0,0,,102,1,30,650,2000,0,2000,2,Ice Bolt,◈ Fire projectile &nbsp;◈ Chill enemy(25%),300,102,7,,,200,\n1015,IceBolt5,5,3,2,1,1010,-1,500,300,2500,0,0,0,90,0,500,0,0,0,0,0,0,0,0,0,0,0,,103,1,30,650,2000,0,0,0,Ice Bolt,◈ Fire projectile &nbsp;◈ Chill enemy(30%),300,102,7,,,200,\n1021,Healing1,1,8,2,1,1020,1022,500,300,9000,0,0,0,80,0,0,0,0,0,0,0,300,0,0,0,0,0,2000,,0,0,0,0,0,500,0,Healing,◈ Heal 500 HP,300,103,,,,200,\n1022,Healing2,2,8,2,1,1020,1023,500,300,9000,0,0,0,95,0,0,0,0,0,0,0,400,0,0,0,0,0,2000,,0,0,0,0,0,1000,0,Healing,◈ Heal 600 HP,300,103,,,,200,\n1023,Healing3,3,8,2,1,1020,1024,500,300,9000,0,0,0,110,0,0,0,0,0,0,0,500,0,0,0,0,0,2000,,0,0,0,0,0,1500,1,Healing,◈ Heal 750 HP,300,103,,,,200,\n1024,Healing4,4,8,2,1,1020,1025,500,300,9000,0,0,0,125,0,0,0,0,0,0,0,600,0,0,0,0,0,2000,,0,0,0,0,0,2000,2,Healing,◈ Heal 850 HP,300,103,,,,200,\n1025,Healing5,5,8,2,1,1020,-1,500,300,9000,0,0,0,140,0,0,0,0,0,0,0,700,0,0,0,0,0,2000,,0,0,0,0,0,0,0,Healing,◈ Heal 1000 HP,300,103,,,,200,\n1031,FrozenSoul1,1,11,2,1,1030,1032,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,107,,0,0,0,0,0,500,0,Frozen Soul,◈ +4 MP regen,300,104,,,,200,\n1032,FrozenSoul2,2,11,2,1,1030,1033,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,108,,0,0,0,0,0,1000,0,Frozen Soul,◈ +5 MP regen,300,104,,,,200,\n1033,FrozenSoul3,3,11,2,1,1030,1034,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,109,,0,0,0,0,0,1500,1,Frozen Soul,◈ +7 MP regen,300,104,,,,200,\n1034,FrozenSoul4,4,11,2,1,1030,1035,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,110,,0,0,0,0,0,2000,2,Frozen Soul,◈ +8 MP regen,300,104,,,,200,\n1035,FrozenSoul5,5,11,2,1,1030,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,111,,0,0,0,0,0,0,0,Frozen Soul,◈ +10 MP regen,300,104,,,,200,\n1041,Purify1,1,8,2,2,1040,1042,500,300,20000,0,0,0,80,0,0,0,0,0,0,0,0,0,0,0,0,0,112,,0,0,0,0,0,1000,0,Purify,◈ Every second Dispel oneself &nbsp;◈ Every second +1% HP Regen,300,105,,,,400,\n1042,Purify2,2,8,2,2,1040,1043,500,300,20000,0,0,0,95,0,0,0,0,0,0,0,0,0,0,0,0,0,113,,0,0,0,0,0,1500,1,Purify,◈ Every second Dispel oneself &nbsp;◈ Every second +2% HP Regen,300,105,,,,400,\n1043,Purify3,3,8,2,2,1040,1044,500,300,20000,0,0,0,110,0,0,0,0,0,0,0,0,0,0,0,0,0,114,,0,0,0,0,0,2000,2,Purify,◈ Every second Dispel oneself &nbsp;◈ Every second +3% HP Regen,300,105,,,,400,\n1044,Purify4,4,8,2,2,1040,1045,500,300,20000,0,0,0,125,0,0,0,0,0,0,0,0,0,0,0,0,0,115,,0,0,0,0,0,2500,3,Purify,◈ Every second Dispel oneself &nbsp;◈ Every second +4% HP Regen,300,105,,,,400,\n1045,Purify5,5,8,2,2,1040,-1,500,300,20000,0,0,0,140,0,0,0,0,0,0,0,0,0,0,0,0,0,116,,0,0,0,0,0,0,0,Purify,◈ Every second Dispel oneself &nbsp;◈ Every second +5% HP Regen,300,105,,,,400,\n1051,IceBlock1,1,8,2,2,1050,1052,500,300,20000,0,0,0,80,0,0,0,0,0,1,100,0,0,0,0,0,0,117,130,0,0,0,0,0,1000,0,Ice Block,◈ Make Immortal and Freeze oneself &nbsp;◈ Every second +5% HP and MP Regen,300,106,,,,400,\n1052,IceBlock2,2,8,2,2,1050,1053,500,300,20000,0,0,0,95,0,0,0,0,0,1,100,0,0,0,0,0,0,118,130,0,0,0,0,0,1500,1,Ice Block,◈ Make Immortal and Freeze oneself &nbsp;◈ Every second +7% HP and MP Regen,300,106,,,,400,\n1053,IceBlock3,3,8,2,2,1050,1054,500,300,20000,0,0,0,110,0,0,0,0,0,1,100,0,0,0,0,0,0,119,130,0,0,0,0,0,2000,2,Ice Block,◈ Make Immortal and Freeze oneself &nbsp;◈ Every second +10% HP and MP Regen,300,106,,,,400,\n1054,IceBlock4,4,8,2,2,1050,1055,500,300,20000,0,0,0,125,0,0,0,0,0,1,100,0,0,0,0,0,0,120,130,0,0,0,0,0,2500,3,Ice Block,◈ Make Immortal and Freeze oneself &nbsp;◈ Every second +12% HP and MP Regen,300,106,,,,400,\n1055,IceBlock5,5,8,2,2,1050,-1,500,300,20000,0,0,0,140,0,0,0,0,0,1,100,0,0,0,0,0,0,121,130,0,0,0,0,0,0,0,Ice Block,◈ Make Immortal and Freeze oneself &nbsp;◈ Every second +15% HP and MP Regen,300,106,,,,400,\n1061,ColdSnap1,1,7,2,3,1060,1062,800,600,15000,370,120,0,140,0,200,0,0,0,0,0,0,0,0,0,0,0,,104,0,0,0,0,0,1500,1,Cold Snap,◈ Damage target area &nbsp;◈ Chill enemy(70%),300,107,7,,,,1\n1062,ColdSnap2,2,7,2,3,1060,1063,800,600,15000,390,125,0,160,0,250,0,0,0,0,0,0,0,0,0,0,0,,104,0,0,0,0,0,2000,2,Cold Snap,◈ Damage target area &nbsp;◈ Chill enemy(70%),300,107,7,,,,1\n1063,ColdSnap3,3,7,2,3,1060,1064,800,600,15000,410,130,0,180,0,300,0,0,0,0,0,0,0,0,0,0,0,,105,0,0,0,0,0,2500,3,Cold Snap,◈ Damage target area &nbsp;◈ Chill enemy(85%),300,107,7,,,,1\n1064,ColdSnap4,4,7,2,3,1060,1065,800,600,15000,430,135,0,200,0,350,0,0,0,0,0,0,0,0,0,0,0,,105,0,0,0,0,0,3000,4,Cold Snap,◈ Damage target area &nbsp;◈ Chill enemy(85%),300,107,7,,,,1\n1065,ColdSnap5,5,7,2,3,1060,-1,800,600,15000,450,140,0,220,0,400,0,0,0,0,0,0,0,0,0,0,0,,106,0,0,0,0,0,0,0,Cold Snap,◈ Damage target area &nbsp;◈ Chill enemy(100%),300,107,7,,,,1\n1071,FrozenOrb1,1,6,2,4,1070,1072,800,600,20000,0,110,800,160,0,40,0,0,0,0,0,0,0,0,0,0,0,,101,1,51,280,2500,60,2000,2,Frozen Orb,◈ Fire rolling explosive projectile &nbsp;◈ Chill enemy(20%),300,108,7,1008,1008,,2\n1072,FrozenOrb2,2,6,2,4,1070,1073,800,600,20000,0,115,800,180,0,50,0,0,0,0,0,0,0,0,0,0,0,,101,1,52,280,2500,60,2500,3,Frozen Orb,◈ Fire rolling explosive projectile &nbsp;◈ Chill enemy(20%),300,108,7,1008,1008,,2\n1073,FrozenOrb3,3,6,2,4,1070,1074,800,600,20000,0,120,800,200,0,60,0,0,0,0,0,0,0,0,0,0,0,,102,1,53,280,2500,60,3000,4,Frozen Orb,◈ Fire rolling explosive projectile &nbsp;◈ Chill enemy(25%),300,108,7,1008,1008,,2\n1074,FrozenOrb4,4,6,2,4,1070,1075,800,600,20000,0,125,800,220,0,75,0,0,0,0,0,0,0,0,0,0,0,,102,1,54,280,2500,60,3500,5,Frozen Orb,◈ Fire rolling explosive projectile &nbsp;◈ Chill enemy(25%),300,108,7,1008,1008,,2\n1075,FrozenOrb5,5,6,2,4,1070,-1,800,600,20000,0,130,800,240,0,90,0,0,0,0,0,0,0,0,0,0,0,,103,1,55,280,2500,60,0,0,Frozen Orb,◈ Fire rolling explosive projectile &nbsp;◈ Chill enemy(30%),300,108,7,1008,1008,,2\n1081,Freezer1,1,11,2,5,1080,1082,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,122,,0,0,0,0,0,2000,2,Freezer,◈ +5 Magic &nbsp;  ◈ +10% Frost Damage rate,0,109,,,,,2\n1082,Freezer2,2,11,2,5,1080,1083,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,123,,0,0,0,0,0,2500,3,Freezer,◈ +8 Magic &nbsp;  ◈ +14% Frost Damage rate,0,109,,,,,2\n1083,Freezer3,3,11,2,5,1080,1084,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,124,,0,0,0,0,0,3000,4,Freezer,◈ +10 Magic &nbsp;  ◈ +17% Frost Damage rate &nbsp; ◈ Can Make Freezing When Hit Chill Enemy(15%),0,109,,,,,2\n1084,Freezer4,4,11,2,5,1080,1085,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,125,,0,0,0,0,0,3500,5,Freezer,◈ +13 Magic &nbsp;  ◈ +21% Frost Damage rate &nbsp; ◈ Can Make Freezing When Hit Chill Enemy(20%),0,109,,,,,2\n1085,Freezer5,5,11,2,5,1080,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,126,,0,0,0,0,0,0,0,Freezer,◈ +15 Magic &nbsp;  ◈ +25% Frost Damage rate &nbsp; ◈ +15% Move Speed &nbsp; ◈ Can Make Freezing When Hit Chill Enemy(25%),0,109,,,,,2\n2001,MysterBaseAttack1,1,1,3,1,2000,2002,600,400,150,60,45,0,0,0,0,100,1,30,0,0,0,0,0,0,0,0,,,0,0,0,0,0,500,0,Myster Attack,◈ Damage to near front &nbsp;◈ Burn enemy MP(30%),300,201,8,,,200,\n2002,MysterBaseAttack2,2,1,3,1,2000,2003,600,400,150,60,47,0,0,0,0,125,1,30,0,0,0,0,0,0,0,0,,,0,0,0,0,0,1000,0,Myster Attack,◈ Damage to near front &nbsp;◈ Burn enemy MP(30%),300,201,8,,,200,\n2003,MysterBaseAttack3,3,1,3,1,2000,2004,600,400,150,60,49,0,0,0,0,150,1,40,0,0,0,0,0,0,0,0,,,0,0,0,0,0,1500,1,Myster Attack,◈ Damage to near front &nbsp;◈ Burn enemy MP(40%),300,201,8,,,200,\n2004,MysterBaseAttack4,4,1,3,1,2000,2005,600,400,150,60,51,0,0,0,0,175,1,40,0,0,0,0,0,0,0,0,,,0,0,0,0,0,2000,2,Myster Attack,◈ Damage to near front &nbsp;◈ Burn enemy MP(40%),300,201,8,,,200,\n2005,MysterBaseAttack5,5,1,3,1,2000,-1,600,400,150,60,53,0,0,0,0,200,1,50,0,0,0,0,0,0,0,0,,,0,0,0,0,0,0,0,Myster Attack,◈ Damage to near front &nbsp;◈ Burn enemy MP(50%),300,201,8,,,200,\n2011,ArcaneBolt1,1,3,3,1,2010,2012,500,300,2500,0,0,0,40,0,0,300,1,30,0,0,0,0,0,0,0,0,,,1,30,650,2000,0,500,0,Arcane Bolt,◈ Fire projectile &nbsp;◈ Burn enemy MP(30%),300,202,8,,,200,\n2012,ArcaneBolt2,2,3,3,1,2010,2013,500,300,2500,0,0,0,50,0,0,350,1,30,0,0,0,0,0,0,0,0,,,1,30,650,2000,0,1000,0,Arcane Bolt,◈ Fire projectile &nbsp;◈ Burn enemy MP(30%),300,202,8,,,200,\n2013,ArcaneBolt3,3,3,3,1,2010,2014,500,300,2500,0,0,0,60,0,0,400,1,40,0,0,0,0,0,0,0,0,,,1,30,650,2000,0,1500,1,Arcane Bolt,◈ Fire projectile &nbsp;◈ Burn enemy MP(40%),300,202,8,,,200,\n2014,ArcaneBolt4,4,3,3,1,2010,2015,500,300,2500,0,0,0,70,0,0,450,1,40,0,0,0,0,0,0,0,0,,,1,30,650,2000,0,2000,2,Arcane Bolt,◈ Fire projectile &nbsp;◈ Burn enemy MP(40%),300,202,8,,,200,\n2015,ArcaneBolt5,5,3,3,1,2010,-1,500,300,2500,0,0,0,80,0,0,500,1,50,0,0,0,0,0,0,0,0,,,1,30,650,2000,0,0,0,Arcane Bolt,◈ Fire projectile &nbsp;◈ Burn enemy MP(50%),300,202,8,,,200,\n2021,ArcaneCloak1,1,11,3,1,2020,2022,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,201,,0,0,0,0,0,500,0,Arcane Cloak,◈ +15% All Resistance,0,203,,,,200,\n2022,ArcaneCloak2,2,11,3,1,2020,2023,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,202,,0,0,0,0,0,1000,0,Arcane Cloak,◈ +17% All Resistance,0,203,,,,200,\n2023,ArcaneCloak3,3,11,3,1,2020,2024,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,203,,0,0,0,0,0,1500,1,Arcane Cloak,◈ +20% All Resistance,0,203,,,,200,\n2024,ArcaneCloak4,4,11,3,1,2020,2025,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,204,,0,0,0,0,0,2000,2,Arcane Cloak,◈ +22% All Resistance,0,203,,,,200,\n2025,ArcaneCloak5,5,11,3,1,2020,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,205,,0,0,0,0,0,0,0,Arcane Cloak,◈ +25% All Resistance,0,203,,,,200,\n2031,ArcaneMissile1,1,3,3,2,2030,2032,500,300,8000,0,0,0,100,0,0,160,1,30,0,0,0,0,0,0,0,0,,,3,25,500,2000,0,1000,0,Arcane Missile,◈ Fire three projectile &nbsp;◈ Burn enemy MP(30%),300,204,8,,,400,\n2032,ArcaneMissile2,2,3,3,2,2030,2033,500,300,8000,0,0,0,120,0,0,180,1,30,0,0,0,0,0,0,0,0,,,3,25,500,2000,0,1500,1,Arcane Missile,◈ Fire three projectile &nbsp;◈ Burn enemy MP(30%),300,204,8,,,400,\n2033,ArcaneMissile3,3,3,3,2,2030,2034,500,300,8000,0,0,0,140,0,0,200,1,30,0,0,0,0,0,0,0,0,,,4,25,500,2000,0,2000,2,Arcane Missile,◈ Fire four projectile &nbsp;◈ Burn enemy MP(30%),300,204,8,,,400,\n2034,ArcaneMissile4,4,3,3,2,2030,2035,500,300,8000,0,0,0,160,0,0,225,1,30,0,0,0,0,0,0,0,0,,,4,25,500,2000,0,2500,3,Arcane Missile,◈ Fire four projectile &nbsp;◈ Burn enemy MP(30%),300,204,8,,,400,\n2035,ArcaneMissile5,5,3,3,2,2030,-1,500,300,8000,0,0,0,180,0,0,250,1,30,0,0,0,0,0,0,0,0,,,5,25,500,2000,0,0,0,Arcane Missile,◈ Fire five projectile &nbsp;◈ Burn enemy MP(30%),300,204,8,,,400,\n2041,Silence1,1,7,3,2,2040,2042,500,300,10000,320,110,0,100,0,0,0,0,0,0,0,0,0,0,0,0,0,,206,0,0,0,0,0,1000,0,Silence,◈ Silence enemy,300,205,,1009,,400,\n2042,Silence2,2,7,3,2,2040,2043,500,300,10000,340,115,0,120,0,0,0,0,0,0,0,0,0,0,0,0,0,,207,0,0,0,0,0,1500,1,Silence,◈ Silence enemy,300,205,,1009,,400,\n2043,Silence3,3,7,3,2,2040,2044,500,300,10000,360,120,0,140,0,0,0,0,0,0,0,0,0,0,0,0,0,,208,0,0,0,0,0,2000,2,Silence,◈ Silence enemy,300,205,,1009,,400,\n2044,Silence4,4,7,3,2,2040,2045,500,300,10000,380,125,0,160,0,0,0,0,0,0,0,0,0,0,0,0,0,,209,0,0,0,0,0,2500,3,Silence,◈ Silence enemy,300,205,,1009,,400,\n2045,Silence5,5,7,3,2,2040,-1,500,300,10000,400,130,0,180,0,0,0,0,0,0,0,0,0,0,0,0,0,,210,0,0,0,0,0,0,0,Silence,◈ Silence enemy,300,205,,1009,,400,\n2051,Dispel1,1,7,3,2,2050,2052,500,300,8000,320,110,0,100,0,0,0,0,0,0,0,0,0,0,0,0,0,212,211,0,0,0,0,0,1000,0,Dispel,◈ Dispel[Buff] target area &nbsp;◈ Dispel oneself[Debuff],300,206,,1009,,400,\n2052,Dispel2,2,7,3,2,2050,2053,500,300,8000,340,115,0,90,0,0,0,0,0,0,0,0,0,0,0,0,0,212,211,0,0,0,0,0,1500,1,Dispel,◈ Dispel[Buff] target area &nbsp;◈ Dispel oneself[Debuff],300,206,,1009,,400,\n2053,Dispel3,3,7,3,2,2050,2054,500,300,8000,360,120,0,80,0,0,0,0,0,0,0,0,0,0,0,0,0,212,211,0,0,0,0,0,2000,2,Dispel,◈ Dispel[Buff] target area &nbsp;◈ Dispel oneself[Debuff],300,206,,1009,,400,\n2054,Dispel4,4,7,3,2,2050,2055,500,300,8000,380,125,0,70,0,0,0,0,0,0,0,0,0,0,0,0,0,212,211,0,0,0,0,0,2500,3,Dispel,◈ Dispel[Buff] target area &nbsp;◈ Dispel oneself[Debuff],300,206,,1009,,400,\n2055,Dispel5,5,7,3,2,2050,-1,500,300,8000,400,130,0,60,0,0,0,0,0,0,0,0,0,0,0,0,0,212,211,0,0,0,0,0,0,0,Dispel,◈ Dispel[Buff] target area &nbsp;◈ Dispel oneself[Debuff],300,206,,1009,,400,\n2061,Blink1,1,10,3,3,2060,2062,500,300,8000,320,40,0,50,0,0,0,0,0,0,0,0,0,0,0,0,0,,,0,0,0,0,0,1500,1,Blink,◈ Move direct to target position,300,207,,,,,1\n2062,Blink2,2,10,3,3,2060,2063,500,300,7500,340,40,0,60,0,0,0,0,0,0,0,0,0,0,0,0,0,,,0,0,0,0,0,2000,2,Blink,◈ Move direct to target position,300,207,,,,,1\n2063,Blink3,3,10,3,3,2060,2064,500,300,7000,360,40,0,70,0,0,0,0,0,0,0,0,0,0,0,0,0,,,0,0,0,0,0,2500,3,Blink,◈ Move direct to target position,300,207,,,,,1\n2064,Blink4,4,10,3,3,2060,2065,500,300,6500,380,40,0,80,0,0,0,0,0,0,0,0,0,0,0,0,0,,,0,0,0,0,0,3000,4,Blink,◈ Move direct to target position,300,207,,,,,1\n2065,Blink5,5,10,3,3,2060,-1,500,300,6000,400,40,0,90,0,0,0,0,0,0,0,0,0,0,0,0,0,,,0,0,0,0,0,0,0,Blink,◈ Move direct to target position,300,207,,,,,1\n2071,ArcaneBlast1,1,7,3,3,2070,2072,800,600,15000,370,120,0,100,0,0,350,1,50,0,0,0,0,0,0,0,0,,,0,0,0,0,0,1500,1,Arcane Blast,◈ Damage target area &nbsp;◈ Burn enemy MP(50%),300,208,8,,,,1\n2072,ArcaneBlast2,2,7,3,3,2070,2073,800,600,15000,390,125,0,125,0,0,400,1,50,0,0,0,0,0,0,0,0,,,0,0,0,0,0,2000,2,Arcane Blast,◈ Damage target area &nbsp;◈ Burn enemy MP(50%),300,208,8,,,,1\n2073,ArcaneBlast3,3,7,3,3,2070,2074,800,600,15000,410,130,0,150,0,0,450,1,65,0,0,0,0,0,0,0,0,,,0,0,0,0,0,2500,3,Arcane Blast,◈ Damage target area &nbsp;◈ Burn enemy MP(65%),300,208,8,,,,1\n2074,ArcaneBlast4,4,7,3,3,2070,2075,800,600,15000,430,135,0,175,0,0,500,1,65,0,0,0,0,0,0,0,0,,,0,0,0,0,0,3000,4,Arcane Blast,◈ Damage target area &nbsp;◈ Burn enemy MP(65%),300,208,8,,,,1\n2075,ArcaneBlast5,5,7,3,3,2070,-1,800,600,15000,450,140,0,200,0,0,550,1,80,0,0,0,0,0,0,0,0,,,0,0,0,0,0,0,0,Arcane Blast,◈ Damage target area &nbsp;◈ Burn enemy MP(80%),300,208,8,,,,1\n2081,Haste1,1,8,3,3,2080,2082,500,300,30000,0,0,0,100,0,0,0,0,0,0,0,0,0,0,0,0,0,213,,0,0,0,0,0,1500,1,Haste,◈ +14% Move and Cast speed,300,209,,,,,1\n2082,Haste2,2,8,3,3,2080,2083,500,300,30000,0,0,0,125,0,0,0,0,0,0,0,0,0,0,0,0,0,214,,0,0,0,0,0,2000,2,Haste,◈ +18% Move and Cast speed,300,209,,,,,1\n2083,Haste3,3,8,3,3,2080,2084,500,300,30000,0,0,0,150,0,0,0,0,0,0,0,0,0,0,0,0,0,215,,0,0,0,0,0,2500,3,Haste,◈ +22% Move and Cast speed,300,209,,,,,1\n2084,Haste4,4,8,3,3,2080,2085,500,300,30000,0,0,0,175,0,0,0,0,0,0,0,0,0,0,0,0,0,216,,0,0,0,0,0,3000,4,Haste,◈ +26% Move and Cast speed,300,209,,,,,1\n2085,Haste5,5,8,3,3,2080,-1,500,300,30000,0,0,0,200,0,0,0,0,0,0,0,0,0,0,0,0,0,217,,0,0,0,0,0,0,0,Haste,◈ +30% Move and Cast speed,300,209,,,,,1\n2091,Mystic1,1,11,3,5,2090,2092,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,218,,0,0,0,0,0,2000,2,Mystic,◈ +2 All Stat &nbsp;  ◈ +10% All Damage rate,0,210,,,,,2\n2092,Mystic2,2,11,3,5,2090,2093,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,219,,0,0,0,0,0,2500,3,Mystic,◈ +4 All Stat &nbsp;  ◈ +13% All Damage rate,0,210,,,,,2\n2093,Mystic3,3,11,3,5,2090,2094,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,220,,0,0,0,0,0,3000,4,Mystic,◈ +5 All Stat &nbsp;  ◈ +15% All Damage rate &nbsp; ◈ Add Random Buff When Use Arcane Spell ,0,210,,,,,2\n2094,Mystic4,4,11,3,5,2090,2095,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,221,,0,0,0,0,0,3500,5,Mystic,◈ +7 All Stat &nbsp;  ◈ +18% All Damage rate &nbsp; ◈ Add Random Buff When Use Arcane Spell,0,210,,,,,2\n2095,Mystic5,5,11,3,5,2090,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,222,,0,0,0,0,0,0,0,Mystic,◈ +8 All Stat &nbsp;  ◈ +20% All Damage rate &nbsp; ◈ +15% Cooldown Reduce rate &nbsp; ◈ Add Random Buff When Use Arcane Spell,0,210,,,,,2\n",
+  "buffGroupData" : "index,name,clientName,clientDesc,isBuff,buff1,buff2,buff3,buff4,buff5,buff6,buff7,buff8,buff9,buff10,buffLifeTime,buffApplyRate,buffIcon,buffEffectGroup\n1,Ignite20,Ignite,◈ Damage 4% of Max HP,0,1,,,,,,,,,,5000,20,514,5\n2,Ignite30,Ignite,◈ Damage 4% of Max HP,0,1,,,,,,,,,,5000,30,514,5\n3,Ignite40,Ignite,◈ Damage 4% of Max HP,0,1,,,,,,,,,,5000,40,514,5\n4,Ignite100,Ignite,◈ Damage 4% of Max HP,0,1,,,,,,,,,,5000,100,514,5\n5,BurningSoul1,BurningSoul,◈ +4 HP regen,1,17,,,,,,,,,,0,100,501,1010\n6,BurningSoul2,BurningSoul,◈ +6 HP regen,1,18,,,,,,,,,,0,100,501,1010\n7,BurningSoul3,BurningSoul,◈ +8 HP regen,1,19,,,,,,,,,,0,100,501,1010\n8,BurningSoul4,BurningSoul,◈ +10 HP regen,1,20,,,,,,,,,,0,100,501,1010\n9,BurningSoul5,BurningSoul,◈ +12 HP regen,1,21,,,,,,,,,,0,100,501,1010\n10,InnerFire1,InnerFire,◈ +15% Damage rate ,1,80,,,,,,,,,,15000,100,502,1001\n11,InnerFire2,InnerFire,◈ +22% Damage rate ,1,83,,,,,,,,,,15000,100,502,1001\n12,InnerFire3,InnerFire,◈ +30% Damage rate ,1,84,,,,,,,,,,15000,100,502,1001\n13,InnerFire4,InnerFire,◈ +37% Damage rate ,1,85,,,,,,,,,,15000,100,502,1001\n14,InnerFire5,InnerFire,◈ +45% Damage rate ,1,86,,,,,,,,,,15000,100,502,1001\n15,InnerFireIgnite,Ignite,◈ Damage 4% of Max HP,0,1,,,,,,,,,,15000,100,514,5\n16,Fury1,Fury,◈ +10% Move and Cast speed &nbsp;◈ If ignite additional +10% Move and Cast speed,1,27,37,47,52,,,,,,,0,100,503,1002\n17,Fury2,Fury,◈ +12% Move and Cast speed &nbsp;◈ If ignite additional +12% Move and Cast speed,1,28,38,48,53,,,,,,,0,100,503,1002\n18,Fury3,Fury,◈ +15% Move and Cast speed &nbsp;◈ If ignite additional +15% Move and Cast speed,1,30,40,49,54,,,,,,,0,100,503,1002\n19,Fury4,Fury,◈ +17% Move and Cast speed &nbsp;◈ If ignite additional +17% Move and Cast speed,1,31,41,50,55,,,,,,,0,100,503,1002\n20,Fury5,Fury,◈ +20% Move and Cast speed &nbsp;◈ If ignite additional +20% Move and Cast speed,1,33,43,51,56,,,,,,,0,100,503,1002\n21,Pyromaniac1,Pyromaniac,◈ +5 Power &nbsp;  ◈ +10% Fire Damage rate,1,59,87,,,,,,,,,0,100,504,101\n22,Pyromaniac2,Pyromaniac,◈ +8 Power &nbsp;  ◈ +14% Fire Damage rate,1,61,88,,,,,,,,,0,100,504,101\n23,Pyromaniac3,Pyromaniac,◈ +10 Power &nbsp;  ◈ +17% Fire Damage rate &nbsp; ◈ 2% Damage Rate Per 10% Life Loss,1,62,89,97,,,,,,,,0,100,504,101\n24,Pyromaniac4,Pyromaniac,◈ +13 Power &nbsp;  ◈ +21% Fire Damage rate &nbsp; ◈ 3% Damage Rate Per 10% Life Loss,1,63,90,98,,,,,,,,0,100,504,101\n25,Pyromaniac5,Pyromaniac,◈ +15 Power &nbsp;  ◈ +25% Fire Damage rate &nbsp; ◈ +15% Cast Speed &nbsp; ◈ +4% Damage Rate Per 10% Life Loss,1,64,91,99,40,,,,,,,0,100,504,101\n101,Chill20,Chill,◈ Decrease 30% Move and Cast Speed,0,2,,,,,,,,,,3000,20,515,2\n102,Chill25,Chill,◈ Decrease 30% Move and Cast Speed,0,2,,,,,,,,,,3000,25,515,2\n103,Chill30,Chill,◈ Decrease 30% Move and Cast Speed,0,2,,,,,,,,,,3000,30,515,2\n104,Chill70,Chill,◈ Decrease 30% Move and Cast Speed,0,2,,,,,,,,,,3000,70,515,2\n105,Chill85,Chill,◈ Decrease 30% Move and Cast Speed,0,2,,,,,,,,,,3000,85,515,2\n106,Chill100,Chill,◈ Decrease 30% Move and Cast Speed,0,2,,,,,,,,,,3000,100,515,2\n107,FrozenSoul1,FrozenSoul,◈ +4 MP regen,1,22,,,,,,,,,,0,100,505,1011\n108,FrozenSoul2,FrozenSoul,◈ +5 MP regen,1,23,,,,,,,,,,0,100,505,1011\n109,FrozenSoul3,FrozenSoul,◈ +7 MP regen,1,24,,,,,,,,,,0,100,505,1011\n110,FrozenSoul4,FrozenSoul,◈ +8 MP regen,1,25,,,,,,,,,,0,100,505,1011\n111,FrozenSoul5,FrozenSoul,◈ +10 MP regen,1,26,,,,,,,,,,0,100,505,1011\n112,Purify1,Purify,◈ Purify oneself &nbsp;◈ +1% HP Regen,1,3,105,,,,,,,,,5000,100,506,1012\n113,Purify2,Purify,◈ Purify oneself &nbsp;◈ +2% HP Regen,1,4,105,,,,,,,,,5000,100,506,1012\n114,Purify3,Purify,◈ Purify oneself &nbsp;◈ +3% HP Regen,1,5,105,,,,,,,,,5000,100,506,1012\n115,Purify4,Purify,◈ Purify oneself &nbsp;◈ +4% HP Regen,1,6,105,,,,,,,,,5000,100,506,1012\n116,Purify5,Purify,◈ Purify oneself &nbsp;◈ +5% HP Regen,1,7,105,,,,,,,,,5000,100,506,1012\n117,IceBlock1,IceBlock,◈ Immortal &nbsp;◈ +5% HP and MP Regen,1,130,7,12,,,,,,,,3000,100,507,1\n118,IceBlock2,IceBlock,◈ Immortal &nbsp;◈ +7% HP and MP Regen,1,130,8,13,,,,,,,,3000,100,507,1\n119,IceBlock3,IceBlock,◈ Immortal &nbsp;◈ +10% HP and MP Regen,1,130,9,14,,,,,,,,3000,100,507,1\n120,IceBlock4,IceBlock,◈ Immortal &nbsp;◈ +12% HP and MP Regen,1,130,10,15,,,,,,,,3000,100,507,1\n121,IceBlock5,IceBlock,◈ Immortal &nbsp;◈ +15% HP and MP Regen,1,130,11,16,,,,,,,,3000,100,507,1\n122,Freezer1,Freezer,◈ +5 Magic &nbsp;  ◈ +10% Frost Damage rate,1,67,92,,,,,,,,,0,100,508,102\n123,Freezer2,Freezer,◈ +8 Magic &nbsp;  ◈ +14% Frost Damage rate,1,69,93,,,,,,,,,0,100,508,102\n124,Freezer3,Freezer,◈ +10 Magic &nbsp;  ◈ +17% Frost Damage rate &nbsp; ◈ Can Make Freezing When Hit Chill Enemy(15%),1,70,94,100,,,,,,,,0,100,508,102\n125,Freezer4,Freezer,◈ +13 Magic &nbsp;  ◈ +21% Frost Damage rate &nbsp; ◈ Can Make Freezing When Hit Chill Enemy(20%),1,71,95,101,,,,,,,,0,100,508,102\n126,Freezer5,Freezer,◈ +15 Magic &nbsp;  ◈ +25% Frost Damage rate &nbsp; ◈ +15% Move Speed &nbsp; ◈ Can Make Freezing When Hit Chill Enemy(25%),1,72,96,102,30,,,,,,,0,100,508,102\n127,Freeze1,Freeze,◈ Frozen &nbsp;◈ Can`t do anything!!!,0,103,,,,,,,,,,1000,15,516,3\n128,Freeze2,Freeze,◈ Frozen &nbsp;◈ Can`t do anything!!!,0,103,,,,,,,,,,1000,20,516,3\n129,Freeze3,Freeze,◈ Frozen &nbsp;◈ Can`t do anything!!!,0,103,,,,,,,,,,1000,25,516,3\n130,IceBlockFreeze,Freeze,◈ Frozen &nbsp;◈ Can`t do anything!!!,0,104,,,,,,,,,,3000,100,516,3\n201,ArcaneCloak1,ArcaneCloak,◈ +15% All Resistance,1,109,,,,,,,,,,0,100,509,1005\n202,ArcaneCloak2,ArcaneCloak,◈ +17% All Resistance,1,110,,,,,,,,,,0,100,509,1005\n203,ArcaneCloak3,ArcaneCloak,◈ +20% All Resistance,1,111,,,,,,,,,,0,100,509,1005\n204,ArcaneCloak4,ArcaneCloak,◈ +22% All Resistance,1,112,,,,,,,,,,0,100,509,1005\n205,ArcaneCloak5,ArcaneCloak,◈ +25% All Resistance,1,113,,,,,,,,,,0,100,509,1005\n206,Silence1,Silence,◈ Silenced &nbsp;◈ Can`t cast spell!!!,0,114,,,,,,,,,,2000,100,517,4\n207,Silence2,Silence,◈ Silenced &nbsp;◈ Can`t cast spell!!!,0,114,,,,,,,,,,2500,100,517,4\n208,Silence3,Silence,◈ Silenced &nbsp;◈ Can`t cast spell!!!,0,114,,,,,,,,,,3000,100,517,4\n209,Silence4,Silence,◈ Silenced &nbsp;◈ Can`t cast spell!!!,0,114,,,,,,,,,,3500,100,517,4\n210,Silence5,Silence,◈ Silenced &nbsp;◈ Can`t cast spell!!!,0,114,,,,,,,,,,4000,100,517,4\n211,Dispel,Dispel,◈ Dispel Buff,0,107,,,,,,,,,,500,100,518,1013\n212,DispelSelf,Dispel,◈ Dispel Debuff,0,106,,,,,,,,,,500,100,513,1013\n213,Haste1,Haste,◈ +14% Move and Cast speed,1,29,39,,,,,,,,,20000,100,510,1006\n214,Haste2,Haste,◈ +18% Move and Cast speed,1,32,42,,,,,,,,,20000,100,510,1006\n215,Haste3,Haste,◈ +22% Move and Cast speed,1,34,44,,,,,,,,,20000,100,510,1006\n216,Haste4,Haste,◈ +26% Move and Cast speed,1,35,45,,,,,,,,,20000,100,510,1006\n217,Haste5,Haste,◈ +30% Move and Cast speed,1,36,46,,,,,,,,,20000,100,510,1006\n218,Mystic1,Mystic,◈ +2 All Stat &nbsp;  ◈ +10% All Damage rate,1,57,65,73,78,,,,,,,0,100,511,103\n219,Mystic2,Mystic,◈ +4 All Stat &nbsp;  ◈ +13% All Damage rate,1,58,66,74,79,,,,,,,0,100,511,103\n220,Mystic3,Mystic,◈ +5 All Stat &nbsp;  ◈ +15% All Damage rate &nbsp; ◈ Add Random Buff When Use Arcane Spell ,1,59,67,75,80,115,,,,,,0,100,511,103\n221,Mystic4,Mystic,◈ +7 All Stat &nbsp;  ◈ +18% All Damage rate &nbsp; ◈ Add Random Buff When Use Arcane Spell,1,60,68,76,81,116,,,,,,0,100,511,103\n222,Mystic5,Mystic,◈ +8 All Stat &nbsp;  ◈ +20% All Damage rate &nbsp; ◈ +15% Cooldown Reduce rate &nbsp; ◈ Add Random Buff When Use Arcane Spell,1,61,69,77,82,117,108,,,,,0,100,511,103\n223,RandomBuff1-1,MysticBuff1,◈ +50 HP,1,118,,,,,,,,,,7000,100,511,1014\n224,RandomBuff1-2,MysticBuff1,◈ +30 MP,1,119,,,,,,,,,,7000,100,511,1015\n225,RandomBuff1-3,MysticBuff1,◈ +20% Damage Rate,1,120,,,,,,,,,,7000,100,511,1016\n226,RandomBuff1-4,MysticBuff1,◈ +10% All Resistance,1,121,,,,,,,,,,7000,100,511,1017\n227,RandomBuff1-5,MysticBuff1,◈ +10% Move and Cast speed,1,27,37,,,,,,,,,7000,100,511,1018\n228,RandomBuff2-1,MysticBuff2,◈ +75 HP,1,122,,,,,,,,,,8500,100,511,1014\n229,RandomBuff2-2,MysticBuff2,◈ +40 MP,1,123,,,,,,,,,,8500,100,511,1015\n230,RandomBuff2-3,MysticBuff2,◈ +35% Damage Rate,1,124,,,,,,,,,,8500,100,511,1016\n231,RandomBuff2-4,MysticBuff2,◈ +15% All Resistance,1,125,,,,,,,,,,8500,100,511,1017\n232,RandomBuff2-5,MysticBuff2,◈ +15% Move and Cast speed,1,28,38,,,,,,,,,8500,100,511,1018\n233,RandomBuff3-1,MysticBuff3,◈ +100 HP,1,126,,,,,,,,,,10000,100,511,1014\n234,RandomBuff3-2,MysticBuff3,◈ +50 MP,1,127,,,,,,,,,,10000,100,511,1015\n235,RandomBuff3-3,MysticBuff3,◈ +50% Damage Rate,1,128,,,,,,,,,,10000,100,511,1016\n236,RandomBuff3-4,MysticBuff3,◈ +20% All Resistance,1,129,,,,,,,,,,10000,100,511,1017\n237,RandomBuff3-5,MysticBuff3,◈ +20% Move and Cast speed,1,30,40,,,,,,,,,10000,100,511,1018\n1000,StartBuff,Immortal,◈ Immortal ,1,130,131,132,,,,,,,,5000,100,512,1\n1001,LevelUPBuff,LevelUp,◈ Level Up!!! ,1,131,132,,,,,,,,,1000,100,512,1019\n2000,onlyForEffect,,,1,133,,,,,,,,,,500,100,1002,1012\n",
   "chestData" : "index,grade,HP,imgData,provideExp,provideGold,provideJewel,provideScore,minGoldCount,maxGoldCount,minGoldAmount,maxGoldAmount,minJewelCount,maxJewelCount,minJewelAmount,maxJewelAmount,minSkillCount,maxSkillCount,SkillIndex1,SkillDropRate1,SkillIndex2,SkillDropRate2,SkillIndex3,SkillDropRate3,SkillIndex4,SkillDropRate4,SkillIndex5,SkillDropRate5,SkillIndex6,SkillDropRate6,SkillIndex7,SkillDropRate7,SkillIndex7,SkillDropRate7,SkillIndex8,SkillDropRate8,SkillIndex9,SkillDropRate9,SkillIndex10,SkillDropRate10,SkillIndex11,SkillDropRate11,SkillIndex12,SkillDropRate12,SkillIndex13,SkillDropRate13,SkillIndex14,SkillDropRate14,SkillIndex15,SkillDropRate15,SkillIndex16,SkillDropRate16,SkillIndex17,SkillDropRate17,SkillIndex18,SkillDropRate18,SkillIndex19,SkillDropRate19,SkillIndex20,SkillDropRate20\n1,1,2000,108,150,50,0,100,3,6,50,150,0,1,1,1,1,1,21,50,31,100,41,75,51,75,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\n2,1,2000,108,150,50,0,100,3,6,50,150,0,1,1,1,1,1,1011,50,1021,100,1031,100,1041,75,1051,75,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\n3,1,2000,108,150,50,0,100,3,6,50,150,0,1,1,1,1,1,2011,50,2021,50,2031,75,2041,75,2051,75,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\n4,2,2500,109,200,100,0,150,4,6,75,200,0,1,1,1,1,1,21,50,31,100,41,75,51,75,61,50,71,50,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\n5,2,2500,109,200,100,0,150,4,6,75,200,0,1,1,1,1,1,1011,50,1021,100,1031,100,1041,75,1051,75,1061,50,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\n6,2,2500,109,200,100,0,150,4,6,75,200,0,1,1,1,1,1,2011,50,2021,50,2031,75,2041,75,2051,75,2061,50,2071,50,2081,50,,,,,,,,,,,,,,,,,,,,,,,,,,\n7,3,3500,110,300,150,0,200,5,7,100,250,0,2,1,1,1,1,41,75,51,75,61,50,71,50,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\n8,3,3500,110,300,150,0,200,5,7,100,250,0,2,1,1,1,1,1041,75,1051,75,1061,50,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\n9,3,3500,110,300,150,0,200,5,7,100,250,0,2,1,1,1,1,2031,75,2041,75,2051,75,2061,50,2071,50,2081,50,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\n10,4,4500,111,400,200,0,350,5,8,125,300,1,2,1,1,1,1,41,75,51,75,61,50,71,50,81,25,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\n11,4,4500,111,400,200,0,350,5,8,125,300,1,2,1,1,1,1,1041,75,1051,75,1061,50,1071,25,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\n12,4,4500,111,400,200,0,350,5,8,125,300,1,2,1,1,1,1,2031,75,2041,75,2051,75,2061,50,2071,50,2081,50,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\n13,5,6000,112,500,250,0,500,6,9,150,350,1,3,1,1,1,2,41,75,51,75,61,50,71,50,81,25,1041,75,1051,75,1061,50,1071,25,,,,,,,,,,,,,,,,,,,,,,,,\n14,5,6000,112,500,250,0,500,6,9,150,350,1,3,1,1,1,2,1041,75,1051,75,1061,50,1071,25,2031,75,2041,75,2051,75,2061,50,2071,50,2081,50,,,,,,,,,,,,,,,,,,,,,,\n15,5,6000,112,500,250,0,500,6,9,150,350,1,3,1,1,1,2,2031,75,2041,75,2051,75,2061,50,2071,50,2081,50,41,75,51,75,61,50,71,50,81,25,,,,,,,,,,,,,,,,,,,,\n",
   "obstacleData" :
   "index,type,id,posX,posY,radius,treeImgRadius,imgData\n1,1,OTT1,1813,5287,15,45,103\n2,1,OTT2,2916,4689,15,45,103\n3,1,OTT3,3534,5217,15,45,103\n4,1,OTT4,2659,2268,15,45,103\n5,1,OTT5,2205,4811,15,45,103\n6,1,OTT6,4255,5123,15,45,103\n7,1,OTT7,911,5296,15,45,103\n8,1,OTT8,5019,847,15,45,103\n9,1,OTT9,3650,3575,15,45,103\n10,1,OTT10,2442,5525,15,45,103\n11,1,OTT11,4170,1353,15,45,103\n12,1,OTT12,2703,3846,15,45,103\n13,1,OTT13,1050,5250,15,45,103\n14,1,OTT14,5747,3310,15,45,103\n15,1,OTT15,1155,5825,15,45,103\n16,1,OTT16,3538,3638,25,75,102\n17,1,OTT17,5915,2959,25,75,102\n18,1,OTT18,1326,2446,25,75,102\n19,1,OTT19,2381,1937,25,75,102\n20,1,OTT20,5638,4165,25,75,102\n21,1,OTT21,4779,1984,25,75,102\n22,1,OTT22,4577,3139,25,75,102\n23,1,OTT23,5046,3716,25,75,102\n24,1,OTT24,4318,5169,25,75,102\n25,1,OTT25,4394,933,25,75,102\n26,1,OTT26,1539,3673,25,75,102\n27,1,OTT27,2505,1130,25,75,102\n28,1,OTT28,3130,420,25,75,102\n29,1,OTT29,1619,5102,25,75,102\n30,1,OTT30,1495,471,25,75,102\n31,1,OTT31,5776,3131,25,75,102\n32,1,OTT32,5713,5996,25,75,102\n33,1,OTT33,5333,5525,25,75,102\n34,1,OTT34,713,5955,25,75,102\n35,1,OTT35,1487,2343,25,75,102\n36,1,OTT36,3320,2989,25,75,102\n37,1,OTT37,4549,5696,25,75,102\n38,1,OTT38,1885,1192,25,75,102\n39,1,OTT39,620,3401,25,75,102\n40,1,OTT40,1365,1602,25,75,102\n41,1,OTT41,4259,5741,25,75,102\n42,1,OTT42,3759,2736,25,75,102\n43,1,OTT43,2441,2818,25,75,102\n44,1,OTT44,1297,2105,25,75,102\n45,1,OTT45,2790,1331,25,75,102\n46,1,OTT46,1056,1944,25,75,102\n47,1,OTT47,3698,1095,25,75,102\n48,1,OTT48,2627,3504,25,75,102\n49,1,OTT49,3488,1280,25,75,102\n50,1,OTT50,5526,4258,25,75,102\n51,1,OTT51,2504,1595,25,75,102\n52,1,OTT52,4500,1250,25,75,102\n53,1,OTT53,2582,749,30,90,101\n54,1,OTT54,5811,4682,30,90,101\n55,1,OTT55,1681,1557,30,90,101\n56,1,OTT56,5229,4733,30,90,101\n57,1,OTT57,2955,3093,30,90,101\n58,1,OTT58,3779,2909,30,90,101\n59,1,OTT59,5111,2341,30,90,101\n60,1,OTT60,3025,4827,30,90,101\n61,1,OTT61,1756,2445,30,90,101\n62,1,OTT62,4879,1238,30,90,101\n63,1,OTT63,3044,1209,30,90,101\n64,1,OTT64,2502,5932,30,90,101\n65,1,OTT65,3481,1035,30,90,101\n66,1,OTT66,3321,4427,30,90,101\n67,1,OTT67,5508,1295,30,90,101\n68,1,OTT68,650,728,30,90,101\n69,1,OTT69,1030,5347,30,90,101\n70,1,OTT70,5296,5735,30,90,101\n71,1,OTT71,5335,4911,30,90,101\n72,1,OTT72,4424,756,30,90,101\n73,1,OTT73,3617,3077,30,90,101\n74,1,OTT74,2067,3735,30,90,101\n75,1,OTT75,5656,1688,30,90,101\n76,1,OTT76,2026,3498,30,90,101\n77,1,OTT77,4142,5665,30,90,101\n78,1,OTT78,2142,1107,30,90,101\n79,1,OTT79,421,1652,30,90,101\n80,1,OTT80,5672,5072,30,90,101\n81,1,OTT81,2898,3001,30,90,101\n82,1,OTT82,5229,5102,30,90,101\n83,1,OTT83,1712,5196,30,90,101\n84,1,OTT84,844,4561,30,90,101\n85,1,OTT85,3324,2013,30,90,101\n86,1,OTT86,5427,1796,30,90,101\n87,1,OTT87,1800,1100,30,90,101\n88,1,OTT88,1900,1850,30,90,101\n89,1,OTT89,4350,4650,30,90,101\n90,1,OTT90,4450,4600,30,90,101\n91,1,OTT91,4600,1350,30,90,101\n101,2,OTR1,2908,4747,50,,106\n102,2,OTR2,5515,1649,50,,106\n103,2,OTR3,2290,5083,50,,106\n104,2,OTR4,3017,1005,50,,106\n105,2,OTR5,5004,4010,50,,106\n106,2,OTR6,1866,2244,50,,106\n107,2,OTR7,591,879,50,,106\n108,2,OTR8,3546,5294,50,,106\n109,2,OTR9,638,2656,50,,106\n110,2,OTR10,5974,3515,50,,106\n111,2,OTR11,5355,1263,50,,106\n112,2,OTR12,3815,716,50,,106\n113,2,OTR13,1121,2027,50,,106\n114,2,OTR14,3565,2288,50,,106\n115,2,OTR15,1075,5062,50,,106\n116,2,OTR16,4508,425,50,,106\n117,2,OTR17,4486,3926,50,,106\n118,2,OTR18,4685,3434,50,,106\n119,2,OTR19,3495,2151,50,,106\n120,2,OTR20,664,461,50,,106\n121,2,OTR21,4250,914,50,,106\n122,2,OTR22,3419,933,50,,106\n123,2,OTR23,3913,5340,50,,106\n124,2,OTR24,3886,5790,50,,106\n125,2,OTR25,3154,4025,50,,106\n126,2,OTR26,2000,1200,50,,106\n127,2,OTR27,4963,3212,70,,105\n128,2,OTR28,1190,5523,70,,105\n129,2,OTR29,3644,4896,70,,105\n130,2,OTR30,5263,886,70,,105\n131,2,OTR31,3689,3554,70,,105\n132,2,OTR32,2274,2461,70,,105\n133,2,OTR33,1310,1804,70,,105\n134,2,OTR34,1144,5225,70,,105\n135,2,OTR35,814,1889,70,,105\n136,2,OTR36,2152,3749,70,,105\n137,2,OTR37,4610,1118,70,,105\n138,2,OTR38,2968,782,70,,105\n139,2,OTR39,1476,1488,70,,105\n140,2,OTR40,651,3039,70,,105\n141,2,OTR41,2017,1779,70,,105\n142,2,OTR42,5493,5642,70,,105\n143,2,OTR43,4557,1479,70,,105\n144,2,OTR44,3271,4796,70,,105\n145,2,OTR45,1643,4767,70,,105\n146,2,OTR46,5339,3605,70,,105\n147,2,OTR47,666,2321,70,,105\n148,2,OTR48,3681,2011,70,,105\n149,2,OTR49,5014,5235,70,,105\n150,2,OTR50,2958,1974,70,,105\n151,2,OTR51,1758,3574,70,,105\n152,2,OTR52,3550,2900,70,,105\n201,3,OCG1,2090,920,35,,113\n202,3,OCG2,4480,1400,35,,113\n203,3,OCG3,2060,2000,35,,113\n204,3,OCG4,5520,2400,35,,113\n205,3,OCG5,3160,3160,35,,113\n206,3,OCG6,800,3920,35,,113\n207,3,OCG7,4260,4320,35,,113\n208,3,OCG8,1840,4920,35,,113\n209,3,OCG9,4230,5400,35,,113\n",
@@ -5201,7 +5227,7 @@ module.exports={
   "MAX_SERVER_RESPONSE_TIME" : 5000,
   "LIMIT_NO_ACTION_TIME" : 7200000,
   "LONG_TIME_INTERVAL" : 300000,
-  "MAX_PING_LIMIT" : 2000,
+  "MAX_PING_LIMIT" : 1000,
   "INTERVAL" : 60,
   "FPS" : 60,
   "MAX_FIND_AVAILABLE_SERVER_TIME" : 20000,
@@ -6971,6 +6997,11 @@ exports.setImgCssStyle = function(imgDiv, iconData, expandRate){
 exports.processMessage = function(msg, stringLength){
   return msg.replace(/(<([^>]+)>)/ig, '').substring(0,stringLength);
 };
+exports.createDomSelectOptGroup = function(label, parentNode){
+  var optGroup = document.createElement("optgroup");
+  optGroup.label = label;
+  parentNode.appendChild(optGroup);
+};
 exports.createDomSelectOption = function(text, value, isDisabled, parentNode){
   var option = document.createElement("option");
   option.setAttribute("value", value);
@@ -7068,6 +7099,7 @@ var userDataUpdateInterval = false;
 var userDataLastUpdateTime = Date.now();
 var userLastActionTime = Date.now();
 var userPingCheckTime = Date.now();
+var frameCounter = null;
 
 //draw skills range, explosionRadius.
 var drawMode = gameConfig.DRAW_MODE_NORMAL;
@@ -7093,6 +7125,7 @@ var possessSkills = [];
 
 var killUser = null;
 var loseResource = {gold : 0, jewel : 0};
+var lostSkills = [];
 var isLostSkill = false;
 
 var rankers = [];
@@ -7233,6 +7266,7 @@ function stateFuncGameSetup(){
   // UIManager.disableRestartScene();
 };
 function stateFuncGame(){
+  frameCounter.countFrames();
   drawGame();
 };
 //show end message and restart button
@@ -7427,6 +7461,8 @@ function setBaseSetting(){
   Manager.onProjectileSkillFire = onProjectileSkillFireHandler;
   // Manager.onCancelCasting = onCancelCastingHandler;
 
+  frameCounter = new FrameCounter();
+
   resourceObject = new Image()
   resourceCharacter = new Image();
   resourceUI = new Image();
@@ -7523,6 +7559,12 @@ function setCanvasSize(){
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 
+  if(window.innerWidth < 1200){
+    UIManager.bottomToRight();
+  }else{
+    UIManager.rightToBottom();
+  }
+
   gameConfig.canvasSize = {width : window.innerWidth, height : window.innerHeight};
   setCanvasScale(gameConfig);
 };
@@ -7533,6 +7575,7 @@ function drawStartScene(){
 
 function drawGame(){
   UIManager.drawGameScene();
+  UIManager.drawFPSAndPing(frameCounter.lastFrameCount, latency);
 
   gameConfig.userOffset = calcOffset();
 
@@ -7704,7 +7747,6 @@ function setupSocket(url){
     Manager.setUser(data);
     UIManager.updateBoard(rankDatas, gameConfig.userID);
     Manager.setUserInitState(data.objectID);
-    console.log('user joined ' + data.objectID);
   });
   socket.on('userDataUpdate', function(userData){
     Manager.updateUserData(userData);
@@ -8007,7 +8049,9 @@ function setupSocket(url){
       if(changeSkills){
         updateSkills(changeSkills);
         isLostSkill = true;
+        lostSkills = changeSkills.lostSkills;
       }else{
+        lostSkills = [];
         isLostSkill = false;
       }
       changeState(gameConfig.GAME_STATE_END);
@@ -8911,6 +8955,8 @@ var documentKeyDownEventHandler = function(e){
     if(isChattingOn){
       isChattingOn = false;
       UIManager.disableChatInput();
+    }else{
+      UIManager.popCloseWithKey();
     }
   }
   if(keyCode === 83){
@@ -9098,6 +9144,8 @@ function updateCharTypeSkill(charType){
 function updateSkills(changeSkills){
   baseSkill = changeSkills.baseSkill;
   inherentPassiveSkill = changeSkills.inherentPassiveSkill;
+  possessSkills = changeSkills.possessSkills;
+  UIManager.updatePossessionSkills(possessSkills);
   for(var i=0; i<4; i++){
     for(var j=0; j<changeSkills.possessSkills.length; j++){
       var skillData = objectAssign({}, util.findData(skillTable, 'index', changeSkills.possessSkills[j]));
@@ -9111,24 +9159,18 @@ function updateSkills(changeSkills){
         var possessSkillData = objectAssign({}, util.findData(skillTable, 'index', pyroEquipSkills[i]));
         if(possessSkillData.groupIndex === skillData.groupIndex){
           pyroEquipSkills.splice(i, 1, skillData.index);
-          console.log('pyroEquipSkillsChanged');
-          console.log(pyroEquipSkills);
         }
       }
       if(frosterEquipSkills[i]){
         var possessSkillData = objectAssign({}, util.findData(skillTable, 'index', frosterEquipSkills[i]));
         if(possessSkillData.groupIndex === skillData.groupIndex){
           frosterEquipSkills.splice(i, 1, skillData.index);
-          console.log('frosterEquipSkillsChanged');
-          console.log(frosterEquipSkills);
         }
       }
       if(mysterEquipSkills[i]){
         var possessSkillData = objectAssign({}, util.findData(skillTable, 'index', mysterEquipSkills[i]));
         if(possessSkillData.groupIndex === skillData.groupIndex){
           mysterEquipSkills.splice(i, 1, skillData.index);
-          console.log('mysterEquipSkillsChanged');
-          console.log(mysterEquipSkills);
         }
       }
     }
@@ -9183,7 +9225,22 @@ function calcOffset(){
     y : Manager.user.center.y - gameConfig.canvasSize.height/(2 * gameConfig.scaleFactor)
   };
 };
-// update();
+//count frame per second
+function FrameCounter(){
+  this.lastFrameCount = 0;
+  this.lastFrameTime = Date.now();
+  this.frameCount = 0;
+};
+FrameCounter.prototype.countFrames = function(){
+  this.frameCount ++;
+  if(Date.now() >= this.lastFrameTime + 1000){
+    this.lastFrameTime = Date.now();
+    this.lastFrameCount = this.frameCount;
+    this.frameCount = 0;
+  }
+};
+
+//draw start
 changeState(gameConfig.GAME_STATE_LOAD);
 setInterval(function(){
   if(Date.now() >= userLastActionTime + gameConfig.LIMIT_NO_ACTION_TIME){

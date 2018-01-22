@@ -3,20 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <link rel="shortcut icon" href="/images/favicon.ico" type="image/x-icon">
+  <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+  <meta name="subject" content="WorldOfMage">
+  <meta name="title" content="WOM.io">
+  <meta name="author" content="WooksDev">
+  <meta name="keywords" content="game,games,gaming,online,io,IO,WOM,WOM.io,WorldOfMage,worldofmage.io,worldofmage">
+  <meta name="description" content="World Of Mage is a competition io games. Become a most powerful mage in WOM.io">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=0">
+	<!-- <meta http-equiv="cache-control" content="no-cache">
+	<meta http-equiv="expires" content="0">
+	<meta http-equiv="pragma" content="no-cache"> -->
   <title>WOM.io</title>
   <link rel="stylesheet" type="text/css" href="/css/main.css">
-  <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <!-- <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
   <script>
     (adsbygoogle = window.adsbygoogle || []).push({
       google_ad_client: "ca-pub-2600477015128152",
       enable_page_level_ads: true
-    });
+    }); -->
   </script>
   <script>
     var serverList = {
       "NORTH AMERICA" : { "IP" : "" },
       "ASIA" : { "IP" : "" },
-      "ASIA 1" : { "IP" : "52.68.95.222" },
+      "ASIA 1" : { "SERVER" : "ASIA", "IP" : "52.68.95.222" },
+      "ASIA 2" : { "SERVER" : "ASIA", "IP" : "localhost" },
       "EUROPE" : { "IP" : "" }
     }
   </script>
@@ -34,36 +46,40 @@
           <div class="selectSkillDesc"></div>
         </div>
       </div>
-      <button id="btnSelectSkillCancel"><img src="/images/cancel.png"><span>Esc or R-Click</span></button>
+      <button id="btnSelectSkillCancel"><img src="/images/cancel.png" /><span>Esc or R-Click</span></button>
     </div>
     <div class="gameSceneHudTopRightCenter">
       <div class="gameSceneResourceContainer">
-        <img src="/images/GoldIcon.png">
+        <img src="/images/GoldIcon.png" />
         <div id="goldContainer">0</div>
       </div>
       <div class="gameSceneResourceContainer">
-        <img src="/images/JewelIcon.png">
+        <img src="/images/JewelIcon.png" />
         <div id="jewelContainer">0</div>
       </div>
     </div>
     <div class="gameSceneHudTopRight">
-      <div id="gameBoardRank" style="width:40px;"></div>
-      <div id="gameBoardName" style="width:80px; overflow:hidden"></div>
-      <div id="gameBoardLevel" style="width: 40px;"></div>
-      <div id="gameBoardKillScore" style="width:40px;"></div>
-      <div id="gameBoardTotalScore" style="width:70px;"></div>
+      <div id="gameBoardRank" style="width:36px;"></div>
+      <div id="gameBoardName" style="width:72px; overflow:hidden"></div>
+      <div id="gameBoardLevel" style="width:36px;"></div>
+      <div id="gameBoardKillScore" style="width:36px;"></div>
+      <div id="gameBoardTotalScore" style="width:63px;"></div>
     </div>
     <div class="gameSceneHudBottomLeft">
-      <div id="miniMapChest1" type="chest"><img src="/images/chestGround.png"><img src="/images/void.png"></div>
-      <div id="miniMapChest2" type="chest"><img src="/images/chestGround.png"><img src="/images/void.png"></div>
-      <div id="miniMapChest3" type="chest"><img src="/images/chestGround.png"><img src="/images/void.png"></div>
-      <div id="miniMapChest4" type="chest"><img src="/images/chestGround.png"><img src="/images/void.png"></div>
-      <div id="miniMapChest5" type="chest"><img src="/images/chestGround.png"><img src="/images/void.png"></div>
-      <div id="miniMapChest6" type="chest"><img src="/images/chestGround.png"><img src="/images/void.png"></div>
-      <div id="miniMapChest7" type="chest"><img src="/images/chestGround.png"><img src="/images/void.png"></div>
-      <div id="miniMapChest8" type="chest"><img src="/images/chestGround.png"><img src="/images/void.png"></div>
-      <div id="miniMapChest9" type="chest"><img src="/images/chestGround.png"><img src="/images/void.png"></div>
+      <div id="miniMapChest1" type="chest"><img src="/images/chestGround.png" /><img src="/images/void.png" /></div>
+      <div id="miniMapChest2" type="chest"><img src="/images/chestGround.png" /><img src="/images/void.png" /></div>
+      <div id="miniMapChest3" type="chest"><img src="/images/chestGround.png" /><img src="/images/void.png" /></div>
+      <div id="miniMapChest4" type="chest"><img src="/images/chestGround.png" /><img src="/images/void.png" /></div>
+      <div id="miniMapChest5" type="chest"><img src="/images/chestGround.png" /><img src="/images/void.png" /></div>
+      <div id="miniMapChest6" type="chest"><img src="/images/chestGround.png" /><img src="/images/void.png" /></div>
+      <div id="miniMapChest7" type="chest"><img src="/images/chestGround.png" /><img src="/images/void.png" /></div>
+      <div id="miniMapChest8" type="chest"><img src="/images/chestGround.png" /><img src="/images/void.png" /></div>
+      <div id="miniMapChest9" type="chest"><img src="/images/chestGround.png" /><img src="/images/void.png" /></div>
       <div id="miniMapUser" type="user"></div>
+    </div>
+    <div class="gameSceneHudBottomCenterLeft">
+      <div id="gameSceneFpsText">0</div>
+      <div id="gameScenePingText">0</div>
     </div>
     <div class="gameSceneHudBottomCenter">
       <div class="gameSceneHPContainer">
@@ -84,41 +100,41 @@
       </div>
       <div class="gameSceneSkillsContainer">
         <div class="hudBaseSkill">
-          <div class="hudSkillImgContainer"><img src="" id="hudBaseSkillImg"></div>
+          <div class="hudSkillImgContainer"><img src="" id="hudBaseSkillImg" /></div>
           <div id="hudBaseSkillMask" class="skillMask"></div>
           <div id="hudBaseSkillBlockMask" class="skillBlockMask disable"></div>
           <div id="hudBaseSkillConditionBlockMask" class= "skillBlockMask disable"></div>
           <div class="skillShortcutkey"><strong>E</strong> or <strong>Space</strong></div>
         </div>
         <div class="hudPassiveSkill">
-          <div class="hudSkillImgContainer"><img src="" id="hudPassiveSkillImg"></div>
+          <div class="hudSkillImgContainer"><img src="" id="hudPassiveSkillImg" /></div>
           <div id="hudPassiveSkillBlockMask" class="skillBlockMask disable"></div>
           <div class= "skillBlockMask"></div>
         </div>
         <div class="hudEquipSkills">
           <div class="hudEquipSkill1" style="left: 0px">
-            <div class="hudSkillImgContainer"><img src="" id="hudEquipSkill1Img"></div>
+            <div class="hudSkillImgContainer"><img src="" id="hudEquipSkill1Img" /></div>
             <div id="hudEquipSkill1Mask" class="skillMask"></div>
             <div id="hudEquipSkill1BlockMask" class="skillBlockMask disable"></div>
             <div id="hudEquipSkill1ConditionBlockMask" class= "skillBlockMask disable"></div>
             <div class="skillShortcutkey"><strong>1</strong></div>
           </div>
-          <div class="hudEquipSkill2" style="left: 90px">
-            <div class="hudSkillImgContainer"><img src="" id="hudEquipSkill2Img"></div>
+          <div class="hudEquipSkill2" style="left: 72px">
+            <div class="hudSkillImgContainer"><img src="" id="hudEquipSkill2Img" /></div>
             <div id="hudEquipSkill2Mask" class="skillMask"></div>
             <div id="hudEquipSkill2BlockMask" class="skillBlockMask disable"></div>
             <div id="hudEquipSkill2ConditionBlockMask" class= "skillBlockMask disable"></div>
             <div class="skillShortcutkey"><strong>2</strong></div>
           </div>
-          <div class="hudEquipSkill3" style="left: 180px">
-            <div class="hudSkillImgContainer"><img src="" id="hudEquipSkill3Img"></div>
+          <div class="hudEquipSkill3" style="left: 144px">
+            <div class="hudSkillImgContainer"><img src="" id="hudEquipSkill3Img" /></div>
             <div id="hudEquipSkill3Mask" class="skillMask"></div>
             <div id="hudEquipSkill3BlockMask" class="skillBlockMask disable"></div>
             <div id="hudEquipSkill3ConditionBlockMask" class= "skillBlockMask disable"></div>
             <div class="skillShortcutkey"><strong>3</strong></div>
           </div>
-          <div class="hudEquipSkill4" style="left: 270px">
-            <div class="hudSkillImgContainer"><img src="" id="hudEquipSkill4Img"></div>
+          <div class="hudEquipSkill4" style="left: 216px">
+            <div class="hudSkillImgContainer"><img src="" id="hudEquipSkill4Img" /></div>
             <div id="hudEquipSkill4Mask" class="skillMask"></div>
             <div id="hudEquipSkill4BlockMask" class="skillBlockMask disable"></div>
             <div id="hudEquipSkill4ConditionBlockMask" class= "skillBlockMask disable"></div>
@@ -127,36 +143,36 @@
         </div>
       </div>
     </div>
-    <div class="gameSceneHudBottomRightCenter">
+    <div class="gameSceneHudBottomRightCenter" id="gameSceneHudBottomRightCenter">
       <div class="gameSceneCharNameAndLevel" id="gameSceneCharNameAndLevel"></div>
       <div class="gameSceneOffenceDefenceContainer">
         <div id="userStatOffence" style="left:0px">
-          <img src="/images/offenceSymbol.png"/>
-          <span>50%</span>
+          <img src="/images/offenceSymbol.png" />
+          <span>0%</span>
         </div>
-        <div id="userStatDefence" style="left:105px">
-          <img src="/images/defenceSymbol.png"/>
-          <span>30%</span>
+        <div id="userStatDefence" style="left:94.5px">
+          <img src="/images/defenceSymbol.png" />
+          <span>0%</span>
         </div>
       </div>
       <div class="gameSceneStatContainer">
         <div id="userStatPowerContainer" style="left:0px;">
-          <img src="/images/statPowerSymbol.png"/>
+          <img src="/images/statPowerSymbol.png" />
           <span></span>
         </div>
-        <div id="userStatMagicContainer" style="left:70px;">
+        <div id="userStatMagicContainer" style="left:63px;">
           <img src="/images/statMagicSymbol.png"/>
           <span></span>
         </div>
-        <div id="userStatSpeedContainer" style="left:140px;">
+        <div id="userStatSpeedContainer" style="left:126px;">
           <img src="/images/statSpeedSymbol.png"/>
           <span></span>
         </div>
       </div>
     </div>
     <div class="gameSceneHudBottomRight">
-      <img src="/images/newIcon.png" class="">
-      <button id="hudBtnSkillChange" class="hudBtnSkillChange">Spell<br>Setting</button>
+      <img src="/images/newIcon.png" class="" />
+      <button id="hudBtnSkillChange" class="hudBtnSkillChange">Spell<br>Setting<br><span>[G]</span></button>
     </div>
     <div class="gameSceneDeadScene" id="gameSceneDeadScene">
       <div class="deadSceneBackground deadSceneBackgroundDefault" id="deadSceneBackground"></div>
@@ -165,11 +181,11 @@
         <div class="deadSceneLoseInfoContainer">
           <span id="deadSceneToLevel"></span>
           <div class="deadSceneLoseResourceContainer">
-            <img src="/images/GoldIcon.png">
+            <img src="/images/GoldIcon.png" />
             <div id="deadSceneLoseGold"></div>
           </div>
           <div class="deadSceneLoseResourceContainer">
-            <img src="/images/JewelIcon.png">
+            <img src="/images/JewelIcon.png" />
             <div id="deadSceneLoseJewel"></div>
           </div>
         </div>
@@ -196,13 +212,13 @@
           <div class="startSceneHudCenterCenter">
             <input type="text" placeholder="Enter Your Nickname" id="userStartNickName"/>
             <div class="startSceneHudCenterCenterCharSelect" id="startSceneHudCenterCenterCharSelect">
-              <div type="1" class="selectedChar" style="left: 40px;">
-                <img src="/images/charFireSymbol.png"/>
+              <div type="1" class="selectedChar" style="left: 23px;">
+                <img src="/images/charFireSymbol.png" />
               </div>
-              <div type="2" style="left: 185px;">
+              <div type="2" style="left: 145px;">
                 <img src="/images/charFrostSymbol.png" />
               </div>
-              <div type="3" style="left: 330px;">
+              <div type="3" style="left: 267px;">
                 <img src="/images/charArcaneSymbol.png" />
               </div>
             </div>
@@ -210,15 +226,15 @@
               <div class="selectedCharName" id="startSceneSelectedCharName"></div>
               <div class="selectedCharStat" >
                 <div id="startSceneSelectedCharStatPower" style="left:10px;">
-                  <img src="/images/statPowerSymbol.png"/>
+                  <img src="/images/statPowerSymbol.png" />
                   <span></span>
                 </div>
-                <div id="startSceneSelectedCharStatMagic" style="left:80px;">
-                  <img src="/images/statMagicSymbol.png"/>
+                <div id="startSceneSelectedCharStatMagic" style="left:70px;">
+                  <img src="/images/statMagicSymbol.png" />
                   <span></span>
                 </div>
-                <div id="startSceneSelectedCharStatSpeed" style="left:150px;">
-                  <img src="/images/statSpeedSymbol.png"/>
+                <div id="startSceneSelectedCharStatSpeed" style="left:130px;">
+                  <img src="/images/statSpeedSymbol.png" />
                   <span></span>
                 </div>
               </div>
@@ -250,7 +266,7 @@
               <h3>Game Tip</h3>
               <p>● Use <a href="https://chrome.en.softonic.com/" target="_blank">Google Chrome</a> is highly recommended for best performance</p>
               <p>● Each Characters Passive Spell make character special.<span class="memo">[upgrade it!!!]</span></p>
-              <p>● All spells can equip regardless of character type.</p>
+              <p>● All spells can equip regardless of character type.<span class="memo">[except character spell]</span></p>
               <p>● If you hit trees or rocks, you will get exp.</p>
               <p>● If you destroy chests or kill other character, you will get exp and golds.</p>
               <p>● Chests may drop spell and gold and jewel.</p>
@@ -297,13 +313,13 @@
         <div class="standingSceneHudCenterCenter">
           <input type="text" placeholder="Enter Your Nickname" id="userStandingNickName"/>
           <div class="standingSceneHudCenterCenterCharSelect" id="standingSceneHudCenterCenterCharSelect">
-            <div type="1" class="selectedChar" style="left: 40px;">
-              <img src="/images/charFireSymbol.png"/>
+            <div type="1" class="selectedChar" style="left: 23px;">
+              <img src="/images/charFireSymbol.png" />
             </div>
-            <div type="2" style="left: 185px;">
+            <div type="2" style="left: 145px;">
               <img src="/images/charFrostSymbol.png" />
             </div>
-            <div type="3" style="left: 330px;">
+            <div type="3" style="left: 267px;">
               <img src="/images/charArcaneSymbol.png" />
             </div>
           </div>
@@ -311,26 +327,26 @@
             <div class="selectedCharName" id="standingSceneSelectedCharName"></div>
             <div class="selectedCharStat" >
               <div id="standingSceneSelectedCharStatPower" style="left:10px;">
-                <img src="/images/statPowerSymbol.png"/>
+                <img src="/images/statPowerSymbol.png" />
                 <span></span>
               </div>
-              <div id="standingSceneSelectedCharStatMagic" style="left:80px;">
-                <img src="/images/statMagicSymbol.png"/>
+              <div id="standingSceneSelectedCharStatMagic" style="left:70px;">
+                <img src="/images/statMagicSymbol.png" />
                 <span></span>
               </div>
-              <div id="standingSceneSelectedCharStatSpeed" style="left:150px;">
-                <img src="/images/statSpeedSymbol.png"/>
+              <div id="standingSceneSelectedCharStatSpeed" style="left:130px;">
+                <img src="/images/statSpeedSymbol.png" />
                 <span></span>
               </div>
             </div>
             <div class="selectedCharSkillContainer">
-              <div class="selectedCharBaseSkill" id="standingSceneSelectedCharBaseSkill" style="left: 15px"><img /></div>
-              <div class="selectedCharBaseSkill" id="standingSceneSelectedCharPassiveSkill" style="left: 65px"><img /></div>
-              <div class="selectedCharEquipSkill" id="standingSceneSelectedCharEquipSkill1" style="left: 115px"><img /></div>
-              <div class="selectedCharEquipSkill" id="standingSceneSelectedCharEquipSkill2" style="left: 175px"><img /></div>
-              <div class="selectedCharEquipSkill" id="standingSceneSelectedCharEquipSkill3" style="left: 235px"><img /></div>
-              <div class="selectedCharEquipSkill" id="standingSceneSelectedCharEquipSkill4" style="left: 295px"><img /></div>
-              <button class="selectedCharSkillSettingBtn" id="standingSceneSkillSettingBtn"><img src="/images/newIcon.png" class="disable">Spell Setting</button>
+              <div class="selectedCharBaseSkill" id="standingSceneSelectedCharBaseSkill" style="left: 7px"><img /></div>
+              <div class="selectedCharBaseSkill" id="standingSceneSelectedCharPassiveSkill" style="left: 52px"><img /></div>
+              <div class="selectedCharEquipSkill" id="standingSceneSelectedCharEquipSkill1" style="left: 98px"><img /></div>
+              <div class="selectedCharEquipSkill" id="standingSceneSelectedCharEquipSkill2" style="left: 153px"><img /></div>
+              <div class="selectedCharEquipSkill" id="standingSceneSelectedCharEquipSkill3" style="left: 208px"><img /></div>
+              <div class="selectedCharEquipSkill" id="standingSceneSelectedCharEquipSkill4" style="left: 263px"><img /></div>
+              <button class="selectedCharSkillSettingBtn" id="standingSceneSkillSettingBtn"><img src="/images/newIcon.png" class="disable" />Spell Setting</button>
             </div>
           </div>
           <button id="restartButton"><span>Start</span><img class="disable" src="/images/buttonLoading.gif" /></button>
@@ -352,7 +368,7 @@
             <h3>Game Tip</h3>
             <p>● Use <a href="https://chrome.en.softonic.com/" target="_blank">Google Chrome</a> is highly recommended for best performance</p>
             <p>● Each Characters Passive Spell make character special.<span class="memo">[upgrade it!!!]</span></p>
-            <p>● All spells can equip regardless of character type.</p>
+            <p>● All spells can equip regardless of character type.<span class="memo">[except character spell]</span></p>
             <p>● If you hit trees or rocks, you will get exp.</p>
             <p>● If you destroy chests or kill other character, you will get exp and golds.</p>
             <p>● Chests may drop spell and gold and jewel.</p>
@@ -390,7 +406,7 @@
   <div id="popUpSkillChange" class="popUpSkillChange disable">
     <div id="popUpSkillContainer" class="popUpSkillContainer">
     </div>
-    <button class="popUpCloseBtn" id="popUpCloseBtn"><img src="/images/close.png"></button>
+    <button class="popUpCloseBtn" id="popUpCloseBtn"><img src="/images/close.png" /></button>
     <div id="popUpSkillInfoAndBtn" class="popUpSkillInfoAndBtn">
       <div class="popUpSkillInfo">
         <div id="popUpSkillInfoIcon" class="popUpSkillInfoIcon"></div>
@@ -399,14 +415,14 @@
           <div id="skillUpgradeEffect" class="skillUpgradeEffect"></div>
         </div>
       </div>
-      <button class="popUpCancelSkillSelectBtn" id="popUpCancelSkillSelectBtn"><img src="/images/close.png"></button>
+      <button class="popUpCancelSkillSelectBtn" id="popUpCancelSkillSelectBtn"><img src="/images/close.png" /></button>
       <div class="popUpUpgradeCost">
         <div class="popUpResourceContainer">
-          <img src="/images/GoldIcon.png">
+          <img src="/images/GoldIcon.png" />
           <div id="popUpSkillUpgradeCostGold"></div>
         </div>
         <div class="popUpResourceContainer">
-          <img src="/images/JewelIcon.png">
+          <img src="/images/JewelIcon.png" />
           <div id="popUpSkillUpgradeCostJewel"></div>
         </div>
       </div>
@@ -429,8 +445,8 @@
     <div class="popUpSortBtnConatiner"><img src="/images/charFireSymbol.png" id="popUpSortType" sortType="1" /><button id="popUpSortBtn">Sort</button></div>
     <div class="popUpSkillTitleText popUpSkillTextSkillInfo" id="popUpSkillTextSkillInfo"><strong>Spell Info</strong></div>
     <div class="popUpSkillTitleText popUpSkillTextCurrentSkill"><strong>Current Spell Set</strong></div>
-    <div id="popUpSkillTutorialClickText1" class="popUpSkillTutorialClickTextContainer" style="left: 67px; top: 53px;"><div class="popUpSkillTutorialSkillBox"></div><div class="popUpSkillTutorialClickArrow"></div><span class="yellow">CLICK!!!</span></div>
-    <div id="popUpSkillTutorialClickText2" class="popUpSkillTutorialClickTextContainer" style="left: 380.5px; top: 530px;"><div class="popUpSkillTutorialSkillBox"></div><div class="popUpSkillTutorialClickArrow"></div><span class="yellow">CLICK!!!</span></div>
+    <div id="popUpSkillTutorialClickText1" class="popUpSkillTutorialClickTextContainer" style="left: 49.5px; top: 44.5px;"><div class="popUpSkillTutorialSkillBox"></div><div class="popUpSkillTutorialClickArrow"></div><span class="yellow">CLICK!!!</span></div>
+    <div id="popUpSkillTutorialClickText2" class="popUpSkillTutorialClickTextContainer" style="left: 300.5px; top: 449px;"><div class="popUpSkillTutorialSkillBox"></div><div class="popUpSkillTutorialClickArrow"></div><span class="yellow">CLICK!!!</span></div>
     <div id="popUpSkillTutorialArrow" class="popUpSkillTutorialArrow disable"></div>
   </div>
   <div id="popUpBackground" class="popUpBackground disable">

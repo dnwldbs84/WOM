@@ -776,6 +776,11 @@ exports.setImgCssStyle = function(imgDiv, iconData, expandRate){
 exports.processMessage = function(msg, stringLength){
   return msg.replace(/(<([^>]+)>)/ig, '').substring(0,stringLength);
 };
+exports.createDomSelectOptGroup = function(label, parentNode){
+  var optGroup = document.createElement("optgroup");
+  optGroup.label = label;
+  parentNode.appendChild(optGroup);
+};
 exports.createDomSelectOption = function(text, value, isDisabled, parentNode){
   var option = document.createElement("option");
   option.setAttribute("value", value);
