@@ -900,7 +900,7 @@ button:hover{
   float: right;
   width: 54px;
   height: 27px;
-  margin: 7px 5px 0px 0px;
+  margin: 5px 5px 0px 0px;
   text-align: center;
 }
 .gameSceneStatContainer {
@@ -913,7 +913,7 @@ button:hover{
   border-radius: 2px;
   width: 63px;
   height: 27px;
-  margin: 2.5px 5px 0px 0px;
+  margin: 5.5px 5px 0px 0px;
   font-size: 15px;
 }
 .gameSceneStatContainer > div > img{
@@ -926,7 +926,7 @@ button:hover{
   float: right;
   width: 27px;
   height: 27px;
-  margin: 3.5px 5px 0px 0px;
+  margin: 4px 5px 0px 0px;
   text-align: center;
 }
 .gameSceneHPContainer{

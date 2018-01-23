@@ -572,7 +572,8 @@ GameManager.prototype.initializeUser = function(user, baseSkill, possessSkills, 
   user.assignID(randomID);
 
   user.setSize(serverConfig.USER_BODY_SIZE, serverConfig.USER_BODY_SIZE);
-  user.setPosition(10, 10);
+  // user.setPosition(10, 10);
+  // this.setUserPosition(user.objectID);
 
   user.setSkills(baseSkill, possessSkills, inherentPassiveSkill);
 
@@ -764,8 +765,9 @@ GameManager.prototype.setUserSkill = function(userID, charType, baseSkill, passi
 };
 GameManager.prototype.setUserPosition = function(userID){
   if(userID in this.users){
-    //should be change
-    this.users[userID].setPosition(50, 50);
+    var randomPos = SUtil.generateRandomPos(staticTree, 400, 400, gameConfig.CANVAS_MAX_SIZE.width - 400, gameConfig.CANVAS_MAX_SIZE.height - 400,
+                                            this.users[userID].size.width/2, this.users[userID].size.width/2, userID);
+    this.users[userID].setPosition(randomPos.x, randomPos.y);
   }
 };
 GameManager.prototype.startUserUpdate = function(userID){
@@ -1250,8 +1252,20 @@ GameManager.prototype.giveExp = function(userID){
 };
 GameManager.prototype.giveResources = function(userID){
   if(userID in this.users){
-    this.users[userID].getGold(1000);
+    this.users[userID].getGold(10000);
     this.users[userID].getJewel(10);
+  }
+};
+GameManager.prototype.giveAllSkill = function(userID, skills){
+  if(userID in this.users){
+    for(var i=0; i<skills.length; i++){
+      if(i === skills.length -1){
+        var possessSkills = this.users[userID].getSkill(skills[i]);
+        this.onNeedInformSkillData(this.users[userID].socketID, possessSkills);
+      }else{
+        this.users[userID].getSkill(skills[i]);
+      }
+    }
   }
 };
 GameManager.prototype.updateUserTimeDiff = function(userID, timeDiff){

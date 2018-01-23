@@ -82,17 +82,21 @@ app.post('/usersInfo', function(req, res){
     res.sendStatus(400);
   }
 });
+
 app.post('/serverCheck', function(req, res){
-  if(GM){
-    if(Object.keys(GM.users).length < serverConfig.MAX_USER_COUNT){
+  if(!req.body){
+    res.sendStatus(400);
+  }else if(GM){
+    if(Object.keys(GM.users).length < serverConfig.MAX_USER_COUNT &&
+       req.body.version === gameConfig.GAME_VERSION){
       res.send({canJoin : true});
     }else{
-      res.send({canJoin : false});
+      res.send({canJoin : false, version : gameConfig.GAME_VERSION});
     }
   }else{
-    res.send({canJoin : false});
+    res.send({canJoin : false, version : gameConfig.GAME_VERSION});
   }
-})
+});
 
 var server = http.createServer(app);
 var port = process.env.PORT || config.port;
@@ -276,16 +280,18 @@ io.on('connection', function(socket){
         var inherentPassiveSkill = userBase.basePassiveSkill;
 
         // add all skills
-        possessSkills.push(31); possessSkills.push(41); possessSkills.push(51);
-        possessSkills.push(61); possessSkills.push(71); possessSkills.push(81);
-        possessSkills.push(1021); possessSkills.push(1031); possessSkills.push(1041);
-        possessSkills.push(1051); possessSkills.push(1061); possessSkills.push(1071);
-        possessSkills.push(2021); possessSkills.push(2031); possessSkills.push(2041);
-        possessSkills.push(2051); possessSkills.push(2061); possessSkills.push(2071); possessSkills.push(2081);
+        // possessSkills.push(31); possessSkills.push(41); possessSkills.push(51);
+        // possessSkills.push(61); possessSkills.push(71); possessSkills.push(81);
+        // possessSkills.push(1021); possessSkills.push(1031); possessSkills.push(1041);
+        // possessSkills.push(1051); possessSkills.push(1061); possessSkills.push(1071);
+        // possessSkills.push(2021); possessSkills.push(2031); possessSkills.push(2041);
+        // possessSkills.push(2051); possessSkills.push(2061); possessSkills.push(2071); possessSkills.push(2081);
 
         // user init and join game
         GM.initializeUser(user, baseSkill, possessSkills, inherentPassiveSkill);
         GM.joinUser(user);
+        GM.setUserPosition(user.objectID);
+
         GM.setScore(user.objectID);
         var userData = GM.processUserDataSetting(user);
         var rankDatas = GM.processScoreDatas();
@@ -760,6 +766,36 @@ io.on('connection', function(socket){
   });
   socket.on('giveResources', function(){
     GM.giveResources(user.objectID);
+  });
+  socket.on('giveAllSkill', function(){
+    var baseSkills = [];
+    var passiveSkills = [];
+    var allSkills = [];
+    var allSkillGroup = [];
+    for(var i=0; i<userBaseTable.length; i++){
+      if(userBaseTable[i]){
+        baseSkills.push(userBaseTable[i].baseSkill);
+        passiveSkills.push(userBaseTable[i].basePassiveSkill);
+      }
+    }
+    for(var i=0; i<skillTable.length; i++){
+      if(skillTable[i]){
+        if(!allSkillGroup.includes(skillTable[i].groupIndex)){
+          allSkillGroup.push(skillTable[i].groupIndex);
+          allSkills.push(skillTable[i].index);
+        }
+      }
+    }
+    for(var i=0; i<baseSkills.length; i++){
+      var index = allSkills.indexOf(baseSkills[i]);
+      allSkills.splice(index, 1);
+    }
+    for(var i=0; i<passiveSkills.length; i++){
+      index = allSkills.indexOf(passiveSkills[i]);
+      allSkills.splice(index, 1);
+    }
+    // console.log(allSkills);
+    GM.giveAllSkill(user.objectID, allSkills);
   });
   socket.on('firePing', function(date){
     socket.emit('firePong', date, Date.now());
