@@ -1728,13 +1728,20 @@ button:hover{
 }
 .popUpSkillInfoDesc > div{
   display: inline-block;
-  width: 140px;
+  width: 152px;
   height: 15px;
   line-height: 15px;
   font-size: 12px;
   overflow: visible;
   margin: 0;
   padding: 0px 7px 0px 0px;
+}
+.popUpSkillInfoDesc img{
+  width: 13px;
+  height: 13px;
+  vertical-align: middle;
+  margin-left: 4px;
+  margin-bottom: 1.5px;
 }
 .skillUpgradeEffectContainer{
   position: absolute;

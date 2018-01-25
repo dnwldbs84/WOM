@@ -610,7 +610,7 @@ io.on('connection', function(socket){
         if(GM.checkSkillCondition(user.objectID, skillData)){
           var serverSyncFireTime = syncFireTime + GM.getUserTimeDiff(user.objectID);
           var timeoutTime = serverSyncFireTime - Date.now();
-          if(timeoutTime <serverConfig.MINIMUM_LATENCY){
+          if(timeoutTime < serverConfig.MINIMUM_LATENCY){
             timeoutTime = serverConfig.MINIMUM_LATENCY;
           }
           setTimeout(function(){
