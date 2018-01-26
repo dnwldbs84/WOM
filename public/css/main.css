@@ -155,9 +155,9 @@ canvas {
 .startSceneHudCenterLeft, .standingSceneHudCenterLeft{
   position: absolute;
   top: 165px;
-  left: 5px;
-  width: 280px;
-  height: 240px;
+  left: 15px;
+  width: 270px;
+  height: 270px;
   background: rgba(70, 70, 70, 0.6);
   border: 10px solid rgba(255,255,255, 0.75);
   border-radius: 2px;
@@ -426,8 +426,8 @@ button:hover{
 .startSceneHudCenterRight, .standingSceneHudCenterRight{
   position: absolute;
   top: 165px;
-  right: 0px;
-  width: 280px;
+  right: 15px;
+  width: 270px;
   height: 360px;
   overflow-x: hidden;
   z-index: 10;
