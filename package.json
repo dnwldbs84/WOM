@@ -17,6 +17,8 @@
   },
   "homepage": "https://github.com/Wookok/project#readme",
   "dependencies": {
+    "body-parser": "^1.18.2",
+    "cookie-parser": "^1.4.3",
     "csvjson": "^4.3.4",
     "express": "^4.15.4",
     "quadtree-lib": "^1.0.7",
