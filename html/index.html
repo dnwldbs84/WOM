@@ -31,7 +31,6 @@
     h.parentNode.insertBefore(s,h);})();
   </script>
   <!-- End 33Across SiteCTRL -->
-
   <link rel="stylesheet" type="text/css" href="/css/main.css">
   <script>
     var serverList = {
@@ -41,6 +40,14 @@
       "ASIA 2" : { "SERVER" : "ASIA", "IP" : "localhost" },
       "EUROPE" : { "IP" : "" }
     }
+  </script>
+  <!-- adsense !-->
+  <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <script>
+    (adsbygoogle = window.adsbygoogle || []).push({
+      google_ad_client: "ca-pub-2600477015128152",
+      enable_page_level_ads: true
+    });
   </script>
 </head>
 <body>
@@ -54,7 +61,6 @@
     var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ur, s);
     })();
   </script>
-  <script data-cfasync="false" src="//d27x580xb9ao1l.cloudfront.net/?abxxd=705585"></script>
   <div id="gameScene" class="disable">
     <div class="gameSceneHudTopLeft" id="gameSceneHudTopLeft"></div>
     <div class="gameSceneHudTopCenter disable" id="gameSceneHudTopCenter">
@@ -232,7 +238,7 @@
 
           </div>
           <div class="startSceneHudCenterCenter">
-            <input type="text" placeholder="Enter Your Nickname" id="userStartNickName"/>
+            <input type="text" maxlength="15" placeholder="Enter Your Nickname" id="userStartNickName"/>
             <div class="startSceneHudCenterCenterCharSelect" id="startSceneHudCenterCenterCharSelect">
               <div type="1" class="selectedChar" style="left: 23px;">
                 <img src="/images/charFireSymbol.png" />
@@ -273,7 +279,7 @@
             </div>
             <div class="startSceneHudCenterRightHowToPlay">
               <h3>How to play</h3>
-              <p>● Collect various magic spells and grow up character, become the most powerful mage.</p>
+              <p>● Collect various magic spells and grow up character, become the greatest mage.</p>
               <p>● You can get resources<span class="memo">[spell, gold, jewel]</span> and exp from chests, trees, rocks or other characters.</p>
               <p>● Use golds and jewels for spell upgrade.</p>
               <h3>Key Info</h3>
@@ -285,7 +291,7 @@
               <p>● <span class="strong">G :</span> open Spell Setting popup</p>
               <p>● <span class="strong">Enter :</span> chatting</p>
               <h3>Game Tip</h3>
-              <p>● Use <a href="https://chrome.en.softonic.com/" target="_blank">Google Chrome</a> is highly recommended for best performance</p>
+              <p>● Using <a href="https://chrome.en.softonic.com/" target="_blank">Google Chrome</a> is highly recommended for best performance</p>
               <p>● Each Characters Passive Spell make character special.<span class="memo">[upgrade it!!!]</span></p>
               <p>● All spells can equip regardless of character type.<span class="memo">[except character spell]</span></p>
               <p>● Unlock spell`s property by upgrade.</p>
@@ -306,10 +312,11 @@
       </div>
       <div class="startSceneHudBottom">
         <div class="startSceneHudBottomLeft">
+          <div class="SNSReward twitterReward" id="startSceneTwitterReward"><img src="/images/GoldIcon.png" /><span>5000</span><img src="/images/complete.png" class="complete disable" /></div>
+          <div class="SNSReward facebookReward" id="startSceneFacebookReward"><img src="/images/JewelIcon.png" /><span>5</span><img src="/images/complete.png" class="complete disable"/></div>
           <div class="startSceneHudSocial">
-            <!-- <a href="https://www.facebook.com/WooksDev" target="_blank" class="socialBtn facebookBtn"></a> -->
-            <a href="https://twitter.com/WooksDev" target="_blank" class="socialBtn twitterBtn"></a>
-            <a href="https://discord.gg/35nrAAR" target="_blank" class="socialBtn discordBtn"></a>
+            <a id="startSceneFacebook" href="https://www.facebook.com/World-Of-Mageio-772845656244542" target="_blank" class="socialBtn facebookBtn"></a>
+            <a id="startSceneTwitter" href="https://twitter.com/WooksDev" target="_blank" class="socialBtn twitterBtn"></a>
             <!-- <a href="" target="_blank" class="socialBtn redditBtn"></a> -->
             <a href="http://iogames.space/" target="_blank" class="moreIOBtn">More IO Games</a>
           </div>
@@ -319,7 +326,8 @@
             <h3>Last updated [1.0.0] January 19 2018</h3>
             <p>● Added social btn</p>
           </div>
-          <a href="/changelog" target="_blank">see more...</a>
+          <a href="/changelog" target="_blank" class="changelog">see more...</a>
+          <a href="https://discord.gg/35nrAAR" target="_blank" class="discordBtn"></a>
         </div>
       </div>
     </div>
@@ -333,7 +341,7 @@
         <div class="standingSceneHudCenterLeft">
         </div>
         <div class="standingSceneHudCenterCenter">
-          <input type="text" placeholder="Enter Your Nickname" id="userStandingNickName"/>
+          <input type="text" maxlength="15" placeholder="Enter Your Nickname" id="userStandingNickName"/>
           <div class="standingSceneHudCenterCenterCharSelect" id="standingSceneHudCenterCenterCharSelect">
             <div type="1" class="selectedChar" style="left: 23px;">
               <img src="/images/charFireSymbol.png" />
@@ -376,7 +384,7 @@
         <div class="standingSceneHudCenterRight">
           <div class="standingSceneHudCenterRightHowToPlay">
             <h3>How to play</h3>
-            <p>● Collect various magic spells and grow up character, become the most powerful mage.</p>
+            <p>● Collect various magic spells and grow up character, become the greatest mage.</p>
             <p>● You can get resources<span class="memo">[spell, gold, jewel]</span> and exp from chests, trees, rocks or other characters.</p>
             <p>● Use golds and jewels for spell upgrade.</p>
             <h3>Key Info</h3>
@@ -388,7 +396,7 @@
             <p>● <span class="strong">G :</span> open Spell Setting popup</p>
             <p>● <span class="strong">Enter :</span> chatting</p>
             <h3>Game Tip</h3>
-            <p>● Use <a href="https://chrome.en.softonic.com/" target="_blank">Google Chrome</a> is highly recommended for best performance</p>
+            <p>● Using <a href="https://chrome.en.softonic.com/" target="_blank">Google Chrome</a> is highly recommended for best performance</p>
             <p>● Each Characters Passive Spell make character special.<span class="memo">[upgrade it!!!]</span></p>
             <p>● All spells can equip regardless of character type.<span class="memo">[except character spell]</span></p>
             <p>● Unlock spell`s property by upgrade.</p>
@@ -408,10 +416,11 @@
       </div>
       <div class="standingSceneHudBottom">
         <div class="standingSceneHudBottomLeft">
+          <div class="SNSReward twitterReward" id="standingSceneTwitterReward"><img src="/images/GoldIcon.png" /><span>5000</span><img src="/images/complete.png" class="complete disable" /></div>
+          <div class="SNSReward facebookReward" id="standingSceneFacebookReward"><img src="/images/JewelIcon.png" /><span>5</span><img src="/images/complete.png" class="complete disable"/></div>
           <div class="standingSceneHudSocial">
-            <!-- <a href="https://www.facebook.com/WooksDev" target="_blank" class="socialBtn facebookBtn"></a> -->
-            <a href="https://twitter.com/WooksDev" target="_blank" class="socialBtn twitterBtn"></a>
-            <a href="https://discord.gg/35nrAAR" target="_blank" class="socialBtn discordBtn"></a>
+            <a id="standingSceneFacebook" href="https://www.facebook.com/World-Of-Mageio-772845656244542" target="_blank" class="socialBtn facebookBtn"></a>
+            <a id="standingSceneTwitter" href="https://twitter.com/WooksDev" target="_blank" class="socialBtn twitterBtn"></a>
             <!-- <a href="" target="_blank" class="socialBtn redditBtn"></a> -->
             <a href="http://iogames.space/" target="_blank" class="moreIOBtn">More IO Games</a>
           </div>
@@ -421,7 +430,8 @@
             <h3>Last updated [1.0.0] January 19 2018</h3>
             <p>● Added social btn</p>
           </div>
-          <a href="/changelog" target="_blank">see more...</a>
+          <a href="/changelog" target="_blank" class="changelog">see more...</a>
+          <a href="https://discord.gg/35nrAAR" target="_blank" class="discordBtn"></a>
         </div>
       </div>
     </div>

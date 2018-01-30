@@ -142,6 +142,9 @@ function User(socketID, userName, userStat, userBase, exp){
   this.onLevelUP = new Function();
   this.onDeath = new Function();
 
+  this.isGetTwitterReward = false;
+  this.isGetFacebookReward = false;
+
   this.getExp(0);
   this.initStat();
   this.updateCharTypeSkill();
@@ -1242,16 +1245,16 @@ User.prototype.getExp = function(exp, killScore, chestScore){
 User.prototype.getGold = function(goldAmount){
   if(util.isNumeric(goldAmount)){
     this.gold += goldAmount;
+    this.onGetResource(this, {type : gameConfig.GET_RESOURCE_TYPE_GOLD, amount : goldAmount});
   }
   // this.calcUserScore();
-  this.onGetResource(this, {type : gameConfig.GET_RESOURCE_TYPE_GOLD, amount : goldAmount});
 };
 User.prototype.getJewel = function(jewelAmount){
   if(util.isNumeric(jewelAmount)){
     this.jewel += jewelAmount;
+    this.calcUserScore();
+    this.onGetResource(this, {type : gameConfig.GET_RESOURCE_TYPE_JEWEL, amount : jewelAmount});
   }
-  this.calcUserScore();
-  this.onGetResource(this, {type : gameConfig.GET_RESOURCE_TYPE_JEWEL, amount : jewelAmount});
 };
 User.prototype.levelUp = function(){
   this.level ++;

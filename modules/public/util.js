@@ -804,3 +804,23 @@ exports.createRequest = function(){
   }
   return request;
 };
+exports.getCookie = function(cookie, key){
+  var cols = cookie.split(';');
+  for(var i=0; i<cols.length; i++){
+    var col = cols[i];
+    while(col.charAt(0) == ' '){
+      col = col.substring(1);
+    }
+    if(col.indexOf(key) === 0){
+      var val = col.substring(key.length + 1, col.length);
+      if(val === 'true'){
+        return true;
+      }else if(val === 'false'){
+        return false;
+      }else{
+        return val;
+      }
+    }
+  }
+  return '';
+};

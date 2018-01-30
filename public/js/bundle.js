@@ -1129,6 +1129,7 @@ var standingSceneSelectedCharName, standingSceneSelectedCharStatPower, standingS
 
 var miniMapUser, miniMapChest1, miniMapChest2, miniMapChest3, miniMapChest4, miniMapChest5, miniMapChest6, miniMapChest7, miniMapChest8, miniMapChest9;
 var gameSceneFpsText, gameScenePingText;
+var feedbackBtn;
 
 var selectedPanel = null;
 var selectedDiv = null;
@@ -1147,6 +1148,7 @@ function UIManager(sTable, bTable, iTable, usTable){
 
   this.onLoadCompleteServerList = new Function();
   this.onStartBtnClick = new Function();
+  this.onSocialBtnClick = new Function();
   this.serverConditionOn = new Function();
   this.serverConditionOff = new Function();
 
@@ -1216,60 +1218,42 @@ UIManager.prototype = {
     startButton.getElementsByTagName('img')[0].classList.add('disable');
 
     setStartSceneCharIconClick();
-    // var children = document.getElementById('startSceneHudCenterCenterCharSelect').children;
-    // for(var i=0; i<children.length; i++){
-    //   children[i].onclick = function(){
-    //     var type = parseInt(this.getAttribute('type'));
-    //     if(type === gameConfig.CHAR_TYPE_FIRE || type === gameConfig.CHAR_TYPE_FROST || type === gameConfig.CHAR_TYPE_ARCANE){
-    //       characterType = type;
-    //     }else{
-    //       characterType = gameConfig.CHAR_TYPE_FIRE;
-    //     }
-    //     for(var j=0; j<children.length; j++){
-    //       children[j].classList.remove('selectedChar');
-    //     }
-    //     this.classList.add('selectedChar');
-    //
-    //     //updateSelectedPanel
-    //     var name = "";
-    //     var desc = "";
-    //     var color = "";
-    //     switch (type) {
-    //       case gameConfig.CHAR_TYPE_FIRE:
-    //         name = fireCharName;
-    //         desc = fireCharDesc;
-    //         color = "red";
-    //         break;
-    //       case gameConfig.CHAR_TYPE_FROST:
-    //         name = frostCharName;
-    //         desc = frostCharDesc;
-    //         color = "blue";
-    //         break;
-    //       case gameConfig.CHAR_TYPE_ARCANE:
-    //         name = arcaneCharName;
-    //         desc = arcaneCharDesc;
-    //         color = "purple";
-    //         break;
-    //       default:
-    //     }
-    //     var statData = objectAssign({}, util.findDataWithTwoColumns(userStatTable, 'type', characterType, 'level', 1));
-    //     startSceneSelectedCharName.innerHTML = "<span class='" + color + "'>" + name + "</span>";
-    //     startSceneSelectedCharDesc.innerHTML = desc;
-    //     startSceneSelectedCharStatPower.getElementsByTagName('span')[0].innerHTML = statData.power;
-    //     startSceneSelectedCharStatMagic.getElementsByTagName('span')[0].innerHTML = statData.magic;
-    //     startSceneSelectedCharStatSpeed.getElementsByTagName('span')[0].innerHTML = statData.speed;
-    //
-    //     startSceneSelectedCharStatPower.onmouseover = statTooltipOnHandler.bind(startSceneSelectedCharStatPower, gameConfig.STAT_POWER_INDEX, statData.power);
-    //     startSceneSelectedCharStatPower.onmouseout = bottomTooltipOffHandler.bind(startSceneSelectedCharStatPower);
-    //
-    //     startSceneSelectedCharStatMagic.onmouseover = statTooltipOnHandler.bind(startSceneSelectedCharStatMagic, gameConfig.STAT_MAGIC_INDEX, statData.magic);
-    //     startSceneSelectedCharStatMagic.onmouseout = bottomTooltipOffHandler.bind(startSceneSelectedCharStatMagic);
-    //
-    //     startSceneSelectedCharStatSpeed.onmouseover = statTooltipOnHandler.bind(startSceneSelectedCharStatSpeed, gameConfig.STAT_SPEED_INDEX, statData.speed);
-    //     startSceneSelectedCharStatSpeed.onmouseout = bottomTooltipOffHandler.bind(startSceneSelectedCharStatSpeed);
-    //   };
-    // }
-    // children[0].onclick();
+
+    // set social btns
+    var startSceneFacebook = document.getElementById('startSceneFacebook');
+    var startSceneTwitter = document.getElementById('startSceneTwitter');
+    var standingSceneFacebook = document.getElementById('standingSceneFacebook');
+    var standingSceneTwitter = document.getElementById('standingSceneTwitter');
+
+    var thisOnSocialBtnClick = this.onSocialBtnClick;
+    function socialBtnHandler(path){
+      var req = util.createRequest();
+      req.onreadystatechange = function(e){
+        if(req.readyState === 4){
+          var twitter = util.getCookie(document.cookie, 'twitter');
+          var facebook = util.getCookie(document.cookie, 'facebook');
+          thisOnSocialBtnClick(twitter, facebook);
+        }
+      }
+      req.open('POST', path, true);
+      req.send();
+    }
+    startSceneFacebook.onclick = socialBtnHandler.bind('', '/facebook');
+    standingSceneFacebook.onclick = socialBtnHandler.bind('', '/facebook');
+    startSceneTwitter.onclick = socialBtnHandler.bind('', '/twitter');
+    standingSceneTwitter.onclick = socialBtnHandler.bind('', '/twitter');
+  },
+  completeTwitter : function(){
+    var startSceneTwitterReward = document.getElementById('startSceneTwitterReward');
+    var standingSceneTwitterReward = document.getElementById('standingSceneTwitterReward');
+    startSceneTwitterReward.getElementsByTagName('img')[1].classList.remove('disable');
+    standingSceneTwitterReward.getElementsByTagName('img')[1].classList.remove('disable');
+  },
+  completeFacebook : function(){
+    var startSceneFacebookReward = document.getElementById('startSceneFacebookReward');
+    var standingSceneFacebookReward = document.getElementById('standingSceneFacebookReward');
+    startSceneFacebookReward.getElementsByTagName('img')[1].classList.remove('disable');
+    standingSceneFacebookReward.getElementsByTagName('img')[1].classList.remove('disable');
   },
   setServerList : function(){
     var servers = document.getElementById('servers');
@@ -1406,6 +1390,13 @@ UIManager.prototype = {
     } catch (e) {
       console.log(e.message);
       console.log(url + ' is not response');
+    }
+  },
+  setFeedbackBtn : function(){
+    try {
+      feedbackBtn = document.getElementById('crowd-shortcut').parentNode;
+    } catch (e) {
+      console.log(e.message);
     }
   },
   disableStartButton : function(){
@@ -1772,10 +1763,28 @@ UIManager.prototype = {
   drawGameScene : function(){
     startScene.classList.add('disable');
     standingScene.classList.add('disable');
+    if(feedbackBtn){
+      feedbackBtn.style.display = "none";
+    }else{
+      try {
+        feedbackBtn = document.getElementById('crowd-shortcut').parentNode;
+      } catch (e) {
+        console.log(e.message);
+      }
+    }
   },
   drawRestartScene : function(){
     startScene.classList.add('disable');
     gameScene.classList.add('disable');
+    if(feedbackBtn){
+      feedbackBtn.style.display = "block";
+    }else{
+      try {
+        feedbackBtn = document.getElementById('crowd-shortcut').parentNode;
+      } catch (e) {
+        console.log(e.message);
+      }
+    }
   },
   drawFPSAndPing : function(fps, ping){
     if(fps < 40){
@@ -5368,7 +5377,7 @@ module.exports={
   "PROJECTILE_EFFECT_CHANGE_TIME" : 150,
   "CHAT_MESSAGE_TIME" : 5000,
 
-  "USER_NICK_NAME_LENGTH" : 10,
+  "USER_NICK_NAME_LENGTH" : 15,
   "CHAT_MESSAGE_LENGTH" : 25,
 
   "DEAD_SCENE_TEXT_ANI_PLAY_DELAY_TIME" : 1000,
@@ -7135,6 +7144,26 @@ exports.createRequest = function(){
   }
   return request;
 };
+exports.getCookie = function(cookie, key){
+  var cols = cookie.split(';');
+  for(var i=0; i<cols.length; i++){
+    var col = cols[i];
+    while(col.charAt(0) == ' '){
+      col = col.substring(1);
+    }
+    if(col.indexOf(key) === 0){
+      var val = col.substring(key.length + 1, col.length);
+      if(val === 'true'){
+        return true;
+      }else if(val === 'false'){
+        return false;
+      }else{
+        return val;
+      }
+    }
+  }
+  return '';
+};
 
 },{"../../modules/public/objectAssign.js":9,"./gameConfig.json":8}],12:[function(require,module,exports){
 // inner Modules
@@ -7180,6 +7209,7 @@ var loadedResourcesCount = 0;
 var resourceObject, resourceCharacter, resourceUI, resourceSkillEffect;
 var isLoadResources = false, isUISettingComplete = false, loadingStartTime = Date.now(), loadingTextChangeTime = Date.now();
 var isLoadServerList = false, isServerConditionGood = false, isConnectSocket = false;
+var completeTwitter = false, completeFacebook = false;
 
 var userHandImgData = new Array(5);
 var userCastingTimeHandler = false;
@@ -7285,7 +7315,6 @@ function changeState(newState){
   }
   update();
 };
-
 function update(){
   // if(gameSetupFunc === null && gameUpdateFunc !== null){
   //   drawInterval = setInterval(gameUpdateFunc,fps);
@@ -7341,6 +7370,7 @@ function stateFuncStandby(){
 //if start button clicked, setting game before start game
 //setup socket here!!! now changestate in socket response functions
 function stateFuncStart(){
+  UIManager.setFeedbackBtn();
   UIManager.disableStartButton();
 
   var url = UIManager.getSelectedServer();
@@ -7357,7 +7387,9 @@ function stateFuncCheckServer(){
       if(url){
         setupSocket(url);
         userName = UIManager.getStartUserName();
-        socket.emit('reqStartGame', characterType, userName);
+        var twitter = util.getCookie(document.cookie, 'twitter');
+        var facebook = util.getCookie(document.cookie, 'facebook');
+        socket.emit('reqStartGame', characterType, userName, twitter, facebook);
         userPingCheckTime = Date.now();
         socket.emit('firePing', userPingCheckTime);
       }else{
@@ -7552,12 +7584,32 @@ function setBaseSetting(){
         equipSkillDatas[i] = undefined;
       }
     };
-    UIManager.onPopUpSkillChangeClick = function(){
-      userLastActionTime = Date.now();
-    };
     UIManager.syncSkills(baseSkill, baseSkillData, equipSkills, equipSkillDatas, possessSkills, inherentPassiveSkill, inherentPassiveSkillData);
     UIManager.setPopUpSkillChange(true);
     UIManager.updateCharInfoSelectedPanel(type, level);
+  };
+  UIManager.onPopUpSkillChangeClick = function(){
+    userLastActionTime = Date.now();
+  };
+  UIManager.onSocialBtnClick = function(twitter, facebook){
+    var beforeTwitter = completeTwitter;
+    var beforeFacebook = completeFacebook;
+    if(twitter){
+      completeTwitter = true;
+      UIManager.completeTwitter();
+    }
+    if(facebook){
+      completeFacebook = true;
+      UIManager.completeFacebook();
+    }
+    if(isConnectSocket && socket){
+      if(beforeTwitter !== completeTwitter){
+        socket.emit('completeTwitter');
+      }
+      if(beforeFacebook !== completeFacebook){
+        socket.emit('completeFacebook');
+      }
+    }
   };
   // UIManager.initStartScene();
   // UIManager.initHUD();
@@ -7639,6 +7691,17 @@ function setBaseSetting(){
   UIManager.initHUD();
   UIManager.initPopUpSkillChanger();
   UIManager.setSkillChangeBtn();
+
+  var twitter = util.getCookie(document.cookie, 'twitter');
+  var facebook = util.getCookie(document.cookie, 'facebook');
+  if(twitter){
+    completeTwitter = true;
+    UIManager.completeTwitter();
+  }
+  if(facebook){
+    completeFacebook = true;
+    UIManager.completeFacebook();
+  }
   isUISettingComplete = true;
 };
 function loadResources(){

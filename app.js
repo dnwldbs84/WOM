@@ -1,9 +1,11 @@
 var http = require('http');
 var express = require('express');
 var socketio = require('socket.io');
-var bodyParser = require('body-parser')
+var bodyParser = require('body-parser');
+var cookieParser = require('cookie-parser');
 var path = require('path');
 var fs = require('fs');
+
 var csvJson = require('./modules/public/csvjson.js');
 var objectAssign = require('./modules/public/objectAssign');
 
@@ -36,7 +38,9 @@ var allowCORS = function(req, res, next) {
 
 app.use(allowCORS);
 
-app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(cookieParser());
+
 // app.use(function(req, res, next) {
 //     res.header("Access-Control-Allow-Origin", "*");
 //     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
@@ -46,7 +50,15 @@ app.use(bodyParser.urlencoded({ extended: false }))
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/', function(req, res){
-  fs.readFile('/index.html', 'utf8', function(err, data){
+  if(!req.cookies.twitter){
+    res.cookie('twitter', false, { maxAge: 7 * 24 * 60 * 60 * 1000 });
+  }
+  if(!req.cookies.facebook){
+    res.cookie('facebook', false, { maxAge: 7 * 24 * 60 * 60 * 1000 });
+  }
+  // res.cookie('twitter', req.cookies.twitter ? '' : 'checked'); // set cookie
+  // console.log('Cookies: ', req.cookies)
+  fs.readFile('html/index.html', 'utf8', function(err, data){
     res.writeHead(200, {'Content-Type': 'text/html'});
     res.end(data);
   });
@@ -82,7 +94,6 @@ app.post('/usersInfo', function(req, res){
     res.sendStatus(400);
   }
 });
-
 app.post('/serverCheck', function(req, res){
   if(!req.body){
     res.sendStatus(400);
@@ -97,6 +108,14 @@ app.post('/serverCheck', function(req, res){
     res.send({canJoin : false, version : gameConfig.GAME_VERSION});
   }
 });
+app.post('/twitter', function(req, res){
+  res.cookie('twitter', true, { maxAge: 7 * 24 * 60 * 60 * 1000 });
+  res.end();
+});
+app.post('/facebook', function(req, res){
+  res.cookie('facebook', true, { maxAge: 7 * 24 * 60 * 60 * 1000 });
+  res.end();
+})
 
 var server = http.createServer(app);
 var port = process.env.PORT || config.port;
@@ -257,7 +276,7 @@ GM.onNeedInformProjectileExplode = function(projectileData){
 io.on('connection', function(socket){
   console.log('user connect : ' + socket.id);
   var user;
-  socket.on('reqStartGame', function(userType, userName){
+  socket.on('reqStartGame', function(userType, userName, twitter, facebook){
     try {
       if(userType === gameConfig.CHAR_TYPE_FIRE || userType === gameConfig.CHAR_TYPE_FROST || userType === gameConfig.CHAR_TYPE_ARCANE){
         var userStat = objectAssign({}, util.findDataWithTwoColumns(userStatTable, 'type', userType, 'level', 1));
@@ -314,6 +333,12 @@ io.on('connection', function(socket){
         socket.emit('syncAndSetSkills', userData);
         socket.emit('resStartGame', userDatas, buffDatas, objDatas, chestDatas, rankDatas);
         GM.setStartBuff(user);
+        if(twitter){
+          GM.giveTwitterGold(user.objectID, 5000);
+        }
+        if(facebook){
+          GM.giveFacebookJewel(user.objectID, 5);
+        }
       }else{
         throw "charType error";
       }
@@ -841,6 +866,50 @@ io.on('connection', function(socket){
       }
     }
   });
+  socket.on('completeTwitter', function(){
+    try {
+      GM.giveTwitterGold(user.objectID, 5000);
+    } catch (e) {
+      if(user){
+        try {
+          var rankDatas = GM.processScoreDatas(user.objectID);
+          io.sockets.emit('userLeave', user.objectID, rankDatas);
+        } catch (e) {
+          console.log(e.message);
+        } finally {
+          GM.stopUser(user);
+          GM.kickUser(user);
+          console.log(e.message);
+          socket.disconnect();
+        }
+      }else{
+        console.log(e);
+        socket.disconnect();
+      }
+    }
+  });
+  socket.on('completeFacebook', function(){
+    try {
+      GM.giveFacebookJewel(user.objectID, 5);
+    } catch (e) {
+      if(user){
+        try {
+          var rankDatas = GM.processScoreDatas(user.objectID);
+          io.sockets.emit('userLeave', user.objectID, rankDatas);
+        } catch (e) {
+          console.log(e.message);
+        } finally {
+          GM.stopUser(user);
+          GM.kickUser(user);
+          console.log(e.message);
+          socket.disconnect();
+        }
+      }else{
+        console.log(e);
+        socket.disconnect();
+      }
+    }
+  })
   socket.on('disconnect', function(){
     try {
       var rankDatas = GM.processScoreDatas(user.objectID);

@@ -501,7 +501,7 @@ button:hover{
 }
 .startSceneHudBottomLeft, .standingSceneHudBottomLeft{
   position : absolute;
-  left : 30px;
+  left : 20px;
   width : 350px;
   height : 100px;
   /* background: rgba(70, 70, 70, 0.6); */
@@ -529,7 +529,7 @@ button:hover{
 .socialBtn{
   display: block;
   float: left;
-  margin-right: 10px;
+  margin-right: 15px;
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -552,11 +552,49 @@ button:hover{
   background-color: #0983ce;
 }
 .discordBtn{
+  position: absolute;
+  right: -47px;
+  bottom: 30px;
+  margin-right: 10px;
+  width: 44px;
+  height: 44px;
+  border-radius: 2px;
+  background-size: 40px;
+  background-position: center;
+  background-repeat: no-repeat;
   background-image: url(../images/discord.png);
-  background-color: #7289da;
+  background-color: #6478bd;
 }
 .discordBtn:hover{
   background-color: #5a6db0;
+}
+.SNSReward{
+  position: absolute;
+  bottom: 45px;
+  font-size: 11.5px;
+  color: white;
+  text-shadow: 1px 1px .5px black;
+}
+.SNSReward img:first-child{
+  width: 25px;
+  height: 25px;
+  vertical-align: middle;
+}
+.SNSReward span{
+  margin-left: 5px;
+}
+.facebookReward{
+  left: 1px;
+}
+.twitterReward{
+  left: 48px;
+}
+.complete{
+  height: auto;
+  width: 75px;
+  position: absolute;
+  left: -14px;
+  bottom: -13px;
 }
 .redditBtn{
   background-image: url(../images/reddit.png);
@@ -567,22 +605,22 @@ button:hover{
 }
 .startSceneHudBottomRight, .standingSceneHudBottomRight{
   position: absolute;
-  right: 30px;
+  right: 37px;
   width: 375px;
   height: 150px;
   bottom: 0px;
   color: white;
   text-shadow: 1px 1px 1px black;
 }
-.startSceneHudBottomRight a, .standingSceneHudBottomRight a{
+.changelog{
   text-shadow: none;
-  bottom: 3px;
+  bottom: 5px;
   position: absolute;
-  right: 10px;
+  right: 40px;
 }
 .changelogText{
   position: absolute;
-  bottom: 5px;
+  bottom: 25px;
 }
 .standingSceneHudBottomRight .standingSceneBtnSkillChange{
   position : absolute;

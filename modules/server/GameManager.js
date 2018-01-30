@@ -394,7 +394,7 @@ GameManager.prototype.createOBJsWhenHitStone = function(stoneID){
       }
       randVal = Math.floor(Math.random() * serverConfig.OBSTACLE_STONE_JEWEL_RATE);
       if(randVal === 1){
-        var objJewel = this.createOBJs(1, gameConfig.PREFIX_OBJECT_JEWEL, amount, this.obstacles[i].center, this.obstacles[i].size.width / 2 + 40);
+        var objJewel = this.createOBJs(1, gameConfig.PREFIX_OBJECT_JEWEL, 1, this.obstacles[i].center, this.obstacles[i].size.width / 2 + 40);
         if(objJewel.length){
           createdObjs.push(objJewel[0]);
         }
@@ -422,7 +422,6 @@ GameManager.prototype.createBoxWhenHitTree = function(treeID){
 };
 GameManager.prototype.getObj = function(objID, affectNum, userID, treeObj){
   if(userID in this.users && !this.users[userID].isDead){
-    removeOBJs.push(treeObj);
     // if(objID.substr(0, 3) === gameConfig.PREFIX_OBJECT_EXP){
     //   for(var i=0; i<this.objExps.length; i++){
     //     if(this.objExps[i].objectID === objID){
@@ -441,10 +440,8 @@ GameManager.prototype.getObj = function(objID, affectNum, userID, treeObj){
           if(possessSkills){
             this.onNeedInformSkillData(this.users[userID].socketID, possessSkills);
           }
-
           this.objSkills.splice(i, 1);
-          this.onNeedInformDeleteObj(objID);
-          return;
+          break;
         }
       }
     }else if(objID.substr(0, 3) === gameConfig.PREFIX_OBJECT_GOLD){
@@ -452,8 +449,7 @@ GameManager.prototype.getObj = function(objID, affectNum, userID, treeObj){
         if(this.objGolds[i].objectID === objID){
           this.users[userID].getGold(affectNum);
           this.objGolds.splice(i, 1);
-          this.onNeedInformDeleteObj(objID);
-          return;
+          break;
         }
       }
     }else if(objID.substr(0, 3) === gameConfig.PREFIX_OBJECT_JEWEL){
@@ -461,11 +457,12 @@ GameManager.prototype.getObj = function(objID, affectNum, userID, treeObj){
         if(this.objJewels[i].objectID === objID){
           this.users[userID].getJewel(affectNum);
           this.objJewels.splice(i, 1);
-          this.onNeedInformDeleteObj(objID);
-          return;
+          break;
         }
       }
     }
+    removeOBJs.push(treeObj);
+    this.onNeedInformDeleteObj(objID);
   }
 };
 GameManager.prototype.getBox = function(objID, box, userID, treeObj){
@@ -1254,6 +1251,18 @@ GameManager.prototype.giveResources = function(userID){
   if(userID in this.users){
     this.users[userID].getGold(10000);
     this.users[userID].getJewel(10);
+  }
+};
+GameManager.prototype.giveTwitterGold = function(userID, gold){
+  if(userID in this.users && !this.users[userID].isGetTwitterReward){
+    this.users[userID].isGetTwitterReward = true;
+    this.users[userID].getGold(gold);
+  }
+};
+GameManager.prototype.giveFacebookJewel = function(userID, jewel){
+  if(userID in this.users && !this.users[userID].isGetFacebookReward){
+    this.users[userID].isGetFacebookReward = true;
+    this.users[userID].getJewel(jewel);
   }
 };
 GameManager.prototype.giveAllSkill = function(userID, skills){
