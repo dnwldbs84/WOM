@@ -6380,8 +6380,10 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 },{}],11:[function(require,module,exports){
 module.exports={
   "NORTH AMERICA" : "",
+  "NORTH AMERICA 1" : { "SERVER" : "NORTH AMERICA", "IP" : "54.215.164.45" },
   "ASIA" : "",
   "ASIA 1" : { "SERVER" : "ASIA", "IP" : "13.115.231.106" },
+  "ASIA 2" : { "SERVER" : "ASIA", "IP" : "13.231.37.15" },
   "EUROPE" : ""
 }
 
