@@ -547,7 +547,7 @@ GameManager.prototype.joinUser = function(user){
 };
 GameManager.prototype.kickUser = function(user){
   if(user.objectID in this.users){
-    this.users[user.objectID].clearAll();
+    // this.users[user.objectID].clearAll();
     delete this.users[user.objectID];
     // this.objGoldsCount -= serverConfig.OBJ_GOLD_ADD_PER_USER;
     // this.objExpsCount -= serverConfig.OBJ_EXP_ADD_PER_USER;
@@ -555,12 +555,18 @@ GameManager.prototype.kickUser = function(user){
     console.log("can`t find user`s ID. user already out of game");
   }
 };
+GameManager.prototype.kickAllUser = function(){
+  for(var index in this.users){
+    this.users[index].clearAll();
+    delete this.users[index];
+  }
+};
 GameManager.prototype.stopUser = function(user){
   user.clearAll();
 };
 GameManager.prototype.setStartBuff = function(user){
   this.users[user.objectID].addBuff(serverConfig.START_BUFF_INDEX, user.objectID);
-}
+};
 //user initialize
 GameManager.prototype.initializeUser = function(user, baseSkill, possessSkills, inherentPassiveSkill){
   // check ID is unique

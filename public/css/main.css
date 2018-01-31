@@ -2093,6 +2093,39 @@ button:hover{
   background: rgba(70,70,70,0.3);
   z-index: 15;
 }
+.adminMessageTable{
+  position: absolute;
+  left: 50%;
+  bottom: 60%;
+  width: 500px;
+  transform: translateX(-50%);
+  -webkit-transform: translateX(-50%);
+  -ms-transform: translateX(-50%);
+  -moz-transform: translateX(-50%);
+  -o-transform: translateX(-50%);
+  height: 35%;
+  display: table;
+  overflow: hidden;
+  z-index: 20;
+  pointer-events: none;
+}
+.adminMessage{
+  text-align: center;
+  background: rgba(70,70,70, 0.9);
+  border-radius: 2px;
+  color: #ff9800;
+  font-size: 25px;
+  transition-duration: 3s;
+  -webkit-transition-duration: 3s;
+  -moz-transition-duration: 3s;
+  -o-transition-duration: 3s;
+  text-shadow: 0 0 3px black;
+  font-style: initial;
+}
+.adminMessageAni{
+  opacity: 0;
+  color: #f7bf6e;
+}
 .flashMessageTable{
   position: absolute;
   left: 50%;
@@ -2105,9 +2138,7 @@ button:hover{
   -o-transform: translateX(-50%);
   height: 35%;
   display: table;
-
   overflow: hidden;
-
   z-index: 20;
   pointer-events: none;
 }
@@ -2131,6 +2162,26 @@ td{
 .flashMessageAni{
   opacity: 0;
   color: #f13315;
+}
+.downMessageContainer{
+  position: absolute;
+  left: 50%;
+  top: 10px;
+  width: 500px;
+  transform: translateX(-50%);
+  -webkit-transform: translateX(-50%);
+  -ms-transform: translateX(-50%);
+  -moz-transform: translateX(-50%);
+  -o-transform: translateX(-50%);
+  display: table;
+  z-index: 100;
+  pointer-events: none;
+}
+.downMessage{
+  position: absolute;
+  text-align: center;
+  color: #ff9800;
+  width: 100%;
 }
 .risingMessageContainer{
   position: absolute;

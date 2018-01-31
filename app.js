@@ -26,6 +26,8 @@ var userStatTable = csvJson.toObject(dataJson.userStatData, csvJsonOption);
 
 var util = require('./modules/public/util.js');
 
+var isServerDown = false, serverDownTimeout = false;
+
 var allowCORS = function(req, res, next) {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -80,7 +82,19 @@ app.get('/noaction', function(req, res){
     res.writeHead(200, {'Content-Type': 'text/html'});
     res.end(data);
   });
-})
+});
+app.get('/adminpage', function(req, res){
+  fs.readFile('html/operationTool.html', 'utf8', function(err, data){
+    res.writeHead(200, {'Content-Type': 'text/html'});
+    res.end(data);
+  });
+});
+app.get('/serverdown', function(req, res){
+  fs.readFile('html/serverdown.html', 'utf8', function(err, data){
+    res.writeHead(200, {'Content-Type': 'text/html'});
+    res.end(data);
+  });
+});
 app.post('/usersInfo', function(req, res){
   // console.log(req.body);
   if(!req.body){
@@ -89,7 +103,7 @@ app.post('/usersInfo', function(req, res){
     var cUser = Object.keys(GM.users).length;
     var mUser = serverConfig.MAX_USER_COUNT;
     res.send({ip : req.body.ip, startTime : req.body.startTime,
-             currentUser : cUser, maxUser : mUser, optionIndex : req.body.optionIndex});
+             currentUser : cUser, maxUser : mUser, optionIndex : req.body.optionIndex, isServerDown : isServerDown});
   }else{
     res.sendStatus(400);
   }
@@ -99,13 +113,13 @@ app.post('/serverCheck', function(req, res){
     res.sendStatus(400);
   }else if(GM){
     if(Object.keys(GM.users).length < serverConfig.MAX_USER_COUNT &&
-       req.body.version === gameConfig.GAME_VERSION){
+       req.body.version === gameConfig.GAME_VERSION && !isServerDown){
       res.send({canJoin : true});
     }else{
-      res.send({canJoin : false, version : gameConfig.GAME_VERSION});
+      res.send({canJoin : false, isServerDown : isServerDown, version : gameConfig.GAME_VERSION});
     }
   }else{
-    res.send({canJoin : false, version : gameConfig.GAME_VERSION});
+    res.send({canJoin : false, isServerDown : isServerDown, version : gameConfig.GAME_VERSION});
   }
 });
 app.post('/twitter', function(req, res){
@@ -115,7 +129,48 @@ app.post('/twitter', function(req, res){
 app.post('/facebook', function(req, res){
   res.cookie('facebook', true, { maxAge: 7 * 24 * 60 * 60 * 1000 });
   res.end();
-})
+});
+app.post('/instrction', function(req, res){
+  if(req.body){
+    if(req.body.pw === serverConfig.OPERATION_TOOL_PASSWORD){
+      if(req.body.instruction === serverConfig.OPERATION_MSG_TO_USER){
+        if(io){
+          io.sockets.emit('adminMessage', req.body.msg)
+        }
+        res.send({correctPW : true, correctInstruction : true});
+      }else if(req.body.instruction === serverConfig.OPERATION_DOWN_SERVER){
+        if(io){
+          var time = parseInt(req.body.time);
+          if(time && time > 0){
+            isServerDown = true;
+            io.sockets.emit('downServer', req.body.msg, req.body.time);
+            serverDownTimeout = setTimeout(function(){
+              if(GM){
+                io.sockets.emit('nowServerIsDown');
+                GM.kickAllUser();
+              }
+            }, req.body.time);
+          }
+        }
+        res.send({correctPW : true, correctInstruction : true});
+      }else if(req.body.instruction === serverConfig.OPERATION_CANCEL_SERVER_DOWN){
+        if(isServerDown){
+          clearTimeout(serverDownTimeout);
+          serverDownTimeout = false;
+          isServerDown = false;
+          io.sockets.emit('cancelServerDown', req.body.msg);
+        }
+        res.send({correctPW : true, correctInstruction : true});
+      }else{
+        res.send({correctPW : true, correctInstruction : false});
+      }
+    }else{
+      res.send({correctPW : false});
+    }
+  }else{
+    res.sendStatus(400);
+  }
+});
 
 var server = http.createServer(app);
 var port = process.env.PORT || config.port;

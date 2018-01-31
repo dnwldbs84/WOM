@@ -880,7 +880,7 @@ var onMainUserMoveHandler = function(user){
 }
 module.exports = CManager;
 
-},{"../public/gameConfig.json":8,"../public/objectAssign.js":9,"../public/quadtree.js":10,"../public/util.js":11,"./CObstacle.js":2,"./CUser.js":5}],2:[function(require,module,exports){
+},{"../public/gameConfig.json":8,"../public/objectAssign.js":9,"../public/quadtree.js":10,"../public/util.js":12,"./CObstacle.js":2,"./CUser.js":5}],2:[function(require,module,exports){
 function CObstacle(posX, posY, radius, id, resourceData){
   this.objectID = id;
 
@@ -1057,11 +1057,11 @@ var ProjectileSkill = function(skillInstance, currentPosition, ID, direction){
 
 module.exports = CSkill;
 
-},{"../public/gameConfig.json":8,"../public/util.js":11}],4:[function(require,module,exports){
+},{"../public/gameConfig.json":8,"../public/util.js":12}],4:[function(require,module,exports){
 var util = require('../public/util.js');
 var gameConfig = require('../public/gameConfig.json');
 var objectAssign = require('../public/objectAssign.js');
-// var serverList = require('../public/serverList.json');
+var serverList = require('../public/serverList.json');
 
 var skillTable, buffGroupTable, iconResourceTable, userStatTable;
 var resourceUI;
@@ -1112,7 +1112,8 @@ var goldContainer, jewelContainer, gameBoardRank, gameBoardName, gameBoardLevel,
 var gameSceneDeadScene, deadSceneBackground, deadSceneTextContainer, deadSceneText, deadSceneToLevel, deadSceneLoseGold, deadSceneLoseJewel;
 var chatInputContainer, chatInput;
 
-var flashMessageContainer, risingMessageContainer;
+var flashMessageContainer, risingMessageContainer, adminMessageContainer, downMessageContainer;
+var serverDownTimeout = false;
 var beforeRisingMessageTime = Date.now();
 // var killBoardDisableTimeout = false;
 
@@ -1272,7 +1273,7 @@ UIManager.prototype = {
 
     var optionIndex = 0;
     for(var index in serverList){
-      if(!serverList[index].IP){
+      if(!serverList[index]){
         util.createDomSelectOptGroup(index, servers, false);
       }else{
         var ip = 'http://' + serverList[index].IP;
@@ -1285,29 +1286,31 @@ UIManager.prototype = {
               if(req.readyState === 4){
                 if(req.status === 200){
                   var res = JSON.parse(req.response);
-                  var DOMOption = servers.querySelectorAll('[value="' + res.ip + '"]')[0];
-                  DOMOption.disabled = false;
-                  if(parseInt(res.currentUser) >= parseInt(res.maxUser)){
-                    DOMOption.classList.add('overUser');
-                  }
-                  if(Date.now() - res.startTime >= gameConfig.MAX_PING_LIMIT){
-                    DOMOption.classList.add('highPing');
-                  }
-                  if(!DOMOption.classList.contains('overUser') && !DOMOption.classList.contains('highPing')){
-                    DOMOption.classList.add('available');
-                  }
-                  var text = DOMOption.text + ' [' + res.currentUser + '/' + res.maxUser + '] ' + (Date.now() - res.startTime) + 'ms';
-                  DOMOption.text = text;
-                  if(!isFirstResponse){
-                    //select default
-                    isFirstResponse = true;
-                    servers.selectedIndex = res.optionIndex;
-                  }
-                  if(!isFindAvailableServer){
-                    if(parseInt(res.currentUser) < parseInt(res.maxUser)){
-                      isFindAvailableServer = true;
-                      thisOnLoadCompleteServerList();
+                  if(!res.isServerDown){
+                    var DOMOption = servers.querySelectorAll('[value="' + res.ip + '"]')[0];
+                    DOMOption.disabled = false;
+                    if(parseInt(res.currentUser) >= parseInt(res.maxUser)){
+                      DOMOption.classList.add('overUser');
+                    }
+                    if(Date.now() - res.startTime >= gameConfig.MAX_PING_LIMIT){
+                      DOMOption.classList.add('highPing');
+                    }
+                    if(!DOMOption.classList.contains('overUser') && !DOMOption.classList.contains('highPing')){
+                      DOMOption.classList.add('available');
+                    }
+                    var text = DOMOption.text + ' [' + res.currentUser + '/' + res.maxUser + '] ' + (Date.now() - res.startTime) + 'ms';
+                    DOMOption.text = text;
+                    if(!isFirstResponse){
+                      //select default
+                      isFirstResponse = true;
                       servers.selectedIndex = res.optionIndex;
+                    }
+                    if(!isFindAvailableServer){
+                      if(parseInt(res.currentUser) < parseInt(res.maxUser)){
+                        isFindAvailableServer = true;
+                        thisOnLoadCompleteServerList();
+                        servers.selectedIndex = res.optionIndex;
+                      }
                     }
                   }
                 }
@@ -1369,6 +1372,10 @@ UIManager.prototype = {
           }else{
             if(res.version !== gameConfig.GAME_VERSION){
               alert('Client`s game version is different from server`s. Reload page.');
+              location.reload();
+            }else if(res.isServerDown){
+              alert('Server is down for update! Reload page.');
+              location.reload();
             }else{
               alert('The server is currently full! How about join to other server.');
             }
@@ -1704,6 +1711,8 @@ UIManager.prototype = {
 
     flashMessageContainer = document.getElementById('flashMessageContainer');
     risingMessageContainer = document.getElementById('risingMessageContainer');
+    downMessageContainer = document.getElementById('downMessageContainer');
+    adminMessageContainer = document.getElementById('adminMessageContainer');
   },
   changeLoadingText : function(){
     var loadingText = document.getElementById('loadingText');
@@ -2322,15 +2331,46 @@ UIManager.prototype = {
       jewelContainer.innerText = jewelAmount + jewel;
     }
   },
+  makeAdminMessage : function(msg){
+    var message = document.createElement('p');
+    message.innerHTML = msg;
+    message.classList.add('adminMessage');
+    adminMessageContainer.appendChild(message);
+    setTimeout(function(){
+      message.classList.add('adminMessageAni');
+    }, 2000);
+    setTimeout(function(){
+      adminMessageContainer.removeChild(message);
+    }, 5000);
+  },
+  makeDownMessage : function(msg, time){
+    downMessageContainer.innerHTML = '';
+    var message = document.createElement('p');
+    var newTime = parseInt(time / (60 * 1000));
+    message.innerHTML = msg + ' (' + newTime + ' min)';
+    message.classList.add('downMessage');
+    downMessageContainer.appendChild(message);
+    var that = this;
+    serverDownTimeout = setTimeout(function(){
+      time -= 60 * 1000;
+      that.makeDownMessage.call(that, msg, time);
+    }, 60 * 1000);
+  },
+  cancelDown : function(){
+    downMessageContainer.innerHTML = '';
+    if(serverDownTimeout){
+      clearTimeout(serverDownTimeout);
+    }
+    serverDownTimeout = false;
+  },
   makeFlashMessage : function(msg){
     var message = document.createElement('p');
     message.innerHTML = msg;
     message.classList.add('flashMessage');
+    flashMessageContainer.appendChild(message);
     setTimeout(function(){
       message.classList.add('flashMessageAni');
     }, 2000);
-    flashMessageContainer.appendChild(message);
-    // centerMessageContainer.insertBefore(messageDiv, centerMessageContainer.childNodes[0]);
     setTimeout(function(){
       flashMessageContainer.removeChild(message);
     }, 5000);
@@ -4554,7 +4594,7 @@ function popUpSortBtnClickHandler(dontUpdateEquip){
 }
 module.exports = UIManager;
 
-},{"../public/gameConfig.json":8,"../public/objectAssign.js":9,"../public/util.js":11}],5:[function(require,module,exports){
+},{"../public/gameConfig.json":8,"../public/objectAssign.js":9,"../public/serverList.json":11,"../public/util.js":12}],5:[function(require,module,exports){
 var util = require('../public/util.js');
 var Skill = require('./CSkill.js');
 var gameConfig = require('../public/gameConfig.json');
@@ -4876,7 +4916,7 @@ function imgHandTimeoutHandler(tickTime){
 };
 module.exports = User;
 
-},{"../public/gameConfig.json":8,"../public/util.js":11,"./CSkill.js":3}],6:[function(require,module,exports){
+},{"../public/gameConfig.json":8,"../public/util.js":12,"./CSkill.js":3}],6:[function(require,module,exports){
 
 module.exports = {
     toObject        : toObject,
@@ -6338,6 +6378,14 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 
 
 },{}],11:[function(require,module,exports){
+module.exports={
+  "NORTH AMERICA" : "",
+  "ASIA" : "",
+  "ASIA 1" : { "SERVER" : "ASIA", "IP" : "13.115.231.106" },
+  "EUROPE" : ""
+}
+
+},{}],12:[function(require,module,exports){
 var gameConfig = require('./gameConfig.json');
 var radianFactor = Math.PI/180;
 var objectAssign = require('../../modules/public/objectAssign.js');
@@ -7165,7 +7213,7 @@ exports.getCookie = function(cookie, key){
   return '';
 };
 
-},{"../../modules/public/objectAssign.js":9,"./gameConfig.json":8}],12:[function(require,module,exports){
+},{"../../modules/public/objectAssign.js":9,"./gameConfig.json":8}],13:[function(require,module,exports){
 // inner Modules
 var util = require('../../modules/public/util.js');
 var User = require('../../modules/client/CUser.js');
@@ -7484,6 +7532,8 @@ function setBaseSetting(){
   };
   UIManager.serverConditionOff = function(){
     isServerConditionGood = false;
+    UIManager.enableStartButton();
+    changeState(gameConfig.GAME_STATE_START_SCENE);
   }
   UIManager.onStartBtnClick = function(charType, clickButton){
     userLastActionTime = Date.now();
@@ -7796,6 +7846,20 @@ function setupSocket(url){
     window.onbeforeunload = '';
     window.location.href = "http://localhost/error"
     // changeState(gameConfig.GAME_STATE_RESTART_SCENE);
+  });
+  socket.on('adminMessage', function(msg){
+    UIManager.makeAdminMessage(msg);
+  });
+  socket.on('downServer', function(msg, time){
+    UIManager.makeDownMessage(msg, time);
+  });
+  socket.on('nowServerIsDown', function(){
+    window.onbeforeunload = '';
+    window.location.href = "http://localhost/serverdown"
+  });
+  socket.on('cancelServerDown', function(){
+    UIManager.makeAdminMessage('Server down canceled.');
+    UIManager.cancelDown();
   });
   socket.on('firePong', function(date, serverDate){
     latency = Date.now() - date;
@@ -9439,4 +9503,4 @@ setInterval(function(){
   }
 }, gameConfig.LONG_TIME_INTERVAL);
 
-},{"../../modules/client/CManager.js":1,"../../modules/client/CUIManager.js":4,"../../modules/client/CUser.js":5,"../../modules/public/csvjson.js":6,"../../modules/public/data.json":7,"../../modules/public/gameConfig.json":8,"../../modules/public/objectAssign.js":9,"../../modules/public/util.js":11}]},{},[12]);
+},{"../../modules/client/CManager.js":1,"../../modules/client/CUIManager.js":4,"../../modules/client/CUser.js":5,"../../modules/public/csvjson.js":6,"../../modules/public/data.json":7,"../../modules/public/gameConfig.json":8,"../../modules/public/objectAssign.js":9,"../../modules/public/util.js":12}]},{},[13]);

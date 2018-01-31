@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>OperationTool</title>
+    <style>
+      .tools{
+        position: absolute;
+        top: 25%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+      .alertMsg{
+        color: red;
+      }
+      .resultMsg{
+        color: green;
+      }
+    </style>
+    <script>
+      serverList = {
+        "NORTH AMERICA" : "",
+        "ASIA" : "",
+        "ASIA 1" : { "SERVER" : "ASIA", "IP" : "13.115.231.106" },
+        "EUROPE" : ""
+      }
+    </script>
+  </head>
+  <body>
+    <div class="tools">
+      <h2>World Of Mage io - Operation Tool</h2>
+      <hr>
+      <label for="pw">Password</lable><br><input type="password" id="pw"><br>
+        <label for="instruction">Instruction</label><br><input type="text" id="instruction"><br>
+      <label for="msg">Message</label><br><input type="text" id="msg"><br>
+      <label for="time">Time</label><br><input type="number" id="time"><br>
+      <lavel for="ip">IP Index</label><br><input type="text" id="ipIndex"><br>
+      <label for="msgToAll">Message To All Server?</label><br><input type="checkbox" id="msgToAll"><br>
+      <button id="submit">Submit</button><br>
+      <div class="alertMsg" id="alertMsg"></div>
+      <div class="resultMsg" id="resultMsg"></div>
+    </div>
+  </body>
+  <script>
+    document.getElementById('submit').onclick = function(){
+      var pw = document.getElementById('pw').value;
+      var instruction = document.getElementById('instruction').value;
+      var msg = document.getElementById('msg').value;
+      var time = document.getElementById('time').value;
+      var msgToAll = document.getElementById('msgToAll').checked;
+
+      var alertMsg = document.getElementById('alertMsg');
+      var resultMsg = document.getElementById('resultMsg');
+      if(msgToAll){
+        alertMsg.innerHTML = "";
+        resultMsg.innerHTML = "";
+        for(var index in serverList){
+          if(serverList[index]){
+            tryAjax(index, pw, instruction, msg, time);
+          }
+        }
+      }else{
+        alertMsg.innerHTML = "";
+        resultMsg.innerHTML = "";
+        var ipIndex = document.getElementById('ipIndex').value;
+        if(serverList[ipIndex]){
+          tryAjax(ipIndex, pw, instruction, msg, time);
+        }else{
+          alertMsg.innerHTML = "Enter correct ip index.";
+        }
+      }
+    }
+    function tryAjax(index, pw, instruction, msg, time){
+      try {
+        (function doAjax(){
+          var ip = 'http://' + serverList[index].IP;
+          var req = createRequest();
+          req.onreadystatechange = function(e){
+            if(req.readyState === 4){
+              if(req.status === 200){
+                var res = JSON.parse(req.response);
+                if(res.correctPW){
+                  if(res.correctInstruction){
+                    var result = document.createElement('p');
+                    result.innerHTML = "Success( " + index + " )";
+                    resultMsg.appendChild(result)
+                  }else{
+                    var errorMsg = document.createElement('p');
+                    errorMsg.innerHTML = "Error( " + index + " ) : wrong instruction";
+                    alertMsg.appendChild(errorMsg);
+                  }
+                }else{
+                  var errorMsg = document.createElement('p');
+                  errorMsg.innerHTML = "Error( " + index + " ) : wrong password";
+                  alertMsg.appendChild(errorMsg);
+                }
+              }else{
+                var errorMsg = document.createElement('p');
+                errorMsg.innerHTML = "Error( " + index + " )";
+                alertMsg.appendChild(errorMsg);
+              }
+            }
+          }
+          req.open('POST', ip + '/instrction', true);
+          req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+          req.send('pw=' + pw + '&instruction=' + instruction + '&msg=' + msg + '&time=' + time);
+        })();
+      } catch (e) {
+        console.log(e);
+      }
+    }
+    function createRequest(){
+      var request;
+      try {
+        request = new XMLHttpRequest();
+      } catch (e){
+        try {
+          request = new ActiveXObject('Msxml2.XMLHTTP');
+        } catch (innerE) {
+          request = new ActiveXObject('Microsoft.XMLHTTP');
+        }
+      }
+      return request;
+    }
+  </script>
+</html>
