@@ -6380,10 +6380,8 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 },{}],11:[function(require,module,exports){
 module.exports={
   "NORTH AMERICA" : "",
-  "NORTH AMERICA 1" : { "SERVER" : "NORTH AMERICA", "IP" : "54.215.164.45" },
   "ASIA" : "",
   "ASIA 1" : { "SERVER" : "ASIA", "IP" : "13.115.231.106" },
-  "ASIA 2" : { "SERVER" : "ASIA", "IP" : "13.231.37.15" },
   "EUROPE" : ""
 }
 
@@ -7846,7 +7844,7 @@ function setupSocket(url){
   socket.on('disconnect', function(){
     console.log('disconnected');
     window.onbeforeunload = '';
-    window.location.href = "http://localhost/error"
+    window.location.href = "/error"
     // changeState(gameConfig.GAME_STATE_RESTART_SCENE);
   });
   socket.on('adminMessage', function(msg){
@@ -7857,7 +7855,7 @@ function setupSocket(url){
   });
   socket.on('nowServerIsDown', function(){
     window.onbeforeunload = '';
-    window.location.href = "http://localhost/serverdown"
+    window.location.href = "/serverdown"
   });
   socket.on('cancelServerDown', function(){
     UIManager.makeAdminMessage('Server down canceled.');
@@ -9501,7 +9499,7 @@ setInterval(function(){
   if(Date.now() >= userLastActionTime + gameConfig.LIMIT_NO_ACTION_TIME){
     console.log('disconnected');
     window.onbeforeunload = '';
-    window.location.href = "http://localhost/noaction"
+    window.location.href = "/noaction"
   }
 }, gameConfig.LONG_TIME_INTERVAL);
 

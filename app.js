@@ -130,7 +130,7 @@ app.post('/facebook', function(req, res){
   res.cookie('facebook', true, { maxAge: 7 * 24 * 60 * 60 * 1000 });
   res.end();
 });
-app.post('/instrction', function(req, res){
+app.post('/instruction', function(req, res){
   if(req.body){
     if(req.body.pw === serverConfig.OPERATION_TOOL_PASSWORD){
       if(req.body.instruction === serverConfig.OPERATION_MSG_TO_USER){
