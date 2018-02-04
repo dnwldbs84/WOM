@@ -329,7 +329,6 @@ GM.onNeedInformProjectileExplode = function(projectileData){
 };
 
 io.on('connection', function(socket){
-  console.log('user connect : ' + socket.id);
   var user;
   socket.on('reqStartGame', function(userType, userName, twitter, facebook){
     try {
@@ -352,14 +351,6 @@ io.on('connection', function(socket){
           }
         }
         var inherentPassiveSkill = userBase.basePassiveSkill;
-
-        // add all skills
-        // possessSkills.push(31); possessSkills.push(41); possessSkills.push(51);
-        // possessSkills.push(61); possessSkills.push(71); possessSkills.push(81);
-        // possessSkills.push(1021); possessSkills.push(1031); possessSkills.push(1041);
-        // possessSkills.push(1051); possessSkills.push(1061); possessSkills.push(1071);
-        // possessSkills.push(2021); possessSkills.push(2031); possessSkills.push(2041);
-        // possessSkills.push(2051); possessSkills.push(2061); possessSkills.push(2071); possessSkills.push(2081);
 
         // user init and join game
         GM.initializeUser(user, baseSkill, possessSkills, inherentPassiveSkill);

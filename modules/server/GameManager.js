@@ -543,7 +543,6 @@ GameManager.prototype.joinUser = function(user){
   // this.objGoldsCount += serverConfig.OBJ_GOLD_ADD_PER_USER;
   // console.log(user.conditions);
   // console.log(this.users);
-  console.log(user.objectID + ' join in GameManager');
 };
 GameManager.prototype.kickUser = function(user){
   if(user.objectID in this.users){
