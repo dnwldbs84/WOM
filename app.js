@@ -29,12 +29,17 @@ var util = require('./modules/public/util.js');
 var isServerDown = false, serverDownTimeout = false;
 
 var allowCORS = function(req, res, next) {
-  res.header('Access-Control-Allow-Origin', '*');
+  var allowedOrigins = ['http://worldofmage.io', 'http://localhost', 'http://www.worldofmage.io'];
+  var origin = req.headers.origin;
+  if(allowedOrigins.indexOf(origin) > -1){
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  // res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
   res.header('Access-Control-Max-Age', 10);
   (req.method === 'OPTIONS') ?
-    res.send(200) :
+    res.sendStatus(200) :
     next();
 };
 
@@ -42,12 +47,6 @@ app.use(allowCORS);
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
-
-// app.use(function(req, res, next) {
-//     res.header("Access-Control-Allow-Origin", "*");
-//     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-//     next();
-// });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -96,7 +95,6 @@ app.get('/serverdown', function(req, res){
   });
 });
 app.post('/usersInfo', function(req, res){
-  // console.log(req.body);
   if(!req.body){
     res.sendStatus(400);
   }else if(GM){
@@ -967,8 +965,6 @@ io.on('connection', function(socket){
     } finally {
       socket.disconnect();
       user = null;
-      console.log('user disconnect :' + socket.id);
-      console.log('user count :' + Object.keys(GM.users).length);
     }
   });
 });

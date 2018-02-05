@@ -117,8 +117,13 @@ exports.move = function(deltaTime, isMoveSlight){
 
     this.setCenter();
     if(addPos){
-      this.setTargetDirection();
-      this.setSpeed();
+      if(this.isMoveBackward){
+        this.setTargetDirection(true);
+        this.setSpeed(gameConfig.MOVE_BACK_WARD_SPEED_DECREASE_RATE);
+      }else{
+        this.setTargetDirection();
+        this.setSpeed();
+      }
     }
   }
 };
