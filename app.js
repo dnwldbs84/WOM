@@ -648,7 +648,11 @@ io.on('connection', function(socket){
             timeoutTime += skillData.effectLastTime / 2;
           }
           setTimeout(function(){
-            GM.applySkill(user.objectID, skillData);
+            try {
+              GM.applySkill(user.objectID, skillData);
+            } catch (er) {
+              console.log(er.message);
+            }
           }, timeoutTime);
           io.sockets.emit('skillFired', data, user.objectID);
         }
@@ -658,8 +662,8 @@ io.on('connection', function(socket){
         try {
           var rankDatas = GM.processScoreDatas(user.objectID);
           io.sockets.emit('userLeave', user.objectID, rankDatas);
-        } catch (e) {
-          console.log(e.message);
+        } catch (er) {
+          console.log(er.message);
         } finally {
           GM.stopUser(user);
           GM.kickUser(user);
@@ -683,18 +687,22 @@ io.on('connection', function(socket){
             timeoutTime = serverConfig.MINIMUM_LATENCY;
           }
           setTimeout(function(){
-            var projectiles = [];
-            for(var i=0; i<datas.length; i++){
-              var projectileData = objectAssign({}, util.findData(skillTable, 'index', datas[i].skillIndex));
+            try {
+              var projectiles = [];
+              for(var i=0; i<datas.length; i++){
+                var projectileData = objectAssign({}, util.findData(skillTable, 'index', datas[i].skillIndex));
 
-              projectileData.objectID = datas[i].objectID;
-              projectileData.position = datas[i].position;
-              projectileData.speed = datas[i].speed;
-              projectileData.startTime = Date.now();
+                projectileData.objectID = datas[i].objectID;
+                projectileData.position = datas[i].position;
+                projectileData.speed = datas[i].speed;
+                projectileData.startTime = Date.now();
 
-              projectiles.push(projectileData);
+                projectiles.push(projectileData);
+              }
+              GM.applyProjectile(user.objectID, projectiles);
+            } catch (er) {
+              console.log(er.message);
             }
-            GM.applyProjectile(user.objectID, projectiles);
           }, timeoutTime);
           io.sockets.emit('projectilesFired', datas, serverSyncFireTime, user.objectID);
         }
@@ -704,8 +712,8 @@ io.on('connection', function(socket){
         try {
           var rankDatas = GM.processScoreDatas(user.objectID);
           io.sockets.emit('userLeave', user.objectID, rankDatas);
-        } catch (e) {
-          console.log(e.message);
+        } catch (er) {
+          console.log(er.message);
         } finally {
           GM.stopUser(user);
           GM.kickUser(user);

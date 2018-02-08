@@ -1048,8 +1048,6 @@ User.prototype.death = function(attackUserID){
   //calculate exp to attacker
   if(!this.isDead){
     this.isDead = true;
-
-    console.log(this.objectID + ' is dead by ' + attackUserID);
     this.clearAll();
 
     this.onDeath(this, attackUserID, this.objectID, this.name);

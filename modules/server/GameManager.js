@@ -385,7 +385,7 @@ GameManager.prototype.createOBJsWhenHitStone = function(stoneID){
     if(this.obstacles[i].objectID === stoneID){
       var randVal = Math.floor(Math.random() * serverConfig.OBSTACLE_STONE_GOLD_RATE);
       var createdObjs = [];
-      if(randVal === 1){
+      if(randVal === 5){
         var amount = Math.floor(Math.random() * (serverConfig.OBSTACLE_STONE_GOLD_MAX - serverConfig.OBSTACLE_STONE_GOLD_MIN + 1) + serverConfig.OBSTACLE_STONE_GOLD_MIN);
         var objGold = this.createOBJs(1, gameConfig.PREFIX_OBJECT_GOLD, amount, this.obstacles[i].center, this.obstacles[i].size.width / 2 + 40);
         if(objGold.length){
@@ -393,7 +393,7 @@ GameManager.prototype.createOBJsWhenHitStone = function(stoneID){
         }
       }
       randVal = Math.floor(Math.random() * serverConfig.OBSTACLE_STONE_JEWEL_RATE);
-      if(randVal === 1){
+      if(randVal === 13){
         var objJewel = this.createOBJs(1, gameConfig.PREFIX_OBJECT_JEWEL, 1, this.obstacles[i].center, this.obstacles[i].size.width / 2 + 40);
         if(objJewel.length){
           createdObjs.push(objJewel[0]);
@@ -410,7 +410,7 @@ GameManager.prototype.createBoxWhenHitTree = function(treeID){
   for(var i=0; i<this.obstacles.length; i++){
     if(this.obstacles[i].objectID === treeID){
       var randVal = Math.floor(Math.random() * serverConfig.OBSTACLE_TREE_BOX_RATE);
-      if(randVal === 1){
+      if(randVal === 9){
         var objBox = this.createOBJs(1, gameConfig.PREFIX_OBJECT_BOX, 1, this.obstacles[i].center, this.obstacles[i].size.width / 2 + 40);
         if(objBox.length){
           this.onNeedInformCreateObjs(objBox);
@@ -619,7 +619,7 @@ GameManager.prototype.applySkill = function(userID, skillData){
     }
     this.skills.push(skillCollider);
   }else{
-    console.log('cant find user data');
+    // console.log('cant find user data');
   }
 };
 GameManager.prototype.applyProjectile = function(userID, projectileDatas){
@@ -667,7 +667,7 @@ GameManager.prototype.applyProjectile = function(userID, projectileDatas){
       this.projectiles.push(projectileCollider);
     }
   }else{
-    console.log('cant find user data');
+    // console.log('cant find user data');
   }
 };
 GameManager.prototype.checkCheat = function(userData){
@@ -1154,7 +1154,7 @@ GameManager.prototype.checkCreateChest = function(){
   // if(this.chests.length < 9){
   //   return true;
   // }
-  if(this.users.length < 10){
+  if(this.users.length < 5){
     if(this.chests.length < 2){
       return true;
     }else{
@@ -1166,7 +1166,7 @@ GameManager.prototype.checkCreateChest = function(){
     }else{
       return false;
     }
-  }else if(this.users.length / 5 > this.chests.length){
+  }else if(this.users.length / 4 > this.chests.length){
     return true;
   }else{
     return false;
