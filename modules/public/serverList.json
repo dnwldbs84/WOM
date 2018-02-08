@@ -11,5 +11,6 @@
   "EUROPE" : "",
   "EUROPE 1" : { "SERVER" : "EUROPE", "IP" : "52.59.225.91" },
   "EUROPE 2" : { "SERVER" : "EUROPE", "IP" : "54.93.108.95" },
-  "EUROPE 3" : { "SERVER" : "EUROPE", "IP" : "52.59.211.8" }
+  "EUROPE 3" : { "SERVER" : "EUROPE", "IP" : "52.59.211.8" },
+  "EUROPE 4" : { "SERVER" : "EUROPE", "IP" : "54.93.122.67" }
 }

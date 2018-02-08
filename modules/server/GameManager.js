@@ -1199,8 +1199,8 @@ GameManager.prototype.checkCreateChest = function(){
   // if(this.chests.length < 9){
   //   return true;
   // }
-  if(this.users.length < 5){
-    if(this.chests.length < 2){
+  if(this.users.length < 10){
+    if(this.chests.length < 3){
       return true;
     }else{
       return false;
@@ -1415,10 +1415,10 @@ function longTimeIntervalHandler(){
       this.objBoxs.splice(i, 1);
     }
   }
-  if(this.checkCreateChest()){
-    setChestIndexAndDoCreateChest.call(this);
-    setTimeout(setChestIndexAndDoCreateChest.bind(this), serverConfig.CHEST_CHAIN_CREATE_TIME);
-  }
+  // if(this.checkCreateChest()){
+  setChestIndexAndDoCreateChest.call(this);
+    // setTimeout(setChestIndexAndDoCreateChest.bind(this), serverConfig.CHEST_CHAIN_CREATE_TIME);
+  // }
 };
 var setChestIndexAndDoCreateChest = function(){
   if(this.checkCreateChest()){
@@ -1442,6 +1442,7 @@ var setChestIndexAndDoCreateChest = function(){
         isCreate = true;
       }
     }
+    setTimeout(setChestIndexAndDoCreateChest.bind(this), serverConfig.CHEST_CHAIN_CREATE_TIME);
   }
 }
 function updateIntervalHandler(){

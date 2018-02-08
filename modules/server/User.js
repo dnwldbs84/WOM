@@ -1409,11 +1409,6 @@ User.prototype.updateUserBaseStat = function(){
   this.baseMagic = userLevelData.magic;
   this.baseSpeed = userLevelData.speed;
 };
-// User.prototype.restoreWhenLevelUp = function(){
-//   var healHPAmount = this.maxHP * serverConfig.USER_LEVEL_UPGRADE_RESTORE_RATE / 100;
-//   var healMPAmount = this.maxMP * serverConfig.USER_LEVEL_UPGRADE_RESTORE_RATE / 100;
-//   this.healHPMP(healHPAmount, healMPAmount);
-// };
 User.prototype.calcUserScore = function(){
   var levelScore = this.level  * serverConfig.SCORE_FACOTR_LEVEL;
   // var goldScore = this.gold * serverConfig.SCORE_FACTOR_GOLD;
