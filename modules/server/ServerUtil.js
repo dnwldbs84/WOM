@@ -255,7 +255,7 @@ exports.setAffectedEleColUserWithCollection = function(userID, affectedObj, coll
     affectedID : affectedObj.id,
     affectedObj : affectedObj,
 
-    // expAmount : affectedObj.expAmount || 0,
+    expAmount : affectedObj.expAmount || 0,
     goldAmount : affectedObj.goldAmount || 0,
     jewelAmount : affectedObj.jewelAmount || 0,
     skillIndex : affectedObj.skillIndex || 0
@@ -535,6 +535,7 @@ exports.getBoxDrop = function(){
     }
   }
   return {
+    exp : dropData.provideExp || 0,
     gold : goldAmount || 0,
     jewel : jewelAmount || 0,
     skillIndex : skillIndex || 0

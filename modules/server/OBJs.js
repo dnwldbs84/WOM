@@ -232,6 +232,7 @@ function OBJBox(objectID){
   this.objectID = objectID;
   this.startTime = Date.now();
 
+  this.expAmount = 0;
   this.goldAmount = 0;
   this.jewelAmount = 0;
   this.skillIndex = 0;
@@ -241,9 +242,10 @@ function OBJBox(objectID){
 OBJBox.prototype = Object.create(GameObject.prototype);
 OBJBox.prototype.constructor = OBJBox;
 
-OBJBox.prototype.initOBJBox = function(position, radius, goldAmount, jewelAmount, skillIndex){
+OBJBox.prototype.initOBJBox = function(position, radius, exp, goldAmount, jewelAmount, skillIndex){
   this.setSize(radius * 2, radius * 2);
   this.setPosition(position.x - radius, position.y - radius);
+  this.expAmount = exp;
   if(goldAmount){
     this.goldAmount = goldAmount;
   }
@@ -261,6 +263,7 @@ OBJBox.prototype.setCollectionEle = function(){
     y : this.position.y,
     width : this.size.width,
     height : this.size.height,
+    expAmount : this.expAmount,
     goldAmount : this.goldAmount,
     jewelAmount : this.jewelAmount,
     skillIndex : this.skillIndex

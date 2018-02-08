@@ -77,9 +77,11 @@ function GameManager(){
   this.addedObjJewels = [];
   this.objBoxs = [];
   this.addedObjBoxs = [];
+
   // this.objExpsCount = serverConfig.OBJ_EXP_MIN_COUNT;
   // this.objSkillsCount = serverConfig.OBJ_SKILL_MIN_COUNT;
-  // this.objGoldsCount = serverConfig.OBJ_GOLD_MIN_COUNT;
+  // this.objBoxsCount = serverConfig.OBJ_BOX_COUNT;
+  // this.objGoldsCount = serverConfig.OBJ_GOLD_COUNT;
   // this.objJewelsCount = serverConfig.OBJ_JEWEL_MIN_COUNT;
 
   this.longTimeInterval = false;
@@ -292,7 +294,7 @@ GameManager.prototype.createOBJs = function(count, type, amount, nearPosition, n
       if(nearPosition){
         var randomPos = SUtil.generateNearPos(nearPosition, range, staticTree, randomID, radius);
       }else{
-        randomPos = SUtil.generateRandomPos(collectionTree, 0, 0, gameConfig.CANVAS_MAX_SIZE.width - radius, gameConfig.CANVAS_MAX_SIZE.height - radius,
+        randomPos = SUtil.generateRandomPos(collectionTree, 400, 400, gameConfig.CANVAS_MAX_SIZE.width - 400, gameConfig.CANVAS_MAX_SIZE.height - 400,
                                           radius, serverConfig.OBJ_SKILL_RANGE_WITH_OTHERS, randomID, staticTree);
       }
 
@@ -317,7 +319,7 @@ GameManager.prototype.createOBJs = function(count, type, amount, nearPosition, n
       if(nearPosition){
         var randomPos = SUtil.generateNearPos(nearPosition, range, staticTree, randomID, radius);
       }else{
-        randomPos = SUtil.generateRandomPos(collectionTree, 0, 0, gameConfig.CANVAS_MAX_SIZE.width - radius, gameConfig.CANVAS_MAX_SIZE.height - radius,
+        randomPos = SUtil.generateRandomPos(collectionTree, 400, 400, gameConfig.CANVAS_MAX_SIZE.width - 400, gameConfig.CANVAS_MAX_SIZE.height - 400,
                                             radius, serverConfig.OBJ_GOLD_RANGE_WITH_OTHERS, randomID, staticTree);
       }
       if(randomPos){
@@ -342,7 +344,7 @@ GameManager.prototype.createOBJs = function(count, type, amount, nearPosition, n
       if(nearPosition){
         var randomPos = SUtil.generateNearPos(nearPosition, range, staticTree, randomID, radius);
       }else{
-        randomPos = SUtil.generateRandomPos(collectionTree, 0, 0, gameConfig.CANVAS_MAX_SIZE.width - radius, gameConfig.CANVAS_MAX_SIZE.height - radius,
+        randomPos = SUtil.generateRandomPos(collectionTree, 400, 400, gameConfig.CANVAS_MAX_SIZE.width - 400, gameConfig.CANVAS_MAX_SIZE.height - 400,
                                             radius, serverConfig.OBJ_GOLD_RANGE_WITH_OTHERS, randomID, staticTree);
       }
       if(randomPos){
@@ -367,7 +369,7 @@ GameManager.prototype.createOBJs = function(count, type, amount, nearPosition, n
                                             radius, serverConfig.OBJ_GOLD_RANGE_WITH_OTHERS, randomID, staticTree);
       }
       if(randomPos){
-        objBox.initOBJBox(randomPos, radius, objDrops.gold, objDrops.jewel, objDrops.skillIndex);
+        objBox.initOBJBox(randomPos, radius, objDrops.exp, objDrops.gold, objDrops.jewel, objDrops.skillIndex);
         objBox.setCollectionEle();
 
         this.objBoxs.push(objBox);
@@ -420,6 +422,46 @@ GameManager.prototype.createBoxWhenHitTree = function(treeID){
     }
   }
 };
+GameManager.prototype.createGoldsToRandomPosition = function(count){
+  var createdObjs = [];
+  for(var i=0; i<count; i++){
+    var amount = Math.floor(Math.random() * (serverConfig.OBJ_GOLD_MAX_GOLD_AMOUNT - serverConfig.OBJ_GOLD_MIN_GOLD_AMOUNT + 1) + serverConfig.OBJ_GOLD_MIN_GOLD_AMOUNT);
+    var objGold = this.createOBJs(1, gameConfig.PREFIX_OBJECT_GOLD, amount);
+      // , {x : rock.posX + rock.radius, y : rock.posY + rock.radius}, rock.radius + 40);
+    if(objGold.length){
+      createdObjs.push(objGold[0]);
+    }
+  }
+  if(createdObjs.length){
+    this.onNeedInformCreateObjs(createdObjs);
+  }
+};
+GameManager.prototype.createJewelsToRandomPosition = function(count){
+  var createdObjs = [];
+  for(var i=0; i<count; i++){
+    var objJewel = this.createOBJs(1, gameConfig.PREFIX_OBJECT_JEWEL, 1);
+      // , {x : rock.posX + rock.radius, y : rock.posY + rock.radius}, rock.radius + 40);
+    if(objJewel.length){
+      createdObjs.push(objJewel[0]);
+    }
+  }
+  if(createdObjs.length){
+    this.onNeedInformCreateObjs(createdObjs);
+  }
+};
+GameManager.prototype.createBoxsToRandomPosition = function(count){
+  var createdObjs = [];
+  for(var i=0; i<count; i++){
+    var objBox = this.createOBJs(1, gameConfig.PREFIX_OBJECT_BOX, 1);
+      // {x : tree.posX + tree.radius, y : tree.posY + tree.radius}, tree.radius + 40);
+    if(objBox.length){
+      createdObjs.push(objBox[0]);
+    }
+  }
+  if(createdObjs.length){
+    this.onNeedInformCreateObjs(createdObjs);
+  }
+};
 GameManager.prototype.getObj = function(objID, affectNum, userID, treeObj){
   if(userID in this.users && !this.users[userID].isDead){
     // if(objID.substr(0, 3) === gameConfig.PREFIX_OBJECT_EXP){
@@ -470,6 +512,9 @@ GameManager.prototype.getBox = function(objID, box, userID, treeObj){
     removeOBJs.push(treeObj);
     for(var i=0; i<this.objBoxs.length; i++){
       if(this.objBoxs[i].objectID === objID){
+        if(box.expAmount){
+          this.users[userID].getExp(box.expAmount);
+        }
         if(box.goldAmount){
           this.users[userID].getGold(box.goldAmount);
         }
@@ -1329,6 +1374,19 @@ GameManager.prototype.calcKillFeedBackLevel = function(userID){
   }
 };
 function longTimeIntervalHandler(){
+  var additionalGoldCount = serverConfig.OBJ_GOLD_COUNT - this.objGolds.length;
+  var additionalBoxCount = serverConfig.OBJ_BOX_COUNT - this.objBoxs.length;
+  var additionalJewelCount = serverConfig.OBJ_JEWEL_COUNT - this.objJewels.length;
+  if(additionalGoldCount > 0){
+    this.createGoldsToRandomPosition(additionalGoldCount);
+  }
+  if(additionalBoxCount > 0){
+    this.createBoxsToRandomPosition(additionalBoxCount);
+  }
+  if(additionalJewelCount > 0){
+    this.createJewelsToRandomPosition(additionalJewelCount);
+  }
+
   for(var i=this.objSkills.length - 1; i>= 0; i--){
     if(serverConfig.OBJS_LIFE_TIME <= Date.now() - this.objSkills[i].startTime){
       this.onNeedInformDeleteObj(this.objSkills[i].objectID);

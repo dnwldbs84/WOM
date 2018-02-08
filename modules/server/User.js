@@ -1416,7 +1416,7 @@ User.prototype.updateUserBaseStat = function(){
 // };
 User.prototype.calcUserScore = function(){
   var levelScore = this.level  * serverConfig.SCORE_FACOTR_LEVEL;
-  var goldScore = this.gold * serverConfig.SCORE_FACTOR_GOLD;
+  // var goldScore = this.gold * serverConfig.SCORE_FACTOR_GOLD;
   var jewelScore = this.jewel * serverConfig.SCORE_FACTOR_JEWEL;
 
   var skillScore = 0;
@@ -1429,7 +1429,7 @@ User.prototype.calcUserScore = function(){
     skillScore += getSkillScoreFactor(skillData.tier) * skillData.level;
   }
   this.skillScore = util.isNumeric(skillScore) ? skillScore : 0;
-  this.score = this.skillScore + this.killScore + this.chestScore + levelScore + goldScore + jewelScore - serverConfig.SCORE_FACTOR_START;
+  this.score = this.skillScore + this.killScore + this.chestScore + levelScore + jewelScore - serverConfig.SCORE_FACTOR_START;
 };
 User.prototype.addSkillTick = function(){
   this.skillTick++;
