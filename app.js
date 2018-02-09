@@ -193,6 +193,8 @@ GM.onNeedInformUserTakeDamage = function(user, dmg, skillIndex){
       io.sockets.emit('userDamaged', userData, skillIndex);
     }
   } catch (e) {
+    console.log('onNeedInformUserTakeDamage');
+    console.log(Date.now());
   }
 };
 GM.onNeedInformUserDeath = function(attackUserInfo, deadUserInfo, loseResource, newSkills){
@@ -201,6 +203,8 @@ GM.onNeedInformUserDeath = function(attackUserInfo, deadUserInfo, loseResource, 
     var levelDatas = GM.processUserAllTypeLevels(deadUserInfo.userID);
     io.sockets.emit('userDead', attackUserInfo, deadUserInfo, scoreDatas, levelDatas, loseResource, newSkills);
   } catch (e) {
+    console.log('onNeedInformUserDeath');
+    console.log(Date.now());
   }
 };
 GM.onNeedInformUserReduceMP = function(user){
@@ -210,6 +214,8 @@ GM.onNeedInformUserReduceMP = function(user){
       io.sockets.emit('changeUserStat', userData);
     }
   } catch (e) {
+    console.log('onNeedInformUserReduceMP');
+    console.log(Date.now());
   }
 };
 GM.onNeedInformUserGetExp = function(user, addResource){
@@ -219,6 +225,8 @@ GM.onNeedInformUserGetExp = function(user, addResource){
       io.to(user.socketID).emit('changeUserStat', userData, addResource);
     }
   } catch (e) {
+    console.log('onNeedInformUserGetExp');
+    console.log(Date.now());
   }
 };
 GM.onNeedInformUserGetResource = function(user, addResource){
@@ -234,17 +242,26 @@ GM.onNeedInformUserGetSkill = function(socketID, skillIndex){
   try {
     io.to(socketID).emit('getSkill', skillIndex);
   } catch (e) {
+    console.log('onNeedInformUserGetSkill');
+    console.log(Date.now());
   }
 };
 GM.onNeedInformUserSkillChangeToResource = function(socketID, skillIndex){
   try {
     io.to(socketID).emit('skillChangeToResource', skillIndex);
   } catch (e) {
+    console.log('onNeedInformUserSkillChangeToResource');
+    console.log(Date.now());
   }
 };
 GM.onNeedInformScoreData = function(){
-  var rankDatas = GM.processScoreDatas();
-  io.sockets.emit('updateRank', rankDatas);
+  try {
+    var rankDatas = GM.processScoreDatas();
+    io.sockets.emit('updateRank', rankDatas);
+  } catch (e) {
+    console.log('onNeedInformScoreData');
+    console.log(Date.now());
+  }
 };
 GM.onNeedInformUserLevelUp = function(user){
   try {
@@ -253,6 +270,8 @@ GM.onNeedInformUserLevelUp = function(user){
       io.sockets.emit('changeUserStat', userData);
     }
   } catch (e) {
+    console.log('onNeedInformUserLevelUp');
+    console.log(Date.now());
   }
 };
 GM.onNeedInformBuffUpdate = function(user){
@@ -262,6 +281,8 @@ GM.onNeedInformBuffUpdate = function(user){
       io.sockets.emit('updateBuff', buffData);
     }
   } catch (e) {
+    console.log('onNeedInformBuffUpdate');
+    console.log(Date.now());
   }
   // io.to(user.socketID).emit('updateBuff', buffData);
 };
@@ -269,6 +290,8 @@ GM.onNeedInformSkillUpgrade = function(socketID, beforeSkillIndex, afterSkillInd
   try {
     io.to(socketID).emit('upgradeSkill', beforeSkillIndex, afterSkillIndex, resourceData);
   } catch (e) {
+    console.log('onNeedInformSkillUpgrade');
+    console.log(Date.now());
   }
 };
 GM.onNeedInformUserChangePrivateStat = function(user){
@@ -278,6 +301,8 @@ GM.onNeedInformUserChangePrivateStat = function(user){
       io.to(user.socketID).emit('updateUserPrivateStat', statData);
     }
   } catch (e) {
+    console.log('onNeedInformUserChangePrivateStat');
+    console.log(Date.now());
   }
 };
 GM.onNeedInformUserChangeStat = function(user){
@@ -288,6 +313,8 @@ GM.onNeedInformUserChangeStat = function(user){
       io.sockets.emit('changeUserStat', userData);
     }
   } catch (e) {
+    console.log('onNeedInformUserChangeStat');
+    console.log(Date.now());
   }
 };
 GM.onNeedInformCreateChest = function(chest){
@@ -308,6 +335,8 @@ GM.onNeedInformCreateObjs = function(objs){
     }
     io.sockets.emit('createOBJs', objDatas);
   } catch (e) {
+    console.log('onNeedInformCreateObjs');
+    console.log(Date.now());
   }
 };
 GM.onNeedInformDeleteObj = function(objID){
@@ -317,6 +346,8 @@ GM.onNeedInformSkillData = function(socketID, possessSkills){
   try {
     io.to(socketID).emit('updateSkillPossessions', possessSkills);
   } catch (e) {
+    console.log('onNeedInformSkillData');
+    console.log(Date.now());
   }
 };
 GM.onNeedInformProjectileDelete = function(projectileData){
@@ -396,11 +427,15 @@ io.on('connection', function(socket){
         } finally {
           GM.stopUser(user);
           GM.kickUser(user);
+          console.log('reqStartGame1');
+          console.log(Date.now());
           console.log(e.message);
           socket.disconnect();
         }
       }else{
-        console.log(e);
+        console.log('reqStartGame2');
+        console.log(Date.now());
+        console.log(e.message);
         socket.disconnect();
       }
     }
@@ -451,11 +486,15 @@ io.on('connection', function(socket){
         } finally {
           GM.stopUser(user);
           GM.kickUser(user);
+          console.log('reqRestartGame1');
+          console.log(Date.now());
           console.log(e.message);
           socket.disconnect();
         }
       }else{
-        console.log(e);
+        console.log('reqRestartGame2');
+        console.log(Date.now());
+        console.log(e.message);
         socket.disconnect();
       }
     }
@@ -492,10 +531,14 @@ io.on('connection', function(socket){
         } finally {
           GM.stopUser(user);
           GM.kickUser(user);
+          console.log('userDataUpdate1');
+          console.log(Date.now());
           console.log(e.message);
           socket.disconnect();
         }
       }else{
+        console.log('userDataUpdate2');
+        console.log(Date.now());
         console.log(e);
         socket.disconnect();
       }
@@ -521,10 +564,14 @@ io.on('connection', function(socket){
         } finally {
           GM.stopUser(user);
           GM.kickUser(user);
+          console.log('userMoveStart1');
+          console.log(Date.now());
           console.log(e.message);
           socket.disconnect();
         }
       }else{
+        console.log('userMoveStart2');
+        console.log(Date.now());
         console.log(e);
         socket.disconnect();
       }
@@ -553,10 +600,14 @@ io.on('connection', function(socket){
         } finally {
           GM.stopUser(user);
           GM.kickUser(user);
+          console.log('userMoveAndAttack1');
+          console.log(Date.now());
           console.log(e.message);
           socket.disconnect();
         }
       }else{
+        console.log('userMoveAndAttack2');
+        console.log(Date.now());
         console.log(e);
         socket.disconnect();
       }
@@ -592,10 +643,14 @@ io.on('connection', function(socket){
         } finally {
           GM.stopUser(user);
           GM.kickUser(user);
+          console.log('userUseSkill1');
+          console.log(Date.now());
           console.log(e.message);
           socket.disconnect();
         }
       }else{
+        console.log('userUseSkill2');
+        console.log(Date.now());
         console.log(e);
         socket.disconnect();
       }
@@ -620,10 +675,14 @@ io.on('connection', function(socket){
         } finally {
           GM.stopUser(user);
           GM.kickUser(user);
+          console.log('userStop1');
+          console.log(Date.now());
           console.log(e.message);
           socket.disconnect();
         }
       }else{
+        console.log('userStop2');
+        console.log(Date.now());
         console.log(e);
         socket.disconnect();
       }
@@ -651,6 +710,8 @@ io.on('connection', function(socket){
             try {
               GM.applySkill(user.objectID, skillData);
             } catch (er) {
+              console.log('skillFired1');
+              console.log(Date.now());
               console.log(er.message);
             }
           }, timeoutTime);
@@ -667,10 +728,14 @@ io.on('connection', function(socket){
         } finally {
           GM.stopUser(user);
           GM.kickUser(user);
+          console.log('skillFired2');
+          console.log(Date.now());
           console.log(e.message);
           socket.disconnect();
         }
       }else{
+        console.log('skillFired3');
+        console.log(Date.now());
         console.log(e.message);
         socket.disconnect();
       }
@@ -701,6 +766,8 @@ io.on('connection', function(socket){
               }
               GM.applyProjectile(user.objectID, projectiles);
             } catch (er) {
+              console.log('projectilesFired1');
+              console.log(Date.now());
               console.log(er.message);
             }
           }, timeoutTime);
@@ -717,10 +784,14 @@ io.on('connection', function(socket){
         } finally {
           GM.stopUser(user);
           GM.kickUser(user);
+          console.log('projectilesFired2');
+          console.log(Date.now());
           console.log(e.message);
           socket.disconnect();
         }
       }else{
+        console.log('projectilesFired3');
+        console.log(Date.now());
         console.log(e.message);
         socket.disconnect();
       }
@@ -748,10 +819,14 @@ io.on('connection', function(socket){
         } finally {
           GM.stopUser(user);
           GM.kickUser(user);
+          console.log('upgradeSkill1');
+          console.log(Date.now());
           console.log(e.message);
           socket.disconnect();
         }
       }else{
+        console.log('upgradeSkill2');
+        console.log(Date.now());
         console.log(e);
         socket.disconnect();
       }
@@ -774,10 +849,14 @@ io.on('connection', function(socket){
         } finally {
           GM.stopUser(user);
           GM.kickUser(user);
+          console.log('exchangePassive1');
+          console.log(Date.now());
           console.log(e.message);
           socket.disconnect();
         }
       }else{
+        console.log('exchangePassive2');
+        console.log(Date.now());
         console.log(e);
         socket.disconnect();
       }
@@ -800,10 +879,14 @@ io.on('connection', function(socket){
         } finally {
           GM.stopUser(user);
           GM.kickUser(user);
+          console.log('equipPassive1');
+          console.log(Date.now());
           console.log(e.message);
           socket.disconnect();
         }
       }else{
+        console.log('equipPassive2');
+        console.log(Date.now());
         console.log(e);
         socket.disconnect();
       }
@@ -826,10 +909,14 @@ io.on('connection', function(socket){
         } finally {
           GM.stopUser(user);
           GM.kickUser(user);
+          console.log('unequipPassive1');
+          console.log(Date.now());
           console.log(e.message);
           socket.disconnect();
         }
       }else{
+        console.log('unequipPassive2');
+        console.log(Date.now());
         console.log(e);
         socket.disconnect();
       }
@@ -891,6 +978,8 @@ io.on('connection', function(socket){
         } finally {
           GM.stopUser(user);
           GM.kickUser(user);
+          console.log('chatting');
+          console.log(Date.now());
           console.log(e.message);
           socket.disconnect();
         }
@@ -912,6 +1001,8 @@ io.on('connection', function(socket){
         } finally {
           GM.stopUser(user);
           GM.kickUser(user);
+          console.log('updateUserTimeDiff');
+          console.log(Date.now());
           console.log(e.message);
           socket.disconnect();
         }
@@ -931,11 +1022,15 @@ io.on('connection', function(socket){
         } finally {
           GM.stopUser(user);
           GM.kickUser(user);
+          console.log('completeTwitter1');
+          console.log(Date.now());
           console.log(e.message);
           socket.disconnect();
         }
       }else{
-        console.log(e);
+        console.log('completeTwitter2');
+        console.log(Date.now());
+        console.log(e.message);
         socket.disconnect();
       }
     }
@@ -953,11 +1048,15 @@ io.on('connection', function(socket){
         } finally {
           GM.stopUser(user);
           GM.kickUser(user);
+          console.log('completeFacebook1');
+          console.log(Date.now());
           console.log(e.message);
           socket.disconnect();
         }
       }else{
-        console.log(e);
+        console.log('completeFacebook2');
+        console.log(Date.now());
+        console.log(e.message);
         socket.disconnect();
       }
     }
@@ -969,6 +1068,8 @@ io.on('connection', function(socket){
       GM.stopUser(user);
       GM.kickUser(user);
     } catch (e) {
+      console.log('disconnect');
+      console.log(Date.now());
       console.log(e.message);
     } finally {
       socket.disconnect();

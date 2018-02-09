@@ -490,6 +490,7 @@ GameManager.prototype.getObj = function(objID, affectNum, userID, treeObj){
       for(var i=0; i<this.objGolds.length; i++){
         if(this.objGolds[i].objectID === objID){
           this.users[userID].getGold(affectNum);
+          this.users[userID].getExp(serverConfig.OBJ_GOLD_EXP);
           this.objGolds.splice(i, 1);
           break;
         }
@@ -498,6 +499,7 @@ GameManager.prototype.getObj = function(objID, affectNum, userID, treeObj){
       for(var i=0; i<this.objJewels.length; i++){
         if(this.objJewels[i].objectID === objID){
           this.users[userID].getJewel(affectNum);
+          this.users[userID].getExp(serverConfig.OBJ_JEWEL_EXP);
           this.objJewels.splice(i, 1);
           break;
         }
@@ -1199,24 +1201,45 @@ GameManager.prototype.checkCreateChest = function(){
   // if(this.chests.length < 9){
   //   return true;
   // }
-  if(this.users.length < 10){
+  if(Object.keys(this.users).length <= 10){
     if(this.chests.length < 3){
       return true;
     }else{
       return false;
     }
-  }else if(this.users.length > 40){
-    if(this.chest.length < 9){
+  }else if(Object.keys(this.users).length <= 20){
+    if(this.chests.length < 4){
       return true;
     }else{
       return false;
     }
-  }else if(this.users.length / 4 > this.chests.length){
-    return true;
+  }else if(Object.keys(this.users).length <= 30){
+    if(this.chests.length < 5){
+      return true;
+    }else{
+      return false;
+    }
   }else{
     return false;
   }
-  return false;
+  // if(Object.keys(this.users).length < 10){
+  //   if(this.chests.length < 3){
+  //     return true;
+  //   }else{
+  //     return false;
+  //   }
+  // }else if(Object.keys(this.users).length > 30){
+  //   if(this.chest.length < 7){
+  //     return true;
+  //   }else{
+  //     return false;
+  //   }
+  // }else if(Object.keys(this.users).length / 5 > this.chests.length){
+  //   return true;
+  // }else{
+  //   return false;
+  // }
+  // return false;
 };
 GameManager.prototype.upgradeSkill = function(user, skillIndex){
   try {
@@ -1320,7 +1343,9 @@ GameManager.prototype.giveAllSkill = function(userID, skills){
     for(var i=0; i<skills.length; i++){
       if(i === skills.length -1){
         var possessSkills = this.users[userID].getSkill(skills[i]);
-        this.onNeedInformSkillData(this.users[userID].socketID, possessSkills);
+        if(possessSkills){
+          this.onNeedInformSkillData(this.users[userID].socketID, possessSkills);
+        }
       }else{
         this.users[userID].getSkill(skills[i]);
       }
@@ -1810,7 +1835,6 @@ function affectIntervalHandler(){
             this.users[affectedEles[i].affectedID].addBuff(affectedEles[i].buffToTarget, affectedEles[i].actorID);
           }
           if(affectedEles[i].additionalBuffToTarget){
-            console.log('additionalBuffToTarget!!!');
             this.users[affectedEles[i].affectedID].addBuff(affectedEles[i].additionalBuffToTarget, affectedEles[i].actorID);
           }
         }
