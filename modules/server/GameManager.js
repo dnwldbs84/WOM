@@ -1989,9 +1989,13 @@ function affectedIntervalHandler(){
       }else if(affectedEles[i].collisionType === serverConfig.COLLISION_USER_WITH_COLLECTION_BOX){
         this.getBox(affectedEles[i].affectedID, affectedEles[i], affectedEles[i].actorID, affectedEles[i].affectedObj);
       }else if(affectedEles[i].collisionType === serverConfig.COLLISION_USER_WITH_ENVIRONMENT_IMMORTAL){
-        this.users[affectedEles[i].affectedID].addAura(serverConfig.ENV_IMMORTAL_BUFF_INDEX);
+        if(affectedEles[i].affectedID in this.users){
+          this.users[affectedEles[i].affectedID].addAura(serverConfig.ENV_IMMORTAL_BUFF_INDEX);
+        }
       }else if(affectedEles[i].collisionType === serverConfig.COLLISION_USER_WITH_ENVIRONMENT_PORTAL){
-        this.moveUserToRandomPos(affectedEles[i].affectedID);
+        if(affectedEles[i].affectedID in this.users){
+          this.moveUserToRandomPos(affectedEles[i].affectedID);
+        }
       }else{
         console.log('affectedEle is not specified');
         console.log(affectedEles[i]);
