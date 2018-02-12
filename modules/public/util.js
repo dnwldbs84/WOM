@@ -363,8 +363,8 @@ exports.isYInCanvas = function(y, gameConfig){
   return false;
 };
 exports.isObjInCanvas = function(center, radius, gameConfig){
-  if(center.x - radius <= gameConfig.canvasSize.width && center.x + radius >= 0
-     && center.y - radius <= gameConfig.canvasSize.height && center.y + radius >= 0){
+  if(center.x - (radius + 100) <= gameConfig.canvasSize.width && center.x + (radius + 100) >= 0
+     && center.y - (radius + 100) <= gameConfig.canvasSize.height && center.y + (radius + 100) >= 0){
    return true;
  }
  return false;
@@ -779,7 +779,8 @@ exports.setImgCssStyle = function(imgDiv, iconData, expandRate){
   }
 };
 exports.processMessage = function(msg, stringLength){
-  return msg.replace(/(<([^>]+)>)/ig, '').substring(0,stringLength);
+  var newMsg = msg.replace(/(<([^>]+)>)/ig, '').substring(0,stringLength);
+  return newMsg.replace(/\s/gi, "");
 };
 exports.createDomSelectOptGroup = function(label, parentNode){
   var optGroup = document.createElement("optgroup");

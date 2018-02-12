@@ -18,7 +18,8 @@ var gameConfig = require('../public/gameConfig.json');
 var serverConfig = require('./serverConfig.json');
 var objectAssign = require('../public/objectAssign');
 
-var INTERVAL_TIMER = 1000/serverConfig.INTERVAL;
+// var INTERVAL_TIMER = 1000/serverConfig.INTERVAL;
+var INTERVAL_TIMER = 1000/20;
 
 function User(socketID, userName, userStat, userBase, exp){
   LivingEntity.call(this);
@@ -103,6 +104,7 @@ function User(socketID, userName, userStat, userBase, exp){
 
   this.buffList = [];
   this.passiveList = [];
+  this.auraList = [];
 
   //current stat
   this.maxHP = 0;  this.maxMP = 0;  this.HP = 0;  this.MP = 0;  this.HPRegen = 0;
@@ -126,6 +128,8 @@ function User(socketID, userName, userStat, userBase, exp){
   this.buffUpdateInterval = false;
   this.regenInterval = false;
 
+  this.isEmitPortalPacket = false;
+
   this.onChangePrivateStat = new Function();
   this.onSkillUpgrade = new Function();
   this.onBuffExchange = new Function();
@@ -148,6 +152,10 @@ function User(socketID, userName, userStat, userBase, exp){
   this.getExp(0);
   this.initStat();
   this.updateCharTypeSkill();
+
+  //cheat var
+  this.isTeleported = false;
+  this.isUsePortal = false;
 };
 User.prototype = Object.create(LivingEntity.prototype);
 User.prototype.constructor = User;
@@ -284,6 +292,13 @@ User.prototype.updateStatAndCondition = function(){
           buffList.push(buffs[j]);
         }
       }
+    }
+  }
+  //set aura buffs
+  for(var i=0; i<this.auraList.length; i++){
+    buffs = SUtil.findAndSetBuffs(this.auraList[i], this.objectID);
+    for(var j=0; j<buffs.length; j++){
+      buffList.push(buffs[j]);
     }
   }
   var beforeBuffListLength = this.buffList.length;
@@ -547,6 +562,11 @@ User.prototype.updateStatAndCondition = function(){
     this.rotateSpeed = this.rotateSpeed * decreaseFactor;
     this.castSpeed = this.castSpeed * decreaseFactor;
   }
+  if(this.conditions[gameConfig.USER_CONDITION_BLUR]){
+    this.moveSpeed = 0;
+    this.rotateSpeed = 0;
+    this.castSpeed = 0;
+  }
   if(this.moveSpeed > serverConfig.MAX_MOVE_SPEED){
     this.moveSpeed = serverConfig.MAX_MOVE_SPEED;
   }
@@ -669,6 +689,23 @@ User.prototype.addBuff = function(buffGroupIndex, actorID){
     }
   }
 };
+User.prototype.addAura = function(buffGroupIndex){
+  if(!this.isDead){
+    var buffGroupData = objectAssign({}, util.findData(buffGroupTable, 'index', buffGroupIndex));
+
+    if(Object.keys(buffGroupData).length){
+      this.auraList.push(buffGroupData);
+      this.onBuffExchange(this);
+    }
+  }
+};
+User.prototype.doEmitPortalPacket = function(){
+  this.isEmitPortalPacket = true;
+  var thisUser = this;
+  setTimeout(function(){
+    thisUser.isEmitPortalPacket = false;
+  }, 1000);
+};
 // //Instantiate base attack
 // User.prototype.changeEquipSkills = function(newSkillList){
 //   var skillList = [];
@@ -694,7 +731,6 @@ User.prototype.getSkill = function(index){
         break;
       }
     }
-    //check possible levelup
     if(!possessSkill){
       this.possessSkills.push(skillData.index);
       this.onGetSkill(this, index);
@@ -1434,6 +1470,21 @@ User.prototype.setTimeDiff = function(timeDiff){
 };
 User.prototype.setLatency = function(lat){
   this.latency = lat;
+};
+//for cheatcheck
+User.prototype.useTeleport = function(){
+  this.isTeleported = true;
+  var thisUser = this;
+  setTimeout(function(){
+    thisUser.isTeleported = false;
+  }, 1000);
+};
+User.prototype.usePortal = function(){
+  this.isUsePortal = true;
+  var thisUser = this;
+  setTimeout(function(){
+    thisUser.isUsePortal = false;
+  }, 5000);
 };
 User.prototype.clearAll = function(){
   clearInterval(this.buffUpdateInterval);

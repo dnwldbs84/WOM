@@ -185,6 +185,9 @@ GM.start();
 var User = require('./modules/server/User.js');
 var io = socketio.listen(server);
 
+GM.onUserEnterPortal = function(userID, randomPos){
+  io.sockets.emit('moveUserToNewPos', userID, randomPos);
+};
 GM.onNeedInformUserTakeDamage = function(user, dmg, skillIndex){
   try {
     if(user){
@@ -359,6 +362,7 @@ GM.onNeedInformProjectileExplode = function(projectileData){
 
 io.on('connection', function(socket){
   var user;
+  var warnCount = 0;
   socket.on('reqStartGame', function(userType, userName, twitter, facebook){
     try {
       if(userType === gameConfig.CHAR_TYPE_FIRE || userType === gameConfig.CHAR_TYPE_FROST || userType === gameConfig.CHAR_TYPE_ARCANE){
@@ -450,6 +454,7 @@ io.on('connection', function(socket){
         GM.setUserStat(user.objectID, userStat, userBase);
         GM.setUserSkill(user.objectID, charType, userBase.baseSkill, userBase.basePassiveSkill);
         GM.setUserPosition(user.objectID);
+        GM.disableCheatCheck(user.objectID);
         GM.startUserUpdate(user.objectID);
         GM.setScore(user.objectID);
         GM.setUserName(user.objectID, userName);
@@ -508,7 +513,15 @@ io.on('connection', function(socket){
       if(rand === 1){
         if(GM.checkCheat(userData)){
         }else{
-          console.log(userData.objectID + ' is cheating!!!!!');
+          warnCount++;
+          if(warnCount < 3){
+            console.log(userData.objectID + ' is cheating!!! : ' + warnCount);
+            socket.emit('dontCheat', warnCount);
+          }else{
+            socket.emit('disconnectCauseCheat');
+            console.log('Disconnect User Beacuse Of Cheat ' + userData.objectID);
+            throw 'Disconnect User Beacuse Of Cheat ' + userData.objectID;
+          }
         }
       }
       GM.updateUserData(userData);
@@ -705,6 +718,9 @@ io.on('connection', function(socket){
           }
           if(skillData.effectLastTime && util.isNumeric(skillData.effectLastTime)){
             timeoutTime += skillData.effectLastTime / 2;
+          }
+          if(skillData.type === gameConfig.SKILL_TYPE_TELEPORT){
+            GM.userUseTeleport(user.objectID);
           }
           setTimeout(function(){
             try {

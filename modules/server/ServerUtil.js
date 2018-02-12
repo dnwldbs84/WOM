@@ -171,7 +171,10 @@ exports.onUserDeath = function(user, attackUserID, deadUserID, deadUserName){
         this.users[attackUserID].getJewel(dropData.provideJewel);
       }
       if(skillIndexes.attackUserSkill){
-        this.users[attackUserID].getSkill(skillIndexes.attackUserSkill);
+        var possessSkills = this.users[attackUserID].getSkill(skillIndexes.attackUserSkill);
+        if(possessSkills){
+          this.onNeedInformSkillData(this.users[attackUserID].socketID, possessSkills);
+        }
       }
     }else{
       console.log(attackUserID + ' is not exists');
@@ -273,6 +276,13 @@ exports.setAffectedEleColSkillWithObject = function(skill, affectedObjID, collis
     frostDamage : skill.frostDamage || 0,
     arcaneDamage : skill.arcaneDamage || 0
   };
+};
+exports.setAffectedEleColUserWithEnvironment = function(userID, envType, collisionType){
+  return {
+    collisionType : collisionType,
+    affectedID : userID,
+    envType : envType
+  }
 };
 exports.checkUserBuff = function(user, skillData){
   var fireBuffList = [];

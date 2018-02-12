@@ -58,6 +58,8 @@ var staticTree;
 var staticEles = [];
 var affectedEles = [];
 
+var auraCheckTimer = Date.now();
+
 function GameManager(){
   this.users = [];
 
@@ -89,6 +91,7 @@ function GameManager(){
   this.staticInterval = false;
   this.affectInterval = false;
 
+  this.onUserEnterPortal = new Function();
   this.onNeedInformBuffUpdate = new Function();
   this.onNeedInformSkillUpgrade = new Function();
   this.onNeedInformUserChangePrivateStat = new Function();
@@ -146,6 +149,7 @@ GameManager.prototype.start = function(){
 };
 GameManager.prototype.mapSetting = function(){
   this.setObstacles();
+  this.setEnvironment();
   this.setChestsLocation();
   this.setStaticTreeEle();
   // this.setOBJExps();
@@ -174,7 +178,7 @@ GameManager.prototype.updateGame = function(){
   if(this.affectInterval === false){
     var thisManager = this;
     setTimeout(function(){
-      thisManager.affectInterval = setInterval(affectIntervalHandler.bind(thisManager), INTERVAL_TIMER);
+      thisManager.affectInterval = setInterval(affectedIntervalHandler.bind(thisManager), INTERVAL_TIMER);
     }, INTERVAL_TIMER/3);
   }
 };
@@ -191,6 +195,20 @@ GameManager.prototype.setObstacles = function(){
     var tempRock = new Obstacle(rocks[i].posX, rocks[i].posY, rocks[i].radius, rocks[i].id);
     this.obstacles.push(tempRock);
     staticEles.push(tempRock.staticEle);
+  }
+};
+GameManager.prototype.setEnvironment = function(){
+  var immortalZones = objectAssign({}, util.findAllDatas(obstacleTable, 'type', gameConfig.ENV_TYPE_IMMORTAL_GROUND));
+  for(var i=0; i<Object.keys(immortalZones).length; i++){
+    var tempObstacle = new Obstacle(immortalZones[i].posX, immortalZones[i].posY, immortalZones[i].radius, immortalZones[i].id);
+    // this.obstacles.push(tempObstacle);
+    staticEles.push(tempObstacle.staticEle);
+  }
+  var portalZone = objectAssign({}, util.findAllDatas(obstacleTable, 'type', gameConfig.ENV_TYPE_PORTAL));
+  for(var i=0; i<Object.keys(portalZone).length; i++){
+    var tempObstacle = new Obstacle(portalZone[i].posX, portalZone[i].posY, portalZone[i].radius, portalZone[i].id);
+    // this.obstacles.push(tempObstacle);
+    staticEles.push(tempObstacle.staticEle);
   }
 };
 GameManager.prototype.setChestsLocation = function(){
@@ -660,11 +678,13 @@ GameManager.prototype.applySkill = function(userID, skillData){
     if(healHPAmount > 0 || healMPAmount > 0){
       this.users[userID].healHPMP(healHPAmount, healMPAmount);
     }
-    var skillCollider = new SkillCollider(this.users[userID], skillData);
-    if(skillData.additionalBuffToTarget){
-      skillCollider.additionalBuffToTarget = skillData.additionalBuffToTarget;
+    if(skillData.type !== gameConfig.SKILL_TYPE_SELF){
+      var skillCollider = new SkillCollider(this.users[userID], skillData);
+      if(skillData.additionalBuffToTarget){
+        skillCollider.additionalBuffToTarget = skillData.additionalBuffToTarget;
+      }
+      this.skills.push(skillCollider);
     }
-    this.skills.push(skillCollider);
   }else{
     // console.log('cant find user data');
   }
@@ -718,7 +738,8 @@ GameManager.prototype.applyProjectile = function(userID, projectileDatas){
   }
 };
 GameManager.prototype.checkCheat = function(userData){
-  if(userData.objectID in this.users && !this.users[userData.objectID].isDead){
+  if(userData.objectID in this.users && !this.users[userData.objectID].isDead &&
+     !this.users[userData.objectID].isTeleported && !this.users[userData.objectID].isUsePortal){
     var lastPositionIndex = this.users[userData.objectID].beforePositions.length;
     if(lastPositionIndex > 0){
       var lastPosition = this.users[userData.objectID].beforePositions[lastPositionIndex - 1];
@@ -733,6 +754,11 @@ GameManager.prototype.checkCheat = function(userData){
     return true;
   }else{
     return true;
+  }
+};
+GameManager.prototype.userUseTeleport = function(userID){
+  if(userID in this.users){
+    this.users[userID].useTeleport();
   }
 };
 GameManager.prototype.updateUserData = function(userData){
@@ -1009,17 +1035,22 @@ GameManager.prototype.processBuffDataSettings = function(){
     if(!this.users[index].isDead){
       var buffIndexList = [];
       var passiveIndexList = [];
+      var auraIndexList = [];
       for(var i=0; i<this.users[index].buffList.length; i++){
         buffIndexList.push({index : this.users[index].buffList[i].index, startTime : this.users[index].buffList[i].startTime});
       }
       for(var i=0; i<this.users[index].passiveList.length; i++){
         passiveIndexList.push(this.users[index].passiveList[i].index);
       }
+      for(var i=0; i<this.users[index].auraList.length; i++){
+        auraIndexList.push(this.users[index].auraList[i].index);
+      }
       userBuffDatas.push({
         objectID : index,
         inherentPassive : this.users[index].inherentPassiveSkill,
         buffList : buffIndexList,
-        passiveList : passiveIndexList
+        passiveList : passiveIndexList,
+        auraList : auraIndexList
       });
     }
   }
@@ -1029,17 +1060,22 @@ GameManager.prototype.processBuffDataSetting = function(user){
   try {
     var buffIndexList = [];
     var passiveIndexList = [];
+    var auraIndexList = [];
     for(var i=0; i<user.buffList.length; i++){
       buffIndexList.push({index : user.buffList[i].index, startTime : user.buffList[i].startTime});
     }
     for(var i=0; i<user.passiveList.length; i++){
       passiveIndexList.push(user.passiveList[i].index);
     }
+    for(var i=0; i<user.auraList.length; i++){
+      auraIndexList.push(user.auraList[i].index);
+    }
     return{
       objectID : user.objectID,
       inherentPassive : user.inherentPassiveSkill,
       buffList : buffIndexList,
-      passiveList : passiveIndexList
+      passiveList : passiveIndexList,
+      auraList : auraIndexList
     }
   } catch (e) {
     throw e;
@@ -1292,6 +1328,7 @@ GameManager.prototype.checkSkillCondition = function(userID, skillData){
     if(Object.keys(skillData).length){
       if(!this.users[userID].conditions[gameConfig.USER_CONDITION_FREEZE] ||
          !this.users[userID].conditions[gameConfig.USER_CONDITION_SILENCE] ||
+         !this.users[userID].conditions[gameConfig.USER_CONDITION_BLUR] ||
          this.users[userID].MP >= skillData.consumeMP){
            return true;
        }else{
@@ -1302,11 +1339,11 @@ GameManager.prototype.checkSkillCondition = function(userID, skillData){
     }
   }
 };
-GameManager.prototype.cancelBlur = function(userID){
-  if(userID in this.users){
-    this.users[userID].cancelBlur();
-  }
-};
+// GameManager.prototype.cancelBlur = function(userID){
+//   if(userID in this.users){
+//     this.users[userID].cancelBlur();
+//   }
+// };
 //cheat code
 GameManager.prototype.killme = function(userID){
   if(userID in this.users){
@@ -1398,6 +1435,24 @@ GameManager.prototype.calcKillFeedBackLevel = function(userID){
     }
   }
 };
+GameManager.prototype.moveUserToRandomPos = function(userID){
+  if(userID in this.users){
+    if(!this.users[userID].isEmitPortalPacket){
+      this.users[userID].auraList = [];
+      this.users[userID].doEmitPortalPacket();
+      var randomPos = SUtil.generateRandomPos(staticTree, 400, 400, gameConfig.CANVAS_MAX_SIZE.width - 400, gameConfig.CANVAS_MAX_SIZE.height - 400,
+        this.users[userID].size.width/2, this.users[userID].size.width/2, userID);
+      this.onUserEnterPortal(userID, randomPos);
+      this.users[userID].usePortal();
+      this.users[userID].addBuff(serverConfig.ENV_PORTAL_BUFF_INDEX, userID);
+    }
+  }
+};
+GameManager.prototype.disableCheatCheck = function(userID){
+  if(userID in this.users){
+    this.users[userID].usePortal();
+  }
+}
 function longTimeIntervalHandler(){
   var additionalGoldCount = serverConfig.OBJ_GOLD_COUNT - this.objGolds.length;
   var additionalBoxCount = serverConfig.OBJ_BOX_COUNT - this.objBoxs.length;
@@ -1540,6 +1595,7 @@ function updateIntervalHandler(){
   //check collision user with object(exp, skill, etc)
   //userEle : user, collisionObj : objExp, objSkill
   // var removeOBJs = [];
+  var isCheckAura = false;
   for(var i=0; i<userEles.length; i++){
     var tempUser = userEles[i];
     //collisionObj : exp or skill object
@@ -1565,6 +1621,39 @@ function updateIntervalHandler(){
       }
       // removeOBJs.push(collisionObjs[j]);
     }
+    //check user with env
+    //clear auraList of user
+    if(Date.now() - auraCheckTimer > 500){
+      isCheckAura = true;
+      if(tempUser.id in this.users){
+        var hadImmortalAura = false;
+        for(var j=0; j<this.users[tempUser.id].auraList.length; j++){
+          if(this.users[tempUser.id].auraList[j].index === serverConfig.ENV_IMMORTAL_BUFF_INDEX){
+            hadImmortalAura = true;
+            break;
+          }
+        }
+        var isInImmortalZone = false;
+        this.users[tempUser.id].auraList = [];
+        collisionObjs = util.checkCircleCollision(staticTree, tempUser.x, tempUser.y, tempUser.width/2, tempUser.id);
+        if(collisionObjs.length > 0){
+          for(var j=0; j<collisionObjs.length; j++){
+            if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_ENVIRONMENT_IMMORTAL_GROUND){
+              affectedEles.push(SUtil.setAffectedEleColUserWithEnvironment(tempUser.id, gameConfig.PREFIX_ENVIRONMENT_IMMORTAL_GROUND, serverConfig.COLLISION_USER_WITH_ENVIRONMENT_IMMORTAL));
+              isInImmortalZone = true;
+            }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_ENVIRONMENT_PORTAL){
+              affectedEles.push(SUtil.setAffectedEleColUserWithEnvironment(tempUser.id, gameConfig.PREFIX_ENVIRONMENT_PORTAL, serverConfig.COLLISION_USER_WITH_ENVIRONMENT_PORTAL));
+            }
+          }
+        }
+        if(hadImmortalAura && !isInImmortalZone){
+          this.users[tempUser.id].onBuffExchange(this.users[tempUser.id]);
+        }
+      }
+    }
+  }
+  if(isCheckAura){
+    auraCheckTimer = Date.now();
   }
 
   //clear tree and treeArray
@@ -1733,20 +1822,6 @@ function updateIntervalHandler(){
   collectionTree.pushAll(addedObjEles);
 };
 function staticIntervalHandler(){
-  //explode when projectile collide with obstacle
-  // for(var i=0; i<this.projectiles.length; i++){
-  //   var projectileCollider = this.projectiles[i];
-  //   var collisionObjs = util.checkCircleCollision(staticTree, projectileCollider.x, projectileCollider.y, projectileCollider.width/2, projectileCollider.id);
-  //   if(collisionObjs.length > 0 ){
-  //     if(projectileCollider.type === gameConfig.SKILL_TYPE_PROJECTILE || projectileCollider.type === gameConfig.SKILL_TYPE_PROJECTILE_EXPLOSION
-  //         || projectileCollider.type === gameConfig.SKILL_TYPE_INSTANT_PROJECTILE){
-  //       if(!projectileCollider.isCollide){
-  //         projectileCollider.isCollide = true;
-  //       }
-  //     }
-  //   }
-  // }
-
   for(var i=0; i<colliderEles.length; i++){
     //tempCollider == skill and projectile
     var tempCollider = colliderEles[i];
@@ -1754,66 +1829,60 @@ function staticIntervalHandler(){
     //collision with tree or stone
     if(collisionObjs.length > 0){
       for(var j = 0; j<collisionObjs.length; j++){
-        if(tempCollider.type === gameConfig.SKILL_TYPE_PROJECTILE || tempCollider.type === gameConfig.SKILL_TYPE_INSTANT_PROJECTILE){
-          if(!tempCollider.isCollide){
-            tempCollider.isCollide = true;
-            if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_TREE){
-              affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_TREE));
-              // affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_USER));
-            }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_ROCK){
-              affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_ROCK));
-              // affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST));
-            }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_CHEST_GROUND){
-              affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST_GROUND));
-            }else{
-              console.log('check id' + collisionObjs[j].id);
+        if(collisionObjs[j].id.substr(0, 3) !== gameConfig.PREFIX_ENVIRONMENT_IMMORTAL_GROUND && collisionObjs[j].id.substr(0, 3) !== gameConfig.PREFIX_ENVIRONMENT_PORTAL){
+          if(tempCollider.type === gameConfig.SKILL_TYPE_PROJECTILE || tempCollider.type === gameConfig.SKILL_TYPE_INSTANT_PROJECTILE){
+            if(!tempCollider.isCollide){
+              tempCollider.isCollide = true;
+              if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_TREE){
+                affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_TREE));
+                // affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_USER));
+              }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_ROCK){
+                affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_ROCK));
+                // affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST));
+              }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_CHEST_GROUND){
+                affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST_GROUND));
+              }
             }
-          }
-        }else if(tempCollider.type === gameConfig.SKILL_TYPE_PROJECTILE_EXPLOSION){
-          if(!tempCollider.isCollide){
-            tempCollider.isCollide = true;
-            tempCollider.collisionPosition = collisionObjs.collisionPosition;
-          }else if(tempCollider.isCollide){
-            if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_TREE){
-              affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_TREE));
-              // affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_USER));
-            }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_ROCK){
-              affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_ROCK));
-              // affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST));
-            }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_CHEST_GROUND){
-              affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST_GROUND));
-            }else{
-              console.log('check id' + collisionObjs[j].id);
+          }else if(tempCollider.type === gameConfig.SKILL_TYPE_PROJECTILE_EXPLOSION){
+            if(!tempCollider.isCollide){
+              tempCollider.isCollide = true;
+              tempCollider.collisionPosition = collisionObjs.collisionPosition;
+            }else if(tempCollider.isCollide){
+              if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_TREE){
+                affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_TREE));
+                // affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_USER));
+              }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_ROCK){
+                affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_ROCK));
+                // affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST));
+              }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_CHEST_GROUND){
+                affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST_GROUND));
+              }
             }
-          }
-        }else if((tempCollider.type === gameConfig.SKILL_TYPE_PROJECTILE_TICK || tempCollider.type === gameConfig.SKILL_TYPE_PROJECTILE_TICK_EXPLOSION)){
-          if(!tempCollider.isCollide){
-            if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_TREE){
-              affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_TREE, true));
-              // affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_USER));
-            }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_ROCK){
-              affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_ROCK, true));
-              // affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST));
-            }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_CHEST_GROUND){
-              affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST_GROUND, true));
-            }else{
-              console.log('check id' + collisionObjs[j].id);
+          }else if((tempCollider.type === gameConfig.SKILL_TYPE_PROJECTILE_TICK || tempCollider.type === gameConfig.SKILL_TYPE_PROJECTILE_TICK_EXPLOSION)){
+            if(!tempCollider.isCollide){
+              if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_TREE){
+                affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_TREE, true));
+                // affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_USER));
+              }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_ROCK){
+                affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_ROCK, true));
+                // affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST));
+              }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_CHEST_GROUND){
+                affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST_GROUND, true));
+              }
+              // if(collisionObjs.length - 1 === j){
+              //   tempCollider.isCollide = true;
+              // }
             }
-            // if(collisionObjs.length - 1 === j){
-            //   tempCollider.isCollide = true;
-            // }
-          }
-        }else{
-          if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_TREE){
-            affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_TREE));
-            // affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_USER));
-          }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_ROCK){
-            affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_ROCK));
-            // affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST));
-          }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_CHEST_GROUND){
-            affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST_GROUND));
           }else{
-            console.log('check id' + collisionObjs[j].id);
+            if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_TREE){
+              affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_TREE));
+              // affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_USER));
+            }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_ROCK){
+              affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_ROCK));
+              // affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST));
+            }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_CHEST_GROUND){
+              affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST_GROUND));
+            }
           }
         }
       }
@@ -1821,7 +1890,7 @@ function staticIntervalHandler(){
   }
 };
 
-function affectIntervalHandler(){
+function affectedIntervalHandler(){
   var i = affectedEles.length;
   // console.log('affectedEles.length');
   // console.log(affectedEles.length);
@@ -1919,6 +1988,10 @@ function affectIntervalHandler(){
         this.getObj(affectedEles[i].affectedID, affectedEles[i].jewelAmount, affectedEles[i].actorID, affectedEles[i].affectedObj);
       }else if(affectedEles[i].collisionType === serverConfig.COLLISION_USER_WITH_COLLECTION_BOX){
         this.getBox(affectedEles[i].affectedID, affectedEles[i], affectedEles[i].actorID, affectedEles[i].affectedObj);
+      }else if(affectedEles[i].collisionType === serverConfig.COLLISION_USER_WITH_ENVIRONMENT_IMMORTAL){
+        this.users[affectedEles[i].affectedID].addAura(serverConfig.ENV_IMMORTAL_BUFF_INDEX);
+      }else if(affectedEles[i].collisionType === serverConfig.COLLISION_USER_WITH_ENVIRONMENT_PORTAL){
+        this.moveUserToRandomPos(affectedEles[i].affectedID);
       }else{
         console.log('affectedEle is not specified');
         console.log(affectedEles[i]);
