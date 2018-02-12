@@ -778,9 +778,13 @@ exports.setImgCssStyle = function(imgDiv, iconData, expandRate){
     imgDiv.style.height = (gameConfig.IMAGE_SOURCE_SIZE.height) + "px";
   }
 };
-exports.processMessage = function(msg, stringLength){
+exports.processMessage = function(msg, stringLength, isName){
   var newMsg = msg.replace(/(<([^>]+)>)/ig, '').substring(0,stringLength);
-  return newMsg.replace(/\s/gi, "");
+  if(isName){
+    return newMsg.replace(/\s/gi, "");
+  }else{
+    return newMsg;
+  }
 };
 exports.createDomSelectOptGroup = function(label, parentNode){
   var optGroup = document.createElement("optgroup");
