@@ -1634,19 +1634,21 @@ function updateIntervalHandler(){
           }
         }
         var isInImmortalZone = false;
-        this.users[tempUser.id].auraList = [];
         collisionObjs = util.checkCircleCollision(staticTree, tempUser.x, tempUser.y, tempUser.width/2, tempUser.id);
         if(collisionObjs.length > 0){
           for(var j=0; j<collisionObjs.length; j++){
             if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_ENVIRONMENT_IMMORTAL_GROUND){
-              affectedEles.push(SUtil.setAffectedEleColUserWithEnvironment(tempUser.id, gameConfig.PREFIX_ENVIRONMENT_IMMORTAL_GROUND, serverConfig.COLLISION_USER_WITH_ENVIRONMENT_IMMORTAL));
               isInImmortalZone = true;
+              if(!hadImmortalAura){
+                affectedEles.push(SUtil.setAffectedEleColUserWithEnvironment(tempUser.id, gameConfig.PREFIX_ENVIRONMENT_IMMORTAL_GROUND, serverConfig.COLLISION_USER_WITH_ENVIRONMENT_IMMORTAL));
+              }
             }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_ENVIRONMENT_PORTAL){
               affectedEles.push(SUtil.setAffectedEleColUserWithEnvironment(tempUser.id, gameConfig.PREFIX_ENVIRONMENT_PORTAL, serverConfig.COLLISION_USER_WITH_ENVIRONMENT_PORTAL));
             }
           }
         }
         if(hadImmortalAura && !isInImmortalZone){
+          this.users[tempUser.id].auraList = [];
           this.users[tempUser.id].onBuffExchange(this.users[tempUser.id]);
         }
       }
