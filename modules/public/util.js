@@ -843,3 +843,13 @@ exports.isRender = function(user, otherUser, targetPosition){
     return true;
   }
 };
+exports.setDrawUser = function(users, user, gameConfig){
+  var drawUsers = [];
+  for(var index in users){
+    var center = exports.worldToLocalPosition(users[index].center, gameConfig.userOffset, gameConfig.scaleFactor);
+    if(exports.isObjInCanvas(center, users[index].size.width, gameConfig)){
+      drawUsers.push(users[index]);
+    }
+  }
+  return drawUsers;
+};
