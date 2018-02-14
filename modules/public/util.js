@@ -327,21 +327,21 @@ exports.localToWorldPosition = function(position, offset){
 exports.worldToLocalPosition = function(position, offset, scaleFactor){
   if(scaleFactor){
     return {
-      x : (position.x - offset.x) * scaleFactor,
-      y : (position.y - offset.y) * scaleFactor
+      x : Math.round((position.x - offset.x) * scaleFactor),
+      y : Math.round((position.y - offset.y) * scaleFactor)
     };
   }else{
     return {
-      x : (position.x - offset.x),
-      y : (position.y - offset.y)
+      x : Math.round((position.x - offset.x)),
+      y : Math.round((position.y - offset.y))
     };
   }
 };
 exports.worldXCoordToLocalX = function(x, offsetX, scaleFactor){
-  return (x - offsetX) * scaleFactor;
+  return Math.round((x - offsetX) * scaleFactor);
 };
 exports.worldYCoordToLocalY = function(y, offsetY, scaleFactor){
-  return (y - offsetY) * scaleFactor;
+  return Math.round((y - offsetY) * scaleFactor);
 };
 // exports.calculateOffset = function(obj, canvasSize){
 //   var newOffset = {
@@ -833,4 +833,13 @@ exports.getCookie = function(cookie, key){
     }
   }
   return '';
+};
+exports.isRender = function(user, otherUser, targetPosition){
+  if(otherUser.center.x - user.center.x > 900 && targetPosition.x - user.center.x > 900){
+    return false;
+  }else if(otherUser.center.y - user.center.y > 600 && targetPosition.y - user.center.y > 600){
+    return false;
+  }else{
+    return true;
+  }
 };

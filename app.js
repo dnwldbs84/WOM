@@ -363,6 +363,7 @@ GM.onNeedInformProjectileExplode = function(projectileData){
 io.on('connection', function(socket){
   var user;
   var warnCount = 0;
+
   socket.on('reqStartGame', function(userType, userName, twitter, facebook){
     try {
       if(userType === gameConfig.CHAR_TYPE_FIRE || userType === gameConfig.CHAR_TYPE_FROST || userType === gameConfig.CHAR_TYPE_ARCANE){
@@ -505,22 +506,24 @@ io.on('connection', function(socket){
     }
   });
   // var timeDelay = Date.now();
-  socket.on('userDataUpdate', function(userData, needInform){
+  socket.on('userDataUpdate', function(userData, needInform, fps){
     // console.log(userData.time - timeDelay);
     // timeDelay = userData.time;
     try {
-      var rand = Math.floor(Math.random() * serverConfig.CHEAT_CHECK_RATE);
-      if(rand === 1){
-        if(GM.checkCheat(userData)){
-        }else{
-          warnCount++;
-          if(warnCount < 3){
-            console.log(userData.objectID + ' is cheating!!! : ' + warnCount);
-            socket.emit('dontCheat', warnCount);
+      if(fps && fps > 20){
+        var rand = Math.floor(Math.random() * serverConfig.CHEAT_CHECK_RATE);
+        if(rand === 1){
+          if(GM.checkCheat(userData)){
           }else{
-            socket.emit('disconnectCauseCheat');
-            console.log('Disconnect User Beacuse Of Cheat ' + userData.objectID);
-            throw 'Disconnect User Beacuse Of Cheat ' + userData.objectID;
+            warnCount++;
+            if(warnCount < 3){
+              console.log(userData.objectID + ' is cheating!!! : ' + warnCount);
+              socket.emit('dontCheat', warnCount);
+            }else{
+              socket.emit('disconnectCauseCheat');
+              console.log('Disconnect User Beacuse Of Cheat ' + userData.objectID);
+              throw 'Disconnect User Beacuse Of Cheat ' + userData.objectID;
+            }
           }
         }
       }
