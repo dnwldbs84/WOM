@@ -748,12 +748,12 @@ GameManager.prototype.checkCheat = function(userData){
       var distY = Math.abs(userData.position.y - lastPosition.y);
       var dist = Math.sqrt(Math.pow(distX,2) + Math.pow(distY,2));
       if(dist > this.users[userData.objectID].maxSpeed * timeSpan * serverConfig.TOLERANCE_LIMIT_RATE){
-        return false;
+        return lastPosition;
       }
     }
-    return true;
+    return false;
   }else{
-    return true;
+    return false;
   }
 };
 GameManager.prototype.userUseTeleport = function(userID){

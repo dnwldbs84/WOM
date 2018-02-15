@@ -513,17 +513,11 @@ io.on('connection', function(socket){
       if(fps && fps > 20){
         var rand = Math.floor(Math.random() * serverConfig.CHEAT_CHECK_RATE);
         if(rand === 1){
-          if(GM.checkCheat(userData)){
-          }else{
+          var beforePosition = GM.checkCheat(userData);
+          if(beforePosition){
             warnCount++;
-            if(warnCount < 3){
-              console.log(userData.objectID + ' is cheating!!! : ' + warnCount);
-              socket.emit('dontCheat', warnCount);
-            }else{
-              socket.emit('disconnectCauseCheat');
-              console.log('Disconnect User Beacuse Of Cheat ' + userData.objectID);
-              throw 'Disconnect User Beacuse Of Cheat ' + userData.objectID;
-            }
+            console.log(userData.objectID + ' is cheating!!! : ' + warnCount);
+            socket.emit('dontCheat', beforePosition);
           }
         }
       }
