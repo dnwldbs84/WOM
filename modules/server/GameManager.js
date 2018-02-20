@@ -739,7 +739,9 @@ GameManager.prototype.applyProjectile = function(userID, projectileDatas){
 };
 GameManager.prototype.checkCheat = function(userData){
   if(userData.objectID in this.users && !this.users[userData.objectID].isDead &&
-     !this.users[userData.objectID].isTeleported && !this.users[userData.objectID].isUsePortal){
+     !this.users[userData.objectID].isTeleported && !this.users[userData.objectID].isUsePortal &&
+     !this.users[userData.objectID].conditions[gameConfig.USER_CONDITION_FREEZE] &&
+     !this.users[userData.objectID].conditions[gameConfig.USER_CONDITION_CHILL]){
     var lastPositionIndex = this.users[userData.objectID].beforePositions.length;
     if(lastPositionIndex > 0){
       var lastPosition = this.users[userData.objectID].beforePositions[lastPositionIndex - 1];
@@ -958,6 +960,18 @@ GameManager.prototype.processUserAllTypeLevels = function(userID){
     };
   }
 };
+GameManager.prototype.processUserAllTypeSkillLevels = function(userID){
+  if(userID in this.users){
+    return {
+      pyroBaseSkill : this.users[userID].pyroBaseSkill,
+      pyroInherentPassiveSkill : this.users[userID].pyroInherentPassiveSkill,
+      frosterBaseSkill : this.users[userID].frosterBaseSkill,
+      frosterInherentPassiveSkill : this.users[userID].frosterInherentPassiveSkill,
+      mysterBaseSkill : this.users[userID].mysterBaseSkill,
+      mysterInherentPassiveSkill : this.users[userID].mysterInherentPassiveSkill
+    };
+  }
+};
 GameManager.prototype.processChangedUserStat = function(user){
   try {
     return {
@@ -997,10 +1011,10 @@ GameManager.prototype.processScoreDatas = function(exceptID){
       if(exceptID){
         //if user disconnect
         if(exceptID !== this.users[i].objectID){
-          datas.push({id : this.users[i].objectID, name : this.users[i].name, level: this.users[i].level, killScore : this.users[i].killCount, totalScore : this.users[i].score});
+          datas.push({id : this.users[i].objectID, name : this.users[i].name, level: this.users[i].level, killScore : this.users[i].killCount, totalScore : this.users[i].score, totalKill : this.users[i].totalKillCount});
         }
       }else{
-        datas.push({id : this.users[i].objectID, name : this.users[i].name, level: this.users[i].level, killScore : this.users[i].killCount, totalScore : this.users[i].score});
+        datas.push({id : this.users[i].objectID, name : this.users[i].name, level: this.users[i].level, killScore : this.users[i].killCount, totalScore : this.users[i].score, totalKill : this.users[i].totalKillCount});
       }
     }
   }

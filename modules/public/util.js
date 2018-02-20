@@ -327,21 +327,21 @@ exports.localToWorldPosition = function(position, offset){
 exports.worldToLocalPosition = function(position, offset, scaleFactor){
   if(scaleFactor){
     return {
-      x : Math.round((position.x - offset.x) * scaleFactor),
-      y : Math.round((position.y - offset.y) * scaleFactor)
+      x : (position.x - offset.x) * scaleFactor,
+      y : (position.y - offset.y) * scaleFactor
     };
   }else{
     return {
-      x : Math.round((position.x - offset.x)),
-      y : Math.round((position.y - offset.y))
+      x : position.x - offset.x,
+      y : position.y - offset.y
     };
   }
 };
 exports.worldXCoordToLocalX = function(x, offsetX, scaleFactor){
-  return Math.round((x - offsetX) * scaleFactor);
+  return (x - offsetX) * scaleFactor;
 };
 exports.worldYCoordToLocalY = function(y, offsetY, scaleFactor){
-  return Math.round((y - offsetY) * scaleFactor);
+  return (y - offsetY) * scaleFactor;
 };
 // exports.calculateOffset = function(obj, canvasSize){
 //   var newOffset = {
@@ -848,8 +848,55 @@ exports.setDrawUser = function(users, user, gameConfig){
   for(var index in users){
     var center = exports.worldToLocalPosition(users[index].center, gameConfig.userOffset, gameConfig.scaleFactor);
     if(exports.isObjInCanvas(center, users[index].size.width, gameConfig)){
-      drawUsers.push(users[index]);
+      var position = exports.worldToLocalPosition(users[index].position, gameConfig.userOffset, gameConfig.scaleFactor);
+      var skill = false;
+      if(users[index].currentSkill){
+        skill = users[index].currentSkill.property
+      }
+      drawUsers.push({
+        objectID: users[index].objectID,
+        level: users[index].level,
+        name: users[index].name,
+        HP: users[index].HP,
+        maxHP: users[index].maxHP,
+        MP: users[index].MP,
+        maxMP: users[index].maxMP,
+        chatMessage1: users[index].chatMessage1,
+        chatMessage2: users[index].chatMessage2,
+        // center: users[index].center,
+        // position: users[index].position,
+        localCenter: center,
+        localPosition: position,
+        direction: users[index].direction,
+        buffImgDataList: users[index].buffImgDataList,
+        effectIndex: users[index].effectIndex,
+        effectRotateDegree: users[index].effectRotateDegree,
+        imgHandIndex: users[index].imgHandIndex,
+        imgData: users[index].imgData,
+        skillCastEffectPlay: users[index].skillCastEffectPlay,
+        // currentSkill: users[index].currentSkill,
+        currentSkill: skill,
+        castEffectFactor : users[index].castEffectFactor,
+        hitImgDataList: users[index].hitImgDataList,
+        buffImgDataList: users[index].buffImgDataList
+      });
+      // drawUsers.push(users[index]);
     }
   }
   return drawUsers;
+};
+exports.setRandomName = function(charType){
+  var suffix = "";
+  for(var i=0; i<3; i++){
+    suffix += Math.floor(Math.random() * 10);
+  }
+  switch (charType) {
+    case gameConfig.CHAR_TYPE_FIRE:
+      return "Pyro#" + suffix;
+    case gameConfig.CHAR_TYPE_FROST:
+      return "Froster#" + suffix;
+    case gameConfig.CHAR_TYPE_ARCANE:
+      return "Myster#" + suffix;
+    default:
+  }
 };

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>OperationTool</title>
+    <style>
+      .tools{
+        position: absolute;
+        top: 25%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+      .alertMsg{
+        color: red;
+      }
+      .resultMsg{
+        color: green;
+      }
+    </style>
+    <script>
+      serverList = {
+        "NORTH EAST AMERICA" : "",
+        "NORTH EAST AMERICA 1" : { "SERVER" : "NORTH EAST AMERICA", "IP" : "54.236.247.164" },
+        "NORTH EAST AMERICA 2" : { "SERVER" : "NORTH EAST AMERICA", "IP" : "54.210.233.203" },
+        "NORTH WEST AMERICA" : "",
+        "NORTH WEST AMERICA 1" : { "SERVER" : "NORTH WEST AMERICA", "IP" : "54.153.96.249" },
+        "NORTH WEST AMERICA 2" : { "SERVER" : "NORTH WEST AMERICA", "IP" : "18.144.55.175" },
+        "ASIA" : "",
+        "ASIA 1" : { "SERVER" : "ASIA", "IP" : "13.115.229.58" },
+        "ASIA 2" : { "SERVER" : "ASIA", "IP" : "54.249.58.102" },
+        "EUROPE" : "",
+        "EUROPE 1" : { "SERVER" : "EUROPE", "IP" : "52.59.225.91" },
+        "EUROPE 2" : { "SERVER" : "EUROPE", "IP" : "54.93.108.95" },
+        "EUROPE 3" : { "SERVER" : "EUROPE", "IP" : "52.59.211.8" },
+        "Test" : { "SERVER" : "EUROPE", "IP" : "localhost" }
+      }
+    </script>
+  </head>
+  <body>
+    <div class="tools">
+      <h2>World Of Mage io - Operation Tool</h2>
+      <hr>
+      <label for="pw">Password</lable><br><input type="password" id="pw"><br>
+        <label for="instruction">Instruction</label><br><input type="text" id="instruction"><br>
+      <label for="msg">Message</label><br><input type="text" id="msg"><br>
+      <label for="time">Time</label><br><input type="number" id="time"><br>
+      <lavel for="ip">IP Index</label><br><input type="text" id="ipIndex"><br>
+      <label for="msgToAll">Message To All Server?</label><br><input type="checkbox" id="msgToAll"><br>
+      <button id="submit">Submit</button><br>
+    </div>
+    <div class="alertMsg" id="alertMsg"></div>
+    <div class="resultMsg" id="resultMsg"></div>
+  </body>
+  <script>
+    document.getElementById('submit').onclick = function(){
+      var pw = document.getElementById('pw').value;
+      var instruction = document.getElementById('instruction').value;
+      var msg = document.getElementById('msg').value;
+      var time = document.getElementById('time').value;
+      var msgToAll = document.getElementById('msgToAll').checked;
+
+      var alertMsg = document.getElementById('alertMsg');
+      var resultMsg = document.getElementById('resultMsg');
+      if(msgToAll){
+        alertMsg.innerHTML = "";
+        resultMsg.innerHTML = "";
+        for(var index in serverList){
+          if(serverList[index]){
+            tryAjax(index, pw, instruction, msg, time);
+          }
+        }
+      }else{
+        alertMsg.innerHTML = "";
+        resultMsg.innerHTML = "";
+        var ipIndex = document.getElementById('ipIndex').value;
+        if(serverList[ipIndex]){
+          tryAjax(ipIndex, pw, instruction, msg, time);
+        }else{
+          alertMsg.innerHTML = "Enter correct ip index.";
+        }
+      }
+    }
+    function tryAjax(index, pw, instruction, msg, time){
+      try {
+        (function doAjax(){
+          var ip = 'http://' + serverList[index].IP;
+          var req = createRequest();
+          req.onreadystatechange = function(e){
+            if(req.readyState === 4){
+              if(req.status === 200){
+                var res = JSON.parse(req.response);
+                if(res.correctPW){
+                  if(res.correctInstruction){
+                    var result = document.createElement('p');
+                    result.innerHTML = "Success( " + index + " )";
+                    resultMsg.appendChild(result);
+                  }else{
+                    var errorMsg = document.createElement('p');
+                    errorMsg.innerHTML = "Error( " + index + " ) : wrong instruction";
+                    alertMsg.appendChild(errorMsg);
+                  }
+                }else{
+                  var errorMsg = document.createElement('p');
+                  errorMsg.innerHTML = "Error( " + index + " ) : wrong password";
+                  alertMsg.appendChild(errorMsg);
+                }
+              }else{
+                var errorMsg = document.createElement('p');
+                errorMsg.innerHTML = "Error( " + index + " )";
+                alertMsg.appendChild(errorMsg);
+              }
+            }
+          }
+          req.open('POST', ip + '/instruction', true);
+          req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+          req.send('pw=' + pw + '&instruction=' + instruction + '&msg=' + msg + '&time=' + time);
+        })();
+      } catch (e) {
+        console.log(e);
+      }
+    }
+    function createRequest(){
+      var request;
+      try {
+        request = new XMLHttpRequest();
+      } catch (e){
+        try {
+          request = new ActiveXObject('Msxml2.XMLHTTP');
+        } catch (innerE) {
+          request = new ActiveXObject('Microsoft.XMLHTTP');
+        }
+      }
+      return request;
+    }
+  </script>
+</html>

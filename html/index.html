@@ -74,6 +74,7 @@
       <div id="gameBoardName" style="width:72px; overflow:hidden"></div>
       <div id="gameBoardLevel" style="width:36px;"></div>
       <div id="gameBoardKillScore" style="width:36px;"></div>
+      <div id="gameBoardTotalKillCount" style="width:54; overflow:hidden"></div>
       <div id="gameBoardTotalScore" style="width:63px;"></div>
     </div>
     <div class="gameSceneHudBottomLeft">
@@ -210,7 +211,7 @@
     </div>
     <canvas id="canvas"></canvas>
     <div class="chatInputContainer disable" id="chatInputContainer">
-      <input type="text" id="chatInput">
+      <input type="text" maxlength="15" id="chatInput">
     </div>
   </div>
   <div id="startScene" class="startScene enable">
@@ -306,6 +307,14 @@
         </div>
       </div>
       <div class="startSceneHudBottom">
+        <div class="iospaceIFrame">
+          <iframe id="IOG_CP" scrolling="no" frameborder="0" width="200"
+            height="145" src="https://viral.iogames.space/cp/worldofmage-io"
+            style="border-radius:10px;-webkit-box-shadow:0 3px 6px rgba(0,0,0,.25),0 3px 6px rgba(0,0,0,.4);
+            -moz-box-shadow:0 3px 6px rgba(0,0,0,.25),0 3px 6px rgba(0,0,0,.4);
+            box-shadow:0 3px 6px rgba(0,0,0,.25),0 3px 6px rgba(0,0,0,.4);">
+          </iframe>
+        </div>
         <div class="startSceneHudBottomLeft">
           <div class="SNSReward twitterReward" id="startSceneTwitterReward"><img src="/images/GoldIcon.png" /><span>5000</span><img src="/images/complete.png" class="complete disable" /></div>
           <div class="SNSReward facebookReward" id="startSceneFacebookReward"><img src="/images/JewelIcon.png" /><span>5</span><img src="/images/complete.png" class="complete disable"/></div>
@@ -318,11 +327,11 @@
         </div>
         <div class="startSceneHudBottomRight">
           <div class="changelogText">
-            <h3>1.0.3 - Feburary. 12. 2018</h3>
+            <h3>1.0.4 - Feburary. 20. 2018</h3>
             <ul>
-              <li>Safe zone and Portal has been added.</li>
-              <li>At lower levels, the death penalty has been significantly reduced.</li>
-              <li>The amount of mana burned by Arcane type spell has been reduced significantly.</li>
+              <li>A system to inherit the main character will be added.</li>
+              <li>Now, You can see the kill count throughout the game.</li>
+              <li>The frost spells have improved.</li>
             </ul>
           </div>
           <a href="/changelog" target="_blank" class="changelog">see more...</a>
@@ -419,6 +428,14 @@
         </div>
       </div>
       <div class="standingSceneHudBottom">
+        <div class="iospaceIFrame">
+          <iframe id="IOG_CP" scrolling="no" frameborder="0" width="200"
+            height="145" src="https://viral.iogames.space/cp/worldofmage-io"
+            style="border-radius:10px;-webkit-box-shadow:0 3px 6px rgba(0,0,0,.25),0 3px 6px rgba(0,0,0,.4);
+            -moz-box-shadow:0 3px 6px rgba(0,0,0,.25),0 3px 6px rgba(0,0,0,.4);
+            box-shadow:0 3px 6px rgba(0,0,0,.25),0 3px 6px rgba(0,0,0,.4);">
+          </iframe>
+        </div>
         <div class="standingSceneHudBottomLeft">
           <div class="SNSReward twitterReward" id="standingSceneTwitterReward"><img src="/images/GoldIcon.png" /><span>5000</span><img src="/images/complete.png" class="complete disable" /></div>
           <div class="SNSReward facebookReward" id="standingSceneFacebookReward"><img src="/images/JewelIcon.png" /><span>5</span><img src="/images/complete.png" class="complete disable"/></div>
@@ -431,11 +448,11 @@
         </div>
         <div class="standingSceneHudBottomRight">
           <div class="changelogText">
-            <h3>1.0.3 - Feburary. 12. 2018</h3>
+            <h3>1.0.4 - Feburary. 20. 2018</h3>
             <ul>
-              <li>Safe zone and Portal has been added.</li>
-              <li>At lower levels, the death penalty has been significantly reduced.</li>
-              <li>The amount of mana burned by Arcane type spell has been reduced significantly.</li>
+              <li>A system to inherit the main character will be added.</li>
+              <li>Now, You can see the kill count throughout the game.</li>
+              <li>The frost spells have improved.</li>
             </ul>
           </div>
           <a href="/changelog" target="_blank" class="changelog">see more...</a>

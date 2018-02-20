@@ -31,6 +31,7 @@ function User(socketID, userName, userStat, userBase, exp){
 
   this.type = userStat.type;
 
+  this.totalKillCount = 0;
   this.killCount = 0;
   this.killScore = 0;
   this.skillScore = 0;
@@ -208,6 +209,7 @@ User.prototype.initStat = function(){
   this.setRotateSpeed(this.rotateSpeed);
 };
 User.prototype.updateCharTypeLevel = function(){
+  var inherentLevel = Math.floor(this.level * 0.8);
   switch (this.type) {
     case gameConfig.CHAR_TYPE_FIRE:
       this.pyroLevel = this.level;
@@ -219,8 +221,21 @@ User.prototype.updateCharTypeLevel = function(){
       this.mysterLevel = this.level;
       break;
   }
+  if(this.pyroLevel < inherentLevel){
+    this.pyroLevel = inherentLevel;
+  }
+  if(this.frosterLevel < inherentLevel){
+    this.frosterLevel = inherentLevel;
+  }
+  if(this.mysterLevel < inherentLevel){
+    this.mysterLevel = inherentLevel;
+  }
 };
 User.prototype.updateCharTypeSkill = function(){
+  var baseSkillLevel = objectAssign({}, util.findData(skillTable, 'index', this.baseSkill)).level;
+  var basePassiveSkillLevel = objectAssign({}, util.findData(skillTable, 'index', this.inherentPassiveSkill)).level;
+  var transmissionBaseSkillLevel = Math.floor(baseSkillLevel * 0.8);
+  var transmissionPassiveSkillLevel = Math.floor(basePassiveSkillLevel * 0.8);
   switch (this.type) {
     case gameConfig.CHAR_TYPE_FIRE:
       this.pyroBaseSkill = this.baseSkill;
@@ -234,6 +249,30 @@ User.prototype.updateCharTypeSkill = function(){
       this.mysterBaseSkill = this.baseSkill;
       this.mysterInherentPassiveSkill = this.inherentPassiveSkill;
       break;
+  }
+  var pyroBaseSkillData = objectAssign({}, util.findData(skillTable, 'index', this.pyroBaseSkill));
+  var pyroPassiveSkillData = objectAssign({}, util.findData(skillTable, 'index', this.pyroInherentPassiveSkill));
+  var frosterBaseSkillData = objectAssign({}, util.findData(skillTable, 'index', this.frosterBaseSkill));
+  var frosterPassiveSkillData = objectAssign({}, util.findData(skillTable, 'index', this.frosterInherentPassiveSkill));
+  var mysterBaseSkillData = objectAssign({}, util.findData(skillTable, 'index', this.mysterBaseSkill));
+  var mysterPassiveSkillData = objectAssign({}, util.findData(skillTable, 'index', this.mysterInherentPassiveSkill));
+  if(pyroBaseSkillData.level < transmissionBaseSkillLevel){
+    this.pyroBaseSkill = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', pyroBaseSkillData.groupIndex, 'level', transmissionBaseSkillLevel)).index;
+  }
+  if(pyroPassiveSkillData.level < transmissionPassiveSkillLevel){
+    this.pyroInherentPassiveSkill = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', pyroPassiveSkillData.groupIndex, 'level', transmissionPassiveSkillLevel)).index;
+  }
+  if(frosterBaseSkillData.level < transmissionBaseSkillLevel){
+    this.frosterBaseSkill = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', frosterBaseSkillData.groupIndex, 'level', transmissionBaseSkillLevel)).index;
+  }
+  if(frosterPassiveSkillData.level < transmissionPassiveSkillLevel){
+    this.frosterInherentPassiveSkill = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', frosterPassiveSkillData.groupIndex, 'level', transmissionPassiveSkillLevel)).index;
+  }
+  if(mysterBaseSkillData.level < transmissionBaseSkillLevel){
+    this.mysterBaseSkill = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', mysterBaseSkillData.groupIndex, 'level', transmissionBaseSkillLevel)).index;
+  }
+  if(mysterPassiveSkillData.level < transmissionPassiveSkillLevel){
+    this.mysterInherentPassiveSkill = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', mysterPassiveSkillData.groupIndex, 'level', transmissionPassiveSkillLevel)).index;
   }
 };
 User.prototype.updateStatAndCondition = function(){
@@ -932,6 +971,7 @@ User.prototype.checkSkillPossession = function(skillIndex){
       return true;
     }
   }
+  console.log(Date.now());
   console.log('dont have skill');
   return false;
 };
@@ -1264,6 +1304,7 @@ User.prototype.getExp = function(exp, killScore, chestScore){
     }
     if(killScore){
       this.killCount ++;
+      this.totalKillCount ++;
       this.killScore += killScore;
       this.calcUserScore();
       this.onScoreChange();

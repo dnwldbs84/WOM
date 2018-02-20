@@ -183,7 +183,11 @@ var GM = new GameManager();
 GM.start();
 
 var User = require('./modules/server/User.js');
-var io = socketio.listen(server);
+var io = socketio(server, {
+  'pingInterval' : 2000,
+  'pingTimeout' : 5000,
+});
+// var io = socketio.listen(server);
 
 GM.onUserEnterPortal = function(userID, randomPos){
   io.sockets.emit('moveUserToNewPos', userID, randomPos);
@@ -204,7 +208,8 @@ GM.onNeedInformUserDeath = function(attackUserInfo, deadUserInfo, loseResource, 
   try {
     var scoreDatas = GM.processScoreDatas();
     var levelDatas = GM.processUserAllTypeLevels(deadUserInfo.userID);
-    io.sockets.emit('userDead', attackUserInfo, deadUserInfo, scoreDatas, levelDatas, loseResource, newSkills);
+    var charSkillDatas = GM.processUserAllTypeSkillLevels(deadUserInfo.userID);
+    io.sockets.emit('userDead', attackUserInfo, deadUserInfo, scoreDatas, levelDatas, loseResource, newSkills, charSkillDatas);
   } catch (e) {
     console.log('onNeedInformUserDeath');
     console.log(Date.now());
@@ -1073,7 +1078,7 @@ io.on('connection', function(socket){
         socket.disconnect();
       }
     }
-  })
+  });
   socket.on('disconnect', function(){
     try {
       var rankDatas = GM.processScoreDatas(user.objectID);
