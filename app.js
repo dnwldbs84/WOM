@@ -184,8 +184,8 @@ GM.start();
 
 var User = require('./modules/server/User.js');
 var io = socketio(server, {
-  'pingInterval' : 2000,
-  'pingTimeout' : 5000,
+  'pingInterval' : 2500,
+  'pingTimeout' : 60000,
 });
 // var io = socketio.listen(server);
 
