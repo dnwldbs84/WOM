@@ -368,6 +368,7 @@ GM.onNeedInformProjectileExplode = function(projectileData){
 io.on('connection', function(socket){
   var user;
   var warnCount = 0;
+  var isReconnecting = false;
 
   socket.on('reqStartGame', function(userType, userName, twitter, facebook){
     try {
@@ -454,6 +455,7 @@ io.on('connection', function(socket){
     try {
       if(user.objectID && charType === gameConfig.CHAR_TYPE_FIRE || charType === gameConfig.CHAR_TYPE_FROST || charType === gameConfig.CHAR_TYPE_ARCANE){
         var level = GM.getLevel(user.objectID, charType);
+        console.log(level);
 
         var userStat = objectAssign({}, util.findDataWithTwoColumns(userStatTable, 'type', charType, 'level', level));
         var userBase = objectAssign({}, util.findData(userBaseTable, 'type', charType));
@@ -485,7 +487,11 @@ io.on('connection', function(socket){
         GM.equipPassives(user.objectID, passiveList);
         GM.setStartBuff(user);
       }else{
-        throw "charType error";
+        if(!isReconnecting){
+          isReconnecting = true;
+          socket.emit('reqReconnectResource');
+        }
+        // throw "charType error";
       }
     } catch (e) {
       if(user){
@@ -510,6 +516,67 @@ io.on('connection', function(socket){
       }
     }
   });
+  socket.on('reqReconnect', function(userName, charType, stat, skills, killCount, totalKillCount, position, resources){
+    console.log('reqReconnect Start');
+    try {
+      if(!user){
+        if(charType === gameConfig.CHAR_TYPE_FIRE || charType === gameConfig.CHAR_TYPE_FROST || charType === gameConfig.CHAR_TYPE_ARCANE){
+          var level = 1;
+          var exp = 0;
+          if(util.isNumeric(stat.level)){
+            level = parseInt(stat.level);
+          }
+          if(util.isNumeric(stat.exp)){
+            exp = parseInt(stat.exp);
+          }
+          var userStat = objectAssign({}, util.findDataWithTwoColumns(userStatTable, 'type', charType, 'level', level));
+          var userBase = objectAssign({}, util.findData(userBaseTable, 'type', charType));
+          user = new User(socket.id, userName, userStat, userBase, 0);
+
+          GM.initReconnectUser(user, level, exp, skills.baseSkill, skills.inherentPassiveSkill, skills.possessSkills);
+          GM.joinUser(user);
+
+          GM.setReconnectUserPosition(user.objectID, position);
+          GM.setReconnectUserScore(user.objectID, killCount, totalKillCount);
+          GM.disableCheatCheck(user.objectID);
+          GM.setReconnectResource(user.objectID, resources.gold, resources.jewel);
+          GM.setReconnectUserHPMP(user.objectID, stat.HP, stat.MP);
+          var userData = GM.processUserDataSetting(user);
+          var rankDatas = GM.processScoreDatas();
+
+          socket.broadcast.emit('userJoined', userData, rankDatas);
+
+          var userDatas = GM.processUserDataSettings();
+          var buffDatas = GM.processBuffDataSettings();
+
+          var objDatas = GM.processOBJDataSettings();
+          var chestDatas = GM.processChestDataSettings();
+
+          GM.addPrivateData(userData);
+          var passiveList = [];
+          for(var i=0; i<skills.equipSkills.length; i++){
+            var skillData = objectAssign({}, util.findData(skillTable, 'index', skills.equipSkills[i]));
+            if(skillData.type === gameConfig.SKILL_TYPE_PASSIVE){
+              passiveList.push(skillData.buffToSelf);
+            }
+          }
+          GM.equipPassives(user.objectID, passiveList);
+          socket.emit('resReconnect', userData, userDatas, buffDatas, objDatas, chestDatas, rankDatas);
+        }
+      }
+    } catch (e) {
+      console.log('reqReconnect');
+      console.log(Date.now());
+      console.log(e.message);
+      socket.disconnect();
+    }
+  });
+  socket.on('reconnectSuccess', function(){
+    console.log('reconnectSuccess');
+  });
+  socket.on('needReconnect', function(){
+    socket.emit('reqReconnectResource');
+  });
   // var timeDelay = Date.now();
   socket.on('userDataUpdate', function(userData, needInform, fps){
     // console.log(userData.time - timeDelay);
@@ -533,7 +600,11 @@ io.on('connection', function(socket){
           userData = GM.processUserDataSetting(user);
           socket.broadcast.emit('userDataSync', userData);
         }else{
-          throw "user isn`t instantiated";
+          if(!isReconnecting){
+            isReconnecting = true;
+            socket.emit('reqReconnectResource');
+          }
+          // throw "user isn`t instantiated";
         }
       }
     } catch (e) {
@@ -567,7 +638,11 @@ io.on('connection', function(socket){
         userData = GM.processUserDataSetting(user);
         socket.broadcast.emit('userDataUpdate', userData);
       }else{
-        throw "user isn`t instantiated";
+        if(!isReconnecting){
+          isReconnecting = true;
+          socket.emit('reqReconnectResource');
+        }
+        // throw "user isn`t instantiated";
       }
     } catch (e) {
       if(user){
@@ -603,7 +678,11 @@ io.on('connection', function(socket){
 
         socket.broadcast.emit('userMoveAndAttack', userData);
       }else{
-        throw "user isn`t instantiated";
+        if(!isReconnecting){
+          isReconnecting = true;
+          socket.emit('reqReconnectResource');
+        }
+        // throw "user isn`t instantiated";
       }
     } catch (e) {
       if(user){
@@ -645,7 +724,11 @@ io.on('connection', function(socket){
           }
           socket.broadcast.emit('userDataUpdateAndUseSkill', userData);
         }else{
-          throw "user isn`t instantiated";
+          if(!isReconnecting){
+            isReconnecting = true;
+            socket.emit('reqReconnectResource');
+          }
+          // throw "user isn`t instantiated";
         }
       }
     } catch (e) {
@@ -678,7 +761,11 @@ io.on('connection', function(socket){
         var userData = GM.processUserDataSetting(user);
         socket.broadcast.emit('userDataUpdate', userData);
       }else{
-        throw "user isn`t instantiated";
+        if(!isReconnecting){
+          isReconnecting = true;
+          socket.emit('reqReconnectResource');
+        }
+        // throw "user isn`t instantiated";
       }
     } catch (e) {
       if(user){
@@ -825,7 +912,11 @@ io.on('connection', function(socket){
       if(user){
         GM.upgradeSkill(user, skillIndex);
       }else{
-        throw "user isn`t instantiated";
+        if(!isReconnecting){
+          isReconnecting = true;
+          socket.emit('reqReconnectResource');
+        }
+        // throw "user isn`t instantiated";
       }
     } catch (e) {
       if(user){
@@ -855,7 +946,11 @@ io.on('connection', function(socket){
       if(user){
         GM.exchangePassive(user, beforeBuffGID, afterBuffGID);
       }else{
-        throw "user isn`t instantiated";
+        if(!isReconnecting){
+          isReconnecting = true;
+          socket.emit('reqReconnectResource');
+        }
+        // throw "user isn`t instantiated";
       }
     } catch (e) {
       if(user){
@@ -885,7 +980,11 @@ io.on('connection', function(socket){
       if(user){
         GM.equipPassive(user, buffGroupIndex);
       }else{
-        throw "user isn`t instantiated";
+        if(!isReconnecting){
+          isReconnecting = true;
+          socket.emit('reqReconnectResource');
+        }
+        // throw "user isn`t instantiated";
       }
     } catch (e) {
       if(user){
@@ -915,7 +1014,11 @@ io.on('connection', function(socket){
       if(user){
         GM.unequipPassive(user, buffGroupIndex);
       }else{
-        throw "user isn`t instantiated";
+        if(!isReconnecting){
+          isReconnecting = true;
+          socket.emit('reqReconnectResource');
+        }
+        // throw "user isn`t instantiated";
       }
     } catch (e) {
       if(user){
@@ -1079,7 +1182,7 @@ io.on('connection', function(socket){
       }
     }
   });
-  socket.on('disconnect', function(){
+  socket.on('disconnect', function(reason){
     try {
       var rankDatas = GM.processScoreDatas(user.objectID);
       io.sockets.emit('userLeave', user.objectID, rankDatas);
@@ -1087,6 +1190,7 @@ io.on('connection', function(socket){
       GM.kickUser(user);
     } catch (e) {
       console.log('disconnect');
+      console.log(reason);
       console.log(Date.now());
       console.log(e.message);
     } finally {

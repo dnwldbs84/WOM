@@ -1466,7 +1466,42 @@ GameManager.prototype.disableCheatCheck = function(userID){
   if(userID in this.users){
     this.users[userID].usePortal();
   }
-}
+};
+GameManager.prototype.initReconnectUser = function(user, level, exp, baseSkill, passiveSkill, possessSkills){
+  var randomID = SUtil.generateRandomUniqueID(this.users, gameConfig.PREFIX_USER);
+  user.assignID(randomID);
+  user.setSize(serverConfig.USER_BODY_SIZE, serverConfig.USER_BODY_SIZE);
+  //set inherentPassiveSkill
+  user.setReconnectLevel(level, exp);
+  user.setReconnectSkills(baseSkill, passiveSkill, possessSkills);
+
+  user.initEntityEle();
+  user.startUpdate();
+};
+GameManager.prototype.setReconnectUserScore = function(userID, killCount, totalKillCount){
+  if(userID in this.users){
+    this.users[userID].setReconnectScore(killCount, totalKillCount);
+  }
+};
+GameManager.prototype.setReconnectResource = function(userID, gold, jewel){
+  if(userID in this.users){
+    this.users[userID].addResource(gold, jewel);
+  }
+};
+GameManager.prototype.setReconnectUserHPMP = function(userID, HP, MP){
+  if(userID in this.users){
+    this.users[userID].setReconnectHPMP(HP, MP);
+  }
+};
+GameManager.prototype.setReconnectUserPosition = function(userID, position){
+  if(userID in this.users){
+    if(position && util.isNumeric(position.x) && util.isNumeric(position.y)){
+      this.users[userID].setPosition(position.x, position.y);
+    }else{
+      this.setUserPosition(userID);
+    }
+  }
+};
 function longTimeIntervalHandler(){
   var additionalGoldCount = serverConfig.OBJ_GOLD_COUNT - this.objGolds.length;
   var additionalBoxCount = serverConfig.OBJ_BOX_COUNT - this.objBoxs.length;

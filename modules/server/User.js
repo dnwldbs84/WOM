@@ -150,7 +150,7 @@ function User(socketID, userName, userStat, userBase, exp){
   this.isGetTwitterReward = false;
   this.isGetFacebookReward = false;
 
-  this.getExp(0);
+  this.getExp(exp);
   this.initStat();
   this.updateCharTypeSkill();
 
@@ -1331,6 +1331,14 @@ User.prototype.getJewel = function(jewelAmount){
     this.onGetResource(this, {type : gameConfig.GET_RESOURCE_TYPE_JEWEL, amount : jewelAmount});
   }
 };
+User.prototype.addResource = function(gold, jewel){
+  if(util.isNumeric(gold)){
+    this.gold = gold;
+  }
+  if(util.isNumeric(jewel)){
+    this.jewel = jewel;
+  }
+};
 User.prototype.levelUp = function(){
   this.level ++;
   var userLevelData = objectAssign({}, util.findDataWithTwoColumns(userStatTable, 'type', this.type, 'level', this.level));
@@ -1539,6 +1547,57 @@ User.prototype.clearAll = function(){
   this.killScore = 0;
   this.killCount = 0;
   this.chestScore = 0;
+};
+User.prototype.setReconnectLevel = function(level, exp){
+  this.level = level;
+  this.exp = exp;
+
+  if(level > 3){
+    this.pyroLevel = level - 2;
+    this.frosterLevel = level - 2;
+    this.mysterLevel = level -2;
+  }
+};
+User.prototype.setReconnectSkills = function(baseSkill, passiveSkill, possessSkills){
+  this.baseSkill = baseSkill;
+  this.inherentPassiveSkill = passiveSkill;
+  this.possessSkills = possessSkills;
+  switch (this.type) {
+    case gameConfig.CHAR_TYPE_FIRE:
+      this.pyroBaseSkill = baseSkill;
+      this.pyroInherentPassiveSkill = passiveSkill;
+      break;
+    case gameConfig.CHAR_TYPE_FROST:
+      this.frosterBaseSkill = baseSkill;
+      this.frosterInherentPassiveSkill = passiveSkill;
+      break;
+    case gameConfig.CHAR_TYPE_ARCANE:
+      this.mysterBaseSkill = baseSkill;
+      this.mysterInherentPassiveSkill = passiveSkill;
+      break;
+  }
+};
+User.prototype.setReconnectScore = function(killCount, totalKillCount){
+  this.killCount = killCount;
+  this.killScore = killCount * 500;
+  this.totalKillCount = totalKillCount;
+  this.calcUserScore();
+};
+User.prototype.setReconnectHPMP = function(HP, MP){
+  if(util.isNumeric(HP)){
+    if(this.maxHP > HP){
+      this.HP = HP;
+    }else{
+      this.HP = this.maxHP;
+    }
+  }
+  if(util.isNumeric(MP)){
+    if(this.maxMP > MP){
+      this.MP = MP;
+    }else{
+      this.MP = this.maxMP;
+    }
+  }
 };
 function getSkillScoreFactor(tier){
   switch (tier) {
