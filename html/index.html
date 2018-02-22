@@ -10,7 +10,7 @@
   <meta name="author" content="WooksDev">
   <meta name="keywords" content="game,games,gaming,online,io,IO,WOM,WOM.io,WorldOfMage,worldofmage.io,worldofmage">
   <meta name="description" content="Competition io game, World of Mage.io! Become a most powerful mage in WOM.io">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=0">
+  <meta name="viewport" content="minimal-ui, width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=0">
   <meta property="og:type" content="game">
   <meta property="og:title" content="Play WorldOfMage.io for free!">
   <meta property="og:description" content="Competition io game, World of Mage.io! Become a most powerful mage in WOM.io">
@@ -32,6 +32,44 @@
 
     gtag('config', 'UA-112883634-1');
   </script>
+  <!-- Ad -->
+  <script>
+    var adEventHandler = new Function();
+  </script>
+  <script async src="//api.adinplay.com/display/pub/WOF/worldofmage.io/display.min.js"></script>
+  <script async src="//api.adinplay.com/player/v2/WOF/worldofmage.io/player.min.js"></script>
+  <script>
+  	var aiptag = aiptag || {};
+  	aiptag.cmd = aiptag.cmd || [];
+  	aiptag.cmd.display = aiptag.cmd.display || [];
+    aiptag.cmd.player = aiptag.cmd.player || [];
+
+    aiptag.cmd.player.push(function() {
+		adplayer = new aipPlayer({
+			AD_WIDTH: 960,
+			AD_HEIGHT: 540,
+			AD_FULLSCREEN: true,
+			AD_CENTERPLAYER: false,
+			LOADING_TEXT: 'loading advertisement',
+			PREROLL_ELEM: function(){return document.getElementById('preroll')},
+			AIP_COMPLETE: function ()  {
+				/*******************
+				 ***** WARNING *****
+				 *******************
+				 Please do not remove the PREROLL_ELEM
+				 from the page, it will be hidden automaticly.
+				 If you do want to remove it use the AIP_REMOVE callback
+				*/
+        adEventHandler();
+				// alert("Ad Completed");
+			},
+			AIP_REMOVE: function ()  {
+				// Here it's save to remove the PREROLL_ELEM from the page
+				// But it's not necessary
+			}
+		});
+	});
+	</script>
   <link rel="stylesheet" type="text/css" href="/css/main.css">
 </head>
 <body>
@@ -229,9 +267,9 @@
           <span id="loadingText">loading ... </span>
         </div>
         <div id="startSceneHudContent" class="disable">
-          <div class="startSceneHudCenterLeft">
+          <!-- <div class="startSceneHudCenterLeft" id="startSceneDisplayAdContainer">
 
-          </div>
+          </div> -->
           <div class="startSceneHudCenterCenter">
             <input type="text" maxlength="15" placeholder="Enter Your Nickname" id="userStartNickName"/>
             <div class="startSceneHudCenterCenterCharSelect" id="startSceneHudCenterCenterCharSelect">
@@ -350,8 +388,9 @@
         <div class="standingSceneHudTitle">
           <h1>World Of Mage.io</h1>
         </div>
-        <div class="standingSceneHudCenterLeft">
-        </div>
+        <!-- <div class="standingSceneHudCenterLeft" id="standingSceneDisplayAdContainer">
+
+        </div> -->
         <div class="standingSceneHudCenterCenter">
           <input type="text" maxlength="15" placeholder="Enter Your Nickname" id="userStandingNickName"/>
           <div class="standingSceneHudCenterCenterCharSelect" id="standingSceneHudCenterCenterCharSelect">
@@ -520,6 +559,20 @@
   <div class="reconnectScene disable" id="reconnectScene">
     <span id="reconnectMessage">connecting ...</span>
   </div>
+  <div class="displayContainer" id="displayContainer">
+    <div class="hudCenterLeft" id="displayAdContainer">
+      <div id='worldofmage-io_300x250'>
+        <script type='text/javascript'>
+          aiptag.cmd.display.push(function() { aipDisplayTag.display('worldofmage-io_300x250'); });
+        </script>
+      </div>
+    </div>
+  </div>
+  <div id="preroll"></div>
+
+  <button class="disable" id="displayAdRefresh" onclick="aiptag.cmd.display.push(function() { aipDisplayTag.refresh('worldofmage-io_300x250'); });">Refresh Ad</button>
+  <button class="disable" id="videoAdPlay" onclick="aiptag.cmd.player.push(function() { adplayer.startPreRoll(); });"></button>
+
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/bundle.js"></script>
 </body>

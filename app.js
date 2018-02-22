@@ -455,7 +455,6 @@ io.on('connection', function(socket){
     try {
       if(user.objectID && charType === gameConfig.CHAR_TYPE_FIRE || charType === gameConfig.CHAR_TYPE_FROST || charType === gameConfig.CHAR_TYPE_ARCANE){
         var level = GM.getLevel(user.objectID, charType);
-        console.log(level);
 
         var userStat = objectAssign({}, util.findDataWithTwoColumns(userStatTable, 'type', charType, 'level', level));
         var userBase = objectAssign({}, util.findData(userBaseTable, 'type', charType));
