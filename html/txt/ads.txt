@@ -1,0 +1,3 @@
+google.com, pub-3282547114800347, RESELLER, f08c47fec0942fa0
+appnexus.com, 8631, RESELLER, f5ab79cb980f11d1
+indexexchange.com, 186547, RESELLER, 50b1c356f2c5c8fc

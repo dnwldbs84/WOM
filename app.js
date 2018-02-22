@@ -94,6 +94,12 @@ app.get('/serverdown', function(req, res){
     res.end(data);
   });
 });
+app.get('/ads.txt', function(req, res){
+  fs.readFile('html/txt/ads.txt', 'utf8', function(err, data){
+    res.writeHead(200, {'Content-Type': 'text/text'});
+    res.end(data);
+  });
+});
 app.post('/usersInfo', function(req, res){
   if(!req.body){
     res.sendStatus(400);
