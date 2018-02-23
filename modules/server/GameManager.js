@@ -575,7 +575,7 @@ GameManager.prototype.getBox = function(objID, box, userID, treeObj){
 //   //   }
 //   // }
 //   else if(objID.substr(0,3) === gameConfig.PREFIX_OBJECT_GOLD){
-//     for(var i=0; i<this.objGolds.lengthl i++){
+//     for(var i=0; i<this.objGolds.length; i++){
 //       if(this.objGolds[i].objectID === objID){
 //         this.objGolds.splice(i, 1);
 //
@@ -1503,9 +1503,9 @@ GameManager.prototype.setReconnectUserPosition = function(userID, position){
   }
 };
 function longTimeIntervalHandler(){
-  var additionalGoldCount = serverConfig.OBJ_GOLD_COUNT - this.objGolds.length;
-  var additionalBoxCount = serverConfig.OBJ_BOX_COUNT - this.objBoxs.length;
-  var additionalJewelCount = serverConfig.OBJ_JEWEL_COUNT - this.objJewels.length;
+  var additionalGoldCount = (serverConfig.OBJ_GOLD_COUNT + serverConfig.ADDITIONAL_GOLD_PER_USER * Object.keys(this.users).length) - this.objGolds.length;
+  var additionalBoxCount = (serverConfig.OBJ_BOX_COUNT + Math.floor(serverConfig.ADDITIONAL_BOX_PER_USER * Object.keys(this.users).length)) - this.objBoxs.length;
+  var additionalJewelCount = (serverConfig.OBJ_JEWEL_COUNT + Math.floor(serverConfig.ADDITIONAL_JEWEL_PER_USER * Object.keys(this.users).length)) - this.objJewels.length;
   if(additionalGoldCount > 0){
     this.createGoldsToRandomPosition(additionalGoldCount);
   }
