@@ -22,6 +22,7 @@
   <meta name="twitter:site" content="http://worldofmage.io" />
   <meta name="twitter:description" content="Competition io game, World of Mage.io! Become a most powerful mage in WOM.io">
   <meta name="twitter:image:src" content="http://worldofmage.io/images/thumbnail.png">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <title>WOM.io</title>
   <!-- Global site tag (gtag.js) - Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112883634-1"></script>
@@ -127,10 +128,10 @@
       <div id="miniMapChest9" type="chest"><img src="/images/chestGround.png" /><img src="/images/void.png" /></div>
       <div id="miniMapSafe1" type="safeZone"><img src="/images/SafeZone.png" /></div>
       <div id="miniMapSafe2" type="safeZone"><img src="/images/SafeZone.png" /></div>
-      <div id="miniMapSafe3" type="safeZone"><img src="/images/SafeZone.png" /></div>
-      <div id="miniMapSafe4" type="safeZone"><img src="/images/SafeZone.png" /></div>
       <div id="miniMapPortal1" type="portal"><img src="/images/PortalZone.png" /></div>
       <div id="miniMapPortal2" type="portal"><img src="/images/PortalZone.png" /></div>
+      <div id="miniMapPortal3" type="portal"><img src="/images/PortalZone.png" /></div>
+      <div id="miniMapPortal4" type="portal"><img src="/images/PortalZone.png" /></div>
       <div id="miniMapUser" type="user"></div>
     </div>
     <div class="gameSceneHudBottomCenterLeft">
@@ -256,7 +257,10 @@
     <div class="startSceneHud">
       <div class="startSceneHudTopLeft">
         <h3>Featured YouTuber</h3>
-          <a href="https://www.youtube.com/watch?v=zkqpXRhDW6o" target="_blank">Fady</a>
+          <a href="" id="startSceneUtuber" target="_blank"></a>
+      </div>
+      <div class="startSceneHudTopRight">
+        <button id="settingButton1"><i class="material-icons">settings</i></button>
       </div>
       <div class="startSceneHudCenter">
         <div class="startSceneHudTitle">
@@ -365,11 +369,10 @@
         </div>
         <div class="startSceneHudBottomRight">
           <div class="changelogText">
-            <h3>1.0.4 - Feburary. 20. 2018</h3>
+            <h3>1.0.41 - Feburary. 27. 2018</h3>
             <ul>
-              <li>A system to inherit the main character will be added.</li>
-              <li>Now, You can see the kill count throughout the game.</li>
-              <li>The frost spells have improved.</li>
+              <li>Some ice spells has been changed.(Ice Spear, Cold Snap)</li>
+              <li>Portal and Safe Zone have been relocated.</li>
             </ul>
           </div>
           <a href="/changelog" target="_blank" class="changelog">see more...</a>
@@ -382,7 +385,10 @@
     <div class="standingSceneHud">
       <div class="standingSceneHudTopLeft">
         <h3>Featured YouTuber</h3>
-          <a href="https://www.youtube.com/watch?v=zkqpXRhDW6o" target="_blank">Fady</a>
+          <a href="" id="standingSceneUtuber" target="_blank"></a>
+      </div>
+      <div class="standingSceneHudTopRight">
+        <button id="settingButton2"><i class="material-icons">settings</i></button>
       </div>
       <div class="standingSceneHudCenter">
         <div class="standingSceneHudTitle">
@@ -487,11 +493,10 @@
         </div>
         <div class="standingSceneHudBottomRight">
           <div class="changelogText">
-            <h3>1.0.4 - Feburary. 20. 2018</h3>
+            <h3>1.0.41 - Feburary. 27. 2018</h3>
             <ul>
-              <li>A system to inherit the main character will be added.</li>
-              <li>Now, You can see the kill count throughout the game.</li>
-              <li>The frost spells have improved.</li>
+              <li>Some ice spells has been changed.(Ice Spear, Cold Snap)</li>
+              <li>Portal and Safe Zone have been relocated.</li>
             </ul>
           </div>
           <a href="/changelog" target="_blank" class="changelog">see more...</a>
@@ -547,6 +552,21 @@
     <div id="popUpSkillTutorialArrow" class="popUpSkillTutorialArrow disable"></div>
   </div>
   <div id="popUpBackground" class="popUpBackground disable">
+  </div>
+  <div id="popUpSetting" class="popUpSetting disable">
+    <div class="keySetting">
+      <h4>Key Setting</h4><hr>
+      <label for="bindE"> Base Attack 1 : </label><input type="text" maxlength="1" id="bindE" placeholder="E"> <br>
+      <label for="bindSpace"> Base Attack 2 : </label><input type="text" maxlength="1" id="bindSpace" placeholder="Space"> <br>
+      <label for="bindA"> Base Attack 3 : </label><input type="text" maxlength="1" id="bindA" placeholder="A"> <br>
+      <label for="bind1"> Spell 1 : </label><input type="text" maxlength="1" id="bind1" placeholder="1"> <br>
+      <label for="bind2"> Spell 2 : </label><input type="text" maxlength="1" id="bind2" placeholder="2"> <br>
+      <label for="bind3"> Spell 3 : </label><input type="text" maxlength="1" id="bind3" placeholder="3"> <br>
+      <label for="bind4"> Spell 4 : </label><input type="text" maxlength="1" id="bind4" placeholder="4"> <br>
+      <label for="bindS"> Stop : </label><input type="text" maxlength="1" id="bindS" placeholder="S"> <br>
+      <label for="bindG"> Spell Setting : </label><input type="text" maxlength="1" id="bindG" placeholder="G"> <br>
+      <label for="bindHome"> Suicide : </label><input type="text" maxlength="1" id="bindHome" placeholder="Home"> <br>
+    </div>
   </div>
   <table class="flashMessageTable"><tbody><tr>
     <td id="flashMessageContainer"></td>

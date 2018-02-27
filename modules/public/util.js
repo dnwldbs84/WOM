@@ -857,6 +857,8 @@ exports.setDrawUser = function(users, user, gameConfig){
         objectID: users[index].objectID,
         level: users[index].level,
         name: users[index].name,
+        textCanvas : users[index].textCanvas,
+        textScaleFactor : users[index].textScaleFactor,
         HP: users[index].HP,
         maxHP: users[index].maxHP,
         MP: users[index].MP,
@@ -899,4 +901,22 @@ exports.setRandomName = function(charType){
       return "Myster#" + suffix;
     default:
   }
+};
+// var keyCodeTable = require('./keyCodeTable');
+exports.charToKeyCode = function(char){
+  var keyCodeTable = require('./keyCodeTable');
+  return keyCodeTable[char.toLowerCase()];
+};
+exports.makeCacheCanvas = function(level, name, scaleFactor){
+  var cacheCanvas = document.createElement('canvas');
+  var ctx = cacheCanvas.getContext('2d');
+  cacheCanvas.width = 400 * scaleFactor;
+  cacheCanvas.height = 100 * scaleFactor;
+  ctx.beginPath();
+  ctx.textAlign = "center";
+  ctx.fillStyle = "black";
+  ctx.font = "bold 15px Arial";
+  ctx.fillText("Lv." + level + " " + name, 200 * scaleFactor, 50 * scaleFactor, 200 * scaleFactor);
+  ctx.closePath();
+  return cacheCanvas;
 };
