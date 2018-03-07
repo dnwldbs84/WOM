@@ -1464,7 +1464,9 @@ var pingpongInterval = setInterval(function(){
       return client.terminate();
     }
     client.isAlive = false;
-    client.ping();
+    if(client.readyState === WebSocket.OPEN){
+      client.ping();
+    }
   });
 }, 30000);
 // function makePacketForm(type){
