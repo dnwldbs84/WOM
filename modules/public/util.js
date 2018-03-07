@@ -920,3 +920,13 @@ exports.makeCacheCanvas = function(level, name, scaleFactor){
   ctx.closePath();
   return cacheCanvas;
 };
+exports.makePacketForm = function(type){
+  var vars = [];
+  for(var i=1; i<arguments.length; i++){
+    vars.push(arguments[i]);
+  }
+  return JSON.stringify({
+    type: type,
+    vars: vars
+  });
+}

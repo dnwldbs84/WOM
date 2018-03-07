@@ -1,6 +1,7 @@
 var http = require('http');
 var express = require('express');
-var socketio = require('socket.io');
+// var socketio = require('socket.io');
+var WebSocket = require('ws');
 var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
 var path = require('path');
@@ -139,7 +140,8 @@ app.post('/instruction', function(req, res){
     if(req.body.pw === serverConfig.OPERATION_TOOL_PASSWORD){
       if(req.body.instruction === serverConfig.OPERATION_MSG_TO_USER){
         if(io){
-          io.sockets.emit('adminMessage', req.body.msg)
+          // io.sockets.emit('adminMessage', req.body.msg)
+          messageToClient('public', util.makePacketForm('adminMessage', req.body.msg));
         }
         res.send({correctPW : true, correctInstruction : true});
       }else if(req.body.instruction === serverConfig.OPERATION_DOWN_SERVER){
@@ -147,10 +149,12 @@ app.post('/instruction', function(req, res){
           var time = parseInt(req.body.time);
           if(time && time > 0){
             isServerDown = true;
-            io.sockets.emit('downServer', req.body.msg, req.body.time);
+            // io.sockets.emit('downServer', req.body.msg, req.body.time);
+            messageToClient('public', util.makePacketForm('downServer', req.body.msg, req.body.time));
             serverDownTimeout = setTimeout(function(){
               if(GM){
-                io.sockets.emit('nowServerIsDown');
+                // io.sockets.emit('nowServerIsDown');
+                messageToClient('public', util.makePacketForm('nowServerIsDown'));
                 GM.kickAllUser();
               }
             }, req.body.time);
@@ -162,7 +166,8 @@ app.post('/instruction', function(req, res){
           clearTimeout(serverDownTimeout);
           serverDownTimeout = false;
           isServerDown = false;
-          io.sockets.emit('cancelServerDown', req.body.msg);
+          // io.sockets.emit('cancelServerDown', req.body.msg);
+          messageToClient('public', util.makePacketForm('cancelServerDown', req.body.msg));
         }
         res.send({correctPW : true, correctInstruction : true});
       }else{
@@ -180,7 +185,8 @@ var server = http.createServer(app);
 var port = process.env.PORT || config.port;
 
 server.listen(port, function(){
-  console.log('Server is Running');
+  var time = new Date();
+  console.log('Server is Running ', time);
 });
 
 var GameManager = require('./modules/server/GameManager.js');
@@ -189,26 +195,29 @@ var GM = new GameManager();
 GM.start();
 
 var User = require('./modules/server/User.js');
-var io = socketio(server, {
-  pingInterval : 2500,
-  pingTimeout : 6000,
-  transports : ['websocket']
-});
+var wss = new WebSocket.Server({ server });
+// var io = socketio(server, {
+//   pingInterval : 2500,
+//   pingTimeout : 6000,
+//   transports : ['websocket']
+// });
 // var io = socketio.listen(server);
 
 GM.onUserEnterPortal = function(userID, randomPos){
-  io.sockets.emit('moveUserToNewPos', userID, randomPos);
+  // io.sockets.emit('moveUserToNewPos', userID, randomPos);
+  messageToClient('public', util.makePacketForm('moveUserToNewPos', userID, randomPos));
 };
 GM.onNeedInformUserTakeDamage = function(user, dmg, skillIndex){
   try {
     if(user){
       var userData = GM.processChangedUserStat(user);
       userData.damagedAmount = dmg;
-      io.sockets.emit('userDamaged', userData, skillIndex);
+      // io.sockets.emit('userDamaged', userData, skillIndex);
+      messageToClient('public', util.makePacketForm('userDamaged', userData, skillIndex));
     }
   } catch (e) {
-    console.log('onNeedInformUserTakeDamage');
-    console.log(Date.now());
+    var time = new Date();
+    console.log('onNeedInformUserTakeDamage ' + time);
   }
 };
 GM.onNeedInformUserDeath = function(attackUserInfo, deadUserInfo, loseResource, newSkills){
@@ -216,108 +225,119 @@ GM.onNeedInformUserDeath = function(attackUserInfo, deadUserInfo, loseResource, 
     var scoreDatas = GM.processScoreDatas();
     var levelDatas = GM.processUserAllTypeLevels(deadUserInfo.userID);
     var charSkillDatas = GM.processUserAllTypeSkillLevels(deadUserInfo.userID);
-    io.sockets.emit('userDead', attackUserInfo, deadUserInfo, scoreDatas, levelDatas, loseResource, newSkills, charSkillDatas);
+    // io.sockets.emit('userDead', attackUserInfo, deadUserInfo, scoreDatas, levelDatas, loseResource, newSkills, charSkillDatas);
+    messageToClient('public', util.makePacketForm('userDead', attackUserInfo, deadUserInfo, scoreDatas, levelDatas, loseResource, newSkills, charSkillDatas));
   } catch (e) {
-    console.log('onNeedInformUserDeath');
-    console.log(Date.now());
+    var time = new Date();
+    console.log('onNeedInformUserDeath ' + time);
   }
 };
 GM.onNeedInformUserReduceMP = function(user){
   try {
     if(user){
       var userData = GM.processChangedUserStat(user);
-      io.sockets.emit('changeUserStat', userData);
+      // io.sockets.emit('changeUserStat', userData);
+      messageToClient('public', util.makePacketForm('changeUserStat', userData));
     }
   } catch (e) {
-    console.log('onNeedInformUserReduceMP');
-    console.log(Date.now());
+    var time = new Date();
+    console.log('onNeedInformUserReduceMP ' + time);
   }
 };
 GM.onNeedInformUserGetExp = function(user, addResource){
   try {
     if(user){
       var userData = GM.processChangedUserStat(user);
-      io.to(user.socketID).emit('changeUserStat', userData, addResource);
+      // io.to(user.socketID).emit('changeUserStat', userData, addResource);
+      messageToClient('private', util.makePacketForm('changeUserStat', userData, addResource), user.socketID);
     }
   } catch (e) {
-    console.log('onNeedInformUserGetExp');
-    console.log(Date.now());
+    var time = new Date();
+    console.log('onNeedInformUserGetExp ' + time);
   }
 };
 GM.onNeedInformUserGetResource = function(user, addResource){
   try {
     if(user){
       var resourceData = GM.processUserResource(user);
-      io.to(user.socketID).emit('getResource', resourceData, addResource);
+      // io.to(user.socketID).emit('getResource', resourceData, addResource);
+      messageToClient('private', util.makePacketForm('getResource', resourceData, addResource), user.socketID);
     }
   } catch (e) {
   }
 };
 GM.onNeedInformUserGetSkill = function(socketID, skillIndex){
   try {
-    io.to(socketID).emit('getSkill', skillIndex);
+    // io.to(socketID).emit('getSkill', skillIndex);
+    messageToClient('private', util.makePacketForm('getSkill', skillIndex), socketID);
   } catch (e) {
-    console.log('onNeedInformUserGetSkill');
-    console.log(Date.now());
+    var time = new Date();
+    console.log('onNeedInformUserGetSkill ' + time);
   }
 };
 GM.onNeedInformUserSkillChangeToResource = function(socketID, skillIndex){
   try {
-    io.to(socketID).emit('skillChangeToResource', skillIndex);
+    // io.to(socketID).emit('skillChangeToResource', skillIndex);
+    messageToClient('private', util.makePacketForm('skillChangeToResource', skillIndex), socketID);
   } catch (e) {
-    console.log('onNeedInformUserSkillChangeToResource');
-    console.log(Date.now());
+    var time = new Date();
+    console.log('onNeedInformUserSkillChangeToResource ' + time);
   }
 };
 GM.onNeedInformScoreData = function(){
   try {
     var rankDatas = GM.processScoreDatas();
-    io.sockets.emit('updateRank', rankDatas);
+    // io.sockets.emit('updateRank', rankDatas);
+    messageToClient('public', util.makePacketForm('updateRank', rankDatas));
   } catch (e) {
-    console.log('onNeedInformScoreData');
-    console.log(Date.now());
+    var time = new Date();
+    console.log('onNeedInformScoreData ' + time);
   }
 };
 GM.onNeedInformUserLevelUp = function(user){
   try {
     if(user){
       var userData = GM.processChangedUserStat(user);
-      io.sockets.emit('changeUserStat', userData);
+      // io.sockets.emit('changeUserStat', userData);
+      messageToClient('public', util.makePacketForm('changeUserStat', userData));
     }
   } catch (e) {
-    console.log('onNeedInformUserLevelUp');
-    console.log(Date.now());
+    var time = new Date();
+    console.log('onNeedInformUserLevelUp ' + time);
   }
 };
 GM.onNeedInformBuffUpdate = function(user){
   try {
     if(user){
       var buffData = GM.processBuffDataSetting(user);
-      io.sockets.emit('updateBuff', buffData);
+      // io.sockets.emit('updateBuff', buffData);
+      messageToClient('public', util.makePacketForm('updateBuff', buffData));
     }
   } catch (e) {
-    console.log('onNeedInformBuffUpdate');
-    console.log(Date.now());
+    var time = new Date();
+    console.log('onNeedInformBuffUpdate ' + time);
   }
   // io.to(user.socketID).emit('updateBuff', buffData);
 };
 GM.onNeedInformSkillUpgrade = function(socketID, beforeSkillIndex, afterSkillIndex, resourceData){
   try {
-    io.to(socketID).emit('upgradeSkill', beforeSkillIndex, afterSkillIndex, resourceData);
+    // io.to(socketID).emit('upgradeSkill', beforeSkillIndex, afterSkillIndex, resourceData);
+    messageToClient('private', util.makePacketForm('upgradeSkill', beforeSkillIndex, afterSkillIndex, resourceData), socketID);
   } catch (e) {
-    console.log('onNeedInformSkillUpgrade');
-    console.log(Date.now());
+    var time = new Date();
+    console.log('onNeedInformSkillUpgrade ' + time);
   }
 };
 GM.onNeedInformUserChangePrivateStat = function(user){
   try {
     if(user){
       var statData = GM.processUserPrivateDataSetting(user);
-      io.to(user.socketID).emit('updateUserPrivateStat', statData);
+      // io.to(user.socketID).emit('updateUserPrivateStat', statData);
+      messageToClient('private', util.makePacketForm('updateUserPrivateStat', statData), user.socketID);
     }
   } catch (e) {
-    console.log('onNeedInformUserChangePrivateStat');
-    console.log(Date.now());
+    var time = new Date();
+    console.log('onNeedInformUserChangePrivateStat ' + time);
   }
 };
 GM.onNeedInformUserChangeStat = function(user){
@@ -325,22 +345,26 @@ GM.onNeedInformUserChangeStat = function(user){
     if(user){
       var userData = GM.processChangedUserStat(user);
       // console.log(user.conditions);
-      io.sockets.emit('changeUserStat', userData);
+      // io.sockets.emit('changeUserStat', userData);
+      messageToClient('public', util.makePacketForm('changeUserStat', userData));
     }
   } catch (e) {
-    console.log('onNeedInformUserChangeStat');
-    console.log(Date.now());
+    var time = new Date();
+    console.log('onNeedInformUserChangeStat ' + time);
   }
 };
 GM.onNeedInformCreateChest = function(chest){
   var chestData = GM.processChestDataSetting(chest);
-  io.sockets.emit('createChest', chestData);
+  // io.sockets.emit('createChest', chestData);
+  messageToClient('public', util.makePacketForm('createChest', chestData));
 };
 GM.onNeedInformChestDamaged = function(locationID, HP){
-  io.sockets.emit('chestDamaged', locationID, HP);
+  // io.sockets.emit('chestDamaged', locationID, HP);
+  messageToClient('public', util.makePacketForm('chestDamaged', locationID, HP));
 };
 GM.onNeedInformDeleteChest = function(locationID){
-  io.sockets.emit('deleteChest', locationID);
+  // io.sockets.emit('deleteChest', locationID);
+  messageToClient('public', util.makePacketForm('deleteChest', locationID));
 };
 GM.onNeedInformCreateObjs = function(objs){
   try {
@@ -348,41 +372,169 @@ GM.onNeedInformCreateObjs = function(objs){
     for(var i=0; i<objs.length; i++){
       objDatas.push(GM.processOBJDataSetting(objs[i]));
     }
-    io.sockets.emit('createOBJs', objDatas);
+    // io.sockets.emit('createOBJs', objDatas);
+    messageToClient('public', util.makePacketForm('createOBJs', objDatas));
   } catch (e) {
-    console.log('onNeedInformCreateObjs');
-    console.log(Date.now());
+    console.log('onNeedInformCreateObjs ' + time);
   }
 };
 GM.onNeedInformDeleteObj = function(objID){
-  io.sockets.emit('deleteOBJ', objID);
+  // io.sockets.emit('deleteOBJ', objID);
+  messageToClient('public', util.makePacketForm('deleteOBJ', objID));
 };
 GM.onNeedInformSkillData = function(socketID, possessSkills){
   try {
-    io.to(socketID).emit('updateSkillPossessions', possessSkills);
+    // io.to(socketID).emit('updateSkillPossessions', possessSkills);
+    messageToClient('private', util.makePacketForm('updateSkillPossessions', possessSkills), socketID);
   } catch (e) {
-    console.log('onNeedInformSkillData');
-    console.log(Date.now());
+    console.log('onNeedInformSkillData ' + time);
   }
 };
 GM.onNeedInformProjectileDelete = function(projectileData){
-  io.sockets.emit('deleteProjectile', projectileData.objectID, projectileData.id);
+  // io.sockets.emit('deleteProjectile', projectileData.objectID, projectileData.id);
+  messageToClient('public', util.makePacketForm('deleteProjectile', projectileData.objectID, projectileData.id));
 };
 GM.onNeedInformProjectileExplode = function(projectileData){
-  io.sockets.emit('explodeProjectile', projectileData.objectID, projectileData.id, {x : projectileData.x, y : projectileData.y});
+  // io.sockets.emit('explodeProjectile', projectileData.objectID, projectileData.id, {x : projectileData.x, y : projectileData.y});
+  messageToClient('public', util.makePacketForm('explodeProjectile', projectileData.objectID, projectileData.id, {x : projectileData.x, y : projectileData.y}));
 };
 
-io.on('connection', function(socket){
+wss.on('connection', function(client, req){
   var user;
   var warnCount = 0;
   var isReconnecting = false;
+  client.isAlive = true;
+  client.on('pong', heartbeat);
 
-  socket.on('reqStartGame', function(userType, userName, twitter, facebook){
+  client.on('message', function(msg){
     try {
+      var data = JSON.parse(msg);
+      var vars = data.vars;
+      switch (data.type) {
+        case 'reqStartGame':
+          reqStartGame(vars[0], vars[1], vars[2], vars[3]);
+          break;
+        case 'reqRestartGame':
+          reqRestartGame(vars[0], vars[1], vars[2]);
+          break;
+        case 'reqReconnect':
+          reqReconnect(vars[0], vars[1], vars[2], vars[3], vars[4], vars[5], vars[6], vars[7]);
+          break;
+        case 'reconnectSuccess':
+          isReconnecting = false;
+          console.log('reconnectSuccess');
+          break;
+        case 'needReconnect':
+          needReconnect();
+          break;
+        case 'userDataUpdate':
+          userDataUpdate(vars[0], vars[1], vars[2]);
+          break;
+        case 'userMoveStart':
+          userMoveStart(vars[0]);
+          break;
+        case 'userMoveAndAttack':
+          userMoveAndAttack(vars[0]);
+          break;
+        case 'userUseSkill':
+          userUseSkill(vars[0]);
+          break;
+        case 'userStop':
+          userStop(vars[0]);
+          break;
+        case 'skillFired':
+          skillFired(vars[0]);
+          break;
+        case 'projectilesFired':
+          projectilesFired(vars[0], vars[1]);
+          break;
+        case 'upgradeSkill':
+          upgradeSkill(vars[0]);
+          break;
+        case 'exchangePassive':
+          exchangePassive(vars[0], vars[1]);
+          break;
+        case 'equipPassive':
+          equipPassive(vars[0]);
+          break;
+        case 'unequipPassive':
+          unequipPassive(vars[0]);
+          break;
+        case 'firePing':
+          firePing(vars[0]);
+          break;
+        case 'chatting':
+          chatting(vars[0]);
+          break;
+        case 'updateUserTimeDiff':
+          updateUserTimeDiff(vars[0], vars[1]);
+          break;
+        case 'completeTwitter':
+          completeTwitter();
+          break;
+        case 'completeFacebook':
+          completeFacebook();
+          break;
+        case 'killme':
+          killme();
+          break;
+        case 'giveExp':
+          giveExp();
+          break;
+        case 'giveResources':
+          giveResources();
+          break;
+        case 'giveAllSkill':
+          giveAllSkill();
+          break;
+      }
+    } catch (e) {
+      var time = new Date();
+      console.log('error at onmessage ' + data.type + " " + time + " " + e);
+      try {
+        if(user){
+          var rankDatas = GM.processScoreDatas(user.objectID);
+          messageToClient('public', util.makePacketForm('userLeave', user.objectID, rankDatas));
+          GM.stopUser(user);
+          GM.kickUser(user);
+        }
+      } catch (e) {
+        console.log('In try catch ' + e.message);
+      } finally {
+        client.close();
+      }
+    }
+  });
+  client.on('error', function(err){
+    if(err.errno){
+      return;
+    }else{
+      console.log(err);
+    }
+  });
+  client.on('close', function(){
+    try {
+      if(user){
+        var rankDatas = GM.processScoreDatas(user.objectID);
+        messageToClient('public', util.makePacketForm('userLeave', user.objectID, rankDatas));
+        GM.stopUser(user);
+        GM.kickUser(user);
+      }
+    } catch (e) {
+      var time = new Date();
+      console.log('At onclose ' + e.message + " " + time);
+    } finally {
+      client.close();
+    }
+  });
+
+  // socket.on('reqStartGame', function(userType, userName, twitter, facebook){
+  function reqStartGame(userType, userName, twitter, facebook){
+    // try {
       if(userType === gameConfig.CHAR_TYPE_FIRE || userType === gameConfig.CHAR_TYPE_FROST || userType === gameConfig.CHAR_TYPE_ARCANE){
         var userStat = objectAssign({}, util.findDataWithTwoColumns(userStatTable, 'type', userType, 'level', 1));
         var userBase = objectAssign({}, util.findData(userBaseTable, 'type', userType));
-        user = new User(socket.id, userName, userStat, userBase, 0);
+        user = new User(client, userName, userStat, userBase, 0);
 
         var baseSkill = userBase.baseSkill;
         var equipSkills = [];
@@ -408,7 +560,8 @@ io.on('connection', function(socket){
         var userData = GM.processUserDataSetting(user);
         var rankDatas = GM.processScoreDatas();
         //send users user joined game
-        socket.broadcast.emit('userJoined', userData, rankDatas);
+        // socket.broadcast.emit('userJoined', userData, rankDatas);
+        messageToClient('broadcast', util.makePacketForm('userJoined', userData, rankDatas), client);
 
         var userDatas = GM.processUserDataSettings();
         var buffDatas = GM.processBuffDataSettings();
@@ -423,8 +576,10 @@ io.on('connection', function(socket){
         //user initial equip skill setting;
         userData.equipSkills = equipSkills;
 
-        socket.emit('syncAndSetSkills', userData);
-        socket.emit('resStartGame', userDatas, buffDatas, objDatas, chestDatas, rankDatas);
+        // socket.emit('syncAndSetSkills', userData);
+        messageToClient('private', util.makePacketForm('syncAndSetSkills', userData), client);
+        // socket.emit('resStartGame', userDatas, buffDatas, objDatas, chestDatas, rankDatas);
+        messageToClient('private', util.makePacketForm('resStartGame', userDatas, buffDatas, objDatas, chestDatas, rankDatas), client);
         GM.setStartBuff(user);
         if(twitter){
           GM.giveTwitterGold(user.objectID, 5000);
@@ -435,31 +590,32 @@ io.on('connection', function(socket){
       }else{
         throw "charType error";
       }
-    } catch (e) {
-      if(user){
-        try {
-          var rankDatas = GM.processScoreDatas(user.objectID);
-          io.sockets.emit('userLeave', user.objectID, rankDatas);
-        } catch (e) {
-          console.log(e.message);
-        } finally {
-          GM.stopUser(user);
-          GM.kickUser(user);
-          console.log('reqStartGame1');
-          console.log(Date.now());
-          console.log(e.message);
-          socket.disconnect();
-        }
-      }else{
-        console.log('reqStartGame2');
-        console.log(Date.now());
-        console.log(e.message);
-        socket.disconnect();
-      }
-    }
-  });
-  socket.on('reqRestartGame', function(userName, charType, equipSkills){
-    try {
+    // } catch (e) {
+    //   if(user){
+    //     try {
+    //       var rankDatas = GM.processScoreDatas(user.objectID);
+    //       io.sockets.emit('userLeave', user.objectID, rankDatas);
+    //     } catch (e) {
+    //       console.log(e.message);
+    //     } finally {
+    //       GM.stopUser(user);
+    //       GM.kickUser(user);
+    //       console.log('reqStartGame1');
+    //       console.log(Date.now());
+    //       console.log(e.message);
+    //       socket.disconnect();
+    //     }
+    //   }else{
+    //     console.log('reqStartGame2');
+    //     console.log(Date.now());
+    //     console.log(e.message);
+    //     socket.disconnect();
+    //   }
+    // }
+  }
+  // socket.on('reqRestartGame', function(userName, charType, equipSkills){
+  function reqRestartGame(userName, charType, equipSkills){
+    // try {
       if(user.objectID && charType === gameConfig.CHAR_TYPE_FIRE || charType === gameConfig.CHAR_TYPE_FROST || charType === gameConfig.CHAR_TYPE_ARCANE){
         var level = GM.getLevel(user.objectID, charType);
 
@@ -478,10 +634,13 @@ io.on('connection', function(socket){
         var userData = GM.processUserDataSetting(user);
         var rankDatas = GM.processScoreDatas();
 
-        socket.broadcast.emit('userJoined', userData, rankDatas);
+        // socket.broadcast.emit('userJoined', userData, rankDatas);
+        messageToClient('broadcast', util.makePacketForm('userJoined', userData, rankDatas), client);
+
         GM.addSkillData(userData);
         GM.addPrivateData(userData);
-        socket.emit('resRestartGame', userData, rankDatas);
+        // socket.emit('resRestartGame', userData, rankDatas);
+        messageToClient('private', util.makePacketForm('resRestartGame', userData, rankDatas), client);
 
         var passiveList = [];
         for(var i=0; i<equipSkills.length; i++){
@@ -495,36 +654,38 @@ io.on('connection', function(socket){
       }else{
         if(!isReconnecting){
           isReconnecting = true;
-          socket.emit('reqReconnectResource');
+          // socket.emit('reqReconnectResource');
+          messageToClient('private', util.makePacketForm('reqReconnectResource'), client);
         }
         // throw "charType error";
       }
-    } catch (e) {
-      if(user){
-        try {
-          var rankDatas = GM.processScoreDatas(user.objectID);
-          io.sockets.emit('userLeave', user.objectID, rankDatas);
-        } catch (e) {
-          console.log(e.message);
-        } finally {
-          GM.stopUser(user);
-          GM.kickUser(user);
-          console.log('reqRestartGame1');
-          console.log(Date.now());
-          console.log(e.message);
-          socket.disconnect();
-        }
-      }else{
-        console.log('reqRestartGame2');
-        console.log(Date.now());
-        console.log(e.message);
-        socket.disconnect();
-      }
-    }
-  });
-  socket.on('reqReconnect', function(userName, charType, stat, skills, killCount, totalKillCount, position, resources){
+    // } catch (e) {
+    //   if(user){
+    //     try {
+    //       var rankDatas = GM.processScoreDatas(user.objectID);
+    //       io.sockets.emit('userLeave', user.objectID, rankDatas);
+    //     } catch (e) {
+    //       console.log(e.message);
+    //     } finally {
+    //       GM.stopUser(user);
+    //       GM.kickUser(user);
+    //       console.log('reqRestartGame1');
+    //       console.log(Date.now());
+    //       console.log(e.message);
+    //       socket.disconnect();
+    //     }
+    //   }else{
+    //     console.log('reqRestartGame2');
+    //     console.log(Date.now());
+    //     console.log(e.message);
+    //     socket.disconnect();
+    //   }
+    // }
+  }
+  // socket.on('reqReconnect', function(userName, charType, stat, skills, killCount, totalKillCount, position, resources){
+  function reqReconnect(userName, charType, stat, skills, killCount, totalKillCount, position, resources){
     console.log('reqReconnect Start');
-    try {
+    // try {
       if(!user){
         if(charType === gameConfig.CHAR_TYPE_FIRE || charType === gameConfig.CHAR_TYPE_FROST || charType === gameConfig.CHAR_TYPE_ARCANE){
           var level = 1;
@@ -537,7 +698,7 @@ io.on('connection', function(socket){
           }
           var userStat = objectAssign({}, util.findDataWithTwoColumns(userStatTable, 'type', charType, 'level', level));
           var userBase = objectAssign({}, util.findData(userBaseTable, 'type', charType));
-          user = new User(socket.id, userName, userStat, userBase, 0);
+          user = new User(client, userName, userStat, userBase, 0);
 
           GM.initReconnectUser(user, level, exp, skills.baseSkill, skills.inherentPassiveSkill, skills.possessSkills);
           GM.joinUser(user);
@@ -550,7 +711,8 @@ io.on('connection', function(socket){
           var userData = GM.processUserDataSetting(user);
           var rankDatas = GM.processScoreDatas();
 
-          socket.broadcast.emit('userJoined', userData, rankDatas);
+          // socket.broadcast.emit('userJoined', userData, rankDatas);
+          messageToClient('broadcast', util.makePacketForm('userJoined', userData, rankDatas), client);
 
           var userDatas = GM.processUserDataSettings();
           var buffDatas = GM.processBuffDataSettings();
@@ -567,27 +729,31 @@ io.on('connection', function(socket){
             }
           }
           GM.equipPassives(user.objectID, passiveList);
-          socket.emit('resReconnect', userData, userDatas, buffDatas, objDatas, chestDatas, rankDatas);
+          // socket.emit('resReconnect', userData, userDatas, buffDatas, objDatas, chestDatas, rankDatas);
+          messageToClient('private', util.makePacketForm('resReconnect', userData, userDatas, buffDatas, objDatas, chestDatas, rankDatas), client);
         }
       }
-    } catch (e) {
-      console.log('reqReconnect');
-      console.log(Date.now());
-      console.log(e.message);
-      socket.disconnect();
-    }
-  });
-  socket.on('reconnectSuccess', function(){
-    console.log('reconnectSuccess');
-  });
-  socket.on('needReconnect', function(){
-    socket.emit('reqReconnectResource');
-  });
+    // } catch (e) {
+    //   console.log('reqReconnect');
+    //   console.log(Date.now());
+    //   console.log(e.message);
+    //   socket.disconnect();
+    // }
+  }
+  // socket.on('reconnectSuccess', function(){
+  //   console.log('reconnectSuccess');
+  // });
+  // socket.on('needReconnect', function(){
+  function needReconnect(){
+    // socket.emit('reqReconnectResource');
+    messageToClient('private', util.makePacketForm('reqReconnectResource'), client);
+  }
   // var timeDelay = Date.now();
-  socket.on('userDataUpdate', function(userData, needInform, fps){
+  // socket.on('userDataUpdate', function(userData, needInform, fps){
+  function userDataUpdate(userData, needInform, fps){
     // console.log(userData.time - timeDelay);
     // timeDelay = userData.time;
-    try {
+    // try {
       if(fps && fps > 20){
         var rand = Math.floor(Math.random() * serverConfig.CHEAT_CHECK_RATE);
         if(rand === 1){
@@ -595,7 +761,8 @@ io.on('connection', function(socket){
           if(beforePosition){
             warnCount++;
             console.log(userData.objectID + ' is cheating!!! : ' + warnCount);
-            socket.emit('dontCheat', beforePosition);
+            // socket.emit('dontCheat', beforePosition);
+            messageToClient('private', util.makePacketForm('dontCheat', beforePosition), client);
           }
         }
       }
@@ -604,77 +771,83 @@ io.on('connection', function(socket){
       if(needInform){
         if(user){
           userData = GM.processUserDataSetting(user);
-          socket.broadcast.emit('userDataSync', userData);
+          // socket.broadcast.emit('userDataSync', userData);
+          messageToClient('broadcast', util.makePacketForm('userDataSync', userData), client);
         }else{
           if(!isReconnecting){
             isReconnecting = true;
-            socket.emit('reqReconnectResource');
+            // socket.emit('reqReconnectResource');
+            messageToClient('private', util.makePacketForm('reqReconnectResource'), client);
           }
           // throw "user isn`t instantiated";
         }
       }
-    } catch (e) {
-      if(user){
-        try {
-          var rankDatas = GM.processScoreDatas(user.objectID);
-          io.sockets.emit('userLeave', user.objectID, rankDatas);
-        } catch (e) {
-          console.log(e.message);
-        } finally {
-          GM.stopUser(user);
-          GM.kickUser(user);
-          console.log('userDataUpdate1');
-          console.log(Date.now());
-          console.log(e.message);
-          socket.disconnect();
-        }
-      }else{
-        console.log('userDataUpdate2');
-        console.log(Date.now());
-        console.log(e);
-        socket.disconnect();
-      }
-    }
-  });
-  socket.on('userMoveStart', function(userData){
-    try {
+    // } catch (e) {
+    //   if(user){
+    //     try {
+    //       var rankDatas = GM.processScoreDatas(user.objectID);
+    //       io.sockets.emit('userLeave', user.objectID, rankDatas);
+    //     } catch (e) {
+    //       console.log(e.message);
+    //     } finally {
+    //       GM.stopUser(user);
+    //       GM.kickUser(user);
+    //       console.log('userDataUpdate1');
+    //       console.log(Date.now());
+    //       console.log(e.message);
+    //       socket.disconnect();
+    //     }
+    //   }else{
+    //     console.log('userDataUpdate2');
+    //     console.log(Date.now());
+    //     console.log(e);
+    //     socket.disconnect();
+    //   }
+    // }
+  }
+  // socket.on('userMoveStart', function(userData){
+  function userMoveStart(userData){
+    // try {
       GM.updateUserData(userData);
 
       if(user){
         userData = GM.processUserDataSetting(user);
-        socket.broadcast.emit('userDataUpdate', userData);
+        // socket.broadcast.emit('userDataUpdate', userData);
+        messageToClient('broadcast', util.makePacketForm('userDataUpdate', userData), client);
       }else{
         if(!isReconnecting){
           isReconnecting = true;
-          socket.emit('reqReconnectResource');
+          // socket.emit('reqReconnectResource');
+          messageToClient('private', util.makePacketForm('reqReconnectResource'), client);
         }
         // throw "user isn`t instantiated";
       }
-    } catch (e) {
-      if(user){
-        try {
-          var rankDatas = GM.processScoreDatas(user.objectID);
-          io.sockets.emit('userLeave', user.objectID, rankDatas);
-        } catch (e) {
-          console.log(e.message);
-        } finally {
-          GM.stopUser(user);
-          GM.kickUser(user);
-          console.log('userMoveStart1');
-          console.log(Date.now());
-          console.log(e.message);
-          socket.disconnect();
-        }
-      }else{
-        console.log('userMoveStart2');
-        console.log(Date.now());
-        console.log(e);
-        socket.disconnect();
-      }
-    }
-  });
-  socket.on('userMoveAndAttack', function(userAndSkillData){
-    try {
+    // } catch (e) {
+    //   if(user){
+    //     try {
+    //       var rankDatas = GM.processScoreDatas(user.objectID);
+    //       io.sockets.emit('userLeave', user.objectID, rankDatas);
+    //     } catch (e) {
+    //       console.log(e.message);
+    //     } finally {
+    //       GM.stopUser(user);
+    //       GM.kickUser(user);
+    //       console.log('userMoveStart1');
+    //       console.log(Date.now());
+    //       console.log(e.message);
+    //       socket.disconnect();
+    //     }
+    //   }else{
+    //     console.log('userMoveStart2');
+    //     console.log(Date.now());
+    //     console.log(e);
+    //     socket.disconnect();
+    //   }
+    // }
+  }
+  // socket.on('userMoveAndAttack', function(userAndSkillData){
+  function userMoveAndAttack(userAndSkillData){
+    // try {
       GM.updateUserData(userAndSkillData);
       if(user){
         var userData = GM.processUserDataSetting(user);
@@ -682,39 +855,42 @@ io.on('connection', function(socket){
         userData.skillTargetPosition = userAndSkillData.skillTargetPosition;
         userData.moveBackward = userAndSkillData.moveBackward;
 
-        socket.broadcast.emit('userMoveAndAttack', userData);
+        // socket.broadcast.emit('userMoveAndAttack', userData);
+        messageToClient('broadcast', util.makePacketForm('userMoveAndAttack', userData), client);
       }else{
         if(!isReconnecting){
           isReconnecting = true;
-          socket.emit('reqReconnectResource');
+          // socket.emit('reqReconnectResource');
+          messageToClient('private', util.makePacketForm('reqReconnectResource'), client);
         }
         // throw "user isn`t instantiated";
       }
-    } catch (e) {
-      if(user){
-        try {
-          var rankDatas = GM.processScoreDatas(user.objectID);
-          io.sockets.emit('userLeave', user.objectID, rankDatas);
-        } catch (e) {
-          console.log(e.message);
-        } finally {
-          GM.stopUser(user);
-          GM.kickUser(user);
-          console.log('userMoveAndAttack1');
-          console.log(Date.now());
-          console.log(e.message);
-          socket.disconnect();
-        }
-      }else{
-        console.log('userMoveAndAttack2');
-        console.log(Date.now());
-        console.log(e);
-        socket.disconnect();
-      }
-    }
-  });
-  socket.on('userUseSkill', function(userAndSkillData){
-    try {
+    // } catch (e) {
+    //   if(user){
+    //     try {
+    //       var rankDatas = GM.processScoreDatas(user.objectID);
+    //       io.sockets.emit('userLeave', user.objectID, rankDatas);
+    //     } catch (e) {
+    //       console.log(e.message);
+    //     } finally {
+    //       GM.stopUser(user);
+    //       GM.kickUser(user);
+    //       console.log('userMoveAndAttack1');
+    //       console.log(Date.now());
+    //       console.log(e.message);
+    //       socket.disconnect();
+    //     }
+    //   }else{
+    //     console.log('userMoveAndAttack2');
+    //     console.log(Date.now());
+    //     console.log(e);
+    //     socket.disconnect();
+    //   }
+    // }
+  }
+  // socket.on('userUseSkill', function(userAndSkillData){
+  function userUseSkill(userAndSkillData){
+    // try {
       if(GM.checkSkillPossession(userAndSkillData.objectID, userAndSkillData.skillIndex)){
         GM.updateUserData(userAndSkillData);
         // if(userAndSkillData.cancelBlur){
@@ -728,76 +904,82 @@ io.on('connection', function(socket){
           if(userAndSkillData.projectileIDs){
             userData.skillProjectileIDs = userAndSkillData.projectileIDs;
           }
-          socket.broadcast.emit('userDataUpdateAndUseSkill', userData);
+          // socket.broadcast.emit('userDataUpdateAndUseSkill', userData);
+          messageToClient('broadcast', util.makePacketForm('userDataUpdateAndUseSkill', userData), client);
         }else{
           if(!isReconnecting){
             isReconnecting = true;
-            socket.emit('reqReconnectResource');
+            // socket.emit('reqReconnectResource');
+            messageToClient('private', util.makePacketForm('reqReconnectResource'), client);
           }
           // throw "user isn`t instantiated";
         }
       }
-    } catch (e) {
-      if(user){
-        try {
-          var rankDatas = GM.processScoreDatas(user.objectID);
-          io.sockets.emit('userLeave', user.objectID, rankDatas);
-        } catch (e) {
-          console.log(e.message);
-        } finally {
-          GM.stopUser(user);
-          GM.kickUser(user);
-          console.log('userUseSkill1');
-          console.log(Date.now());
-          console.log(e.message);
-          socket.disconnect();
-        }
-      }else{
-        console.log('userUseSkill2');
-        console.log(Date.now());
-        console.log(e);
-        socket.disconnect();
-      }
-    }
-  });
-  socket.on('userStop', function(data){
-    try {
+    // } catch (e) {
+    //   if(user){
+    //     try {
+    //       var rankDatas = GM.processScoreDatas(user.objectID);
+    //       io.sockets.emit('userLeave', user.objectID, rankDatas);
+    //     } catch (e) {
+    //       console.log(e.message);
+    //     } finally {
+    //       GM.stopUser(user);
+    //       GM.kickUser(user);
+    //       console.log('userUseSkill1');
+    //       console.log(Date.now());
+    //       console.log(e.message);
+    //       socket.disconnect();
+    //     }
+    //   }else{
+    //     console.log('userUseSkill2');
+    //     console.log(Date.now());
+    //     console.log(e);
+    //     socket.disconnect();
+    //   }
+    // }
+  }
+  // socket.on('userStop', function(data){
+  function userStop(data){
+    // try {
       GM.updateUserData(data);
       if(user){
         var userData = GM.processUserDataSetting(user);
-        socket.broadcast.emit('userDataUpdate', userData);
+        // socket.broadcast.emit('userDataUpdate', userData);
+        messageToClient('broadcast', util.makePacketForm('userDataUpdate', userData), client);
       }else{
         if(!isReconnecting){
           isReconnecting = true;
-          socket.emit('reqReconnectResource');
+          // socket.emit('reqReconnectResource');
+          messageToClient('private', util.makePacketForm('reqReconnectResource'), client);
         }
         // throw "user isn`t instantiated";
       }
-    } catch (e) {
-      if(user){
-        try {
-          var rankDatas = GM.processScoreDatas(user.objectID);
-          io.sockets.emit('userLeave', user.objectID, rankDatas);
-        } catch (e) {
-          console.log(e.message);
-        } finally {
-          GM.stopUser(user);
-          GM.kickUser(user);
-          console.log('userStop1');
-          console.log(Date.now());
-          console.log(e.message);
-          socket.disconnect();
-        }
-      }else{
-        console.log('userStop2');
-        console.log(Date.now());
-        console.log(e);
-        socket.disconnect();
-      }
-    }
-  });
-  socket.on('skillFired', function(data){
-    try {
+    // } catch (e) {
+    //   if(user){
+    //     try {
+    //       var rankDatas = GM.processScoreDatas(user.objectID);
+    //       io.sockets.emit('userLeave', user.objectID, rankDatas);
+    //     } catch (e) {
+    //       console.log(e.message);
+    //     } finally {
+    //       GM.stopUser(user);
+    //       GM.kickUser(user);
+    //       console.log('userStop1');
+    //       console.log(Date.now());
+    //       console.log(e.message);
+    //       socket.disconnect();
+    //     }
+    //   }else{
+    //     console.log('userStop2');
+    //     console.log(Date.now());
+    //     console.log(e);
+    //     socket.disconnect();
+    //   }
+    // }
+  }
+  // socket.on('skillFired', function(data){
+  function skillFired(data){
+    // try {
       if(GM.checkSkillPossession(user.objectID, data.skillIndex)){
         var skillData = objectAssign({}, util.findData(skillTable, 'index', data.skillIndex));
         if(GM.checkSkillCondition(user.objectID, skillData)){
@@ -826,34 +1008,36 @@ io.on('connection', function(socket){
               console.log(er.message);
             }
           }, timeoutTime);
-          io.sockets.emit('skillFired', data, user.objectID);
+          // io.sockets.emit('skillFired', data, user.objectID);
+          messageToClient('public', util.makePacketForm('skillFired', data, user.objectID));
         }
       }
-    } catch (e) {
-      if(user){
-        try {
-          var rankDatas = GM.processScoreDatas(user.objectID);
-          io.sockets.emit('userLeave', user.objectID, rankDatas);
-        } catch (er) {
-          console.log(er.message);
-        } finally {
-          GM.stopUser(user);
-          GM.kickUser(user);
-          console.log('skillFired2');
-          console.log(Date.now());
-          console.log(e.message);
-          socket.disconnect();
-        }
-      }else{
-        console.log('skillFired3');
-        console.log(Date.now());
-        console.log(e.message);
-        socket.disconnect();
-      }
-    }
-  });
-  socket.on('projectilesFired', function(datas, syncFireTime){
-    try {
+    // } catch (e) {
+    //   if(user){
+    //     try {
+    //       var rankDatas = GM.processScoreDatas(user.objectID);
+    //       io.sockets.emit('userLeave', user.objectID, rankDatas);
+    //     } catch (er) {
+    //       console.log(er.message);
+    //     } finally {
+    //       GM.stopUser(user);
+    //       GM.kickUser(user);
+    //       console.log('skillFired2');
+    //       console.log(Date.now());
+    //       console.log(e.message);
+    //       socket.disconnect();
+    //     }
+    //   }else{
+    //     console.log('skillFired3');
+    //     console.log(Date.now());
+    //     console.log(e.message);
+    //     socket.disconnect();
+    //   }
+    // }
+  }
+  // socket.on('projectilesFired', function(datas, syncFireTime){
+  function projectilesFired(datas, syncFireTime){
+    // try {
       if(GM.checkSkillPossession(user.objectID, datas[0].skillIndex)){
         var skillData = objectAssign({}, util.findData(skillTable, 'index', datas[0].skillIndex));
         if(GM.checkSkillCondition(user.objectID, skillData)){
@@ -882,183 +1066,196 @@ io.on('connection', function(socket){
               console.log(er.message);
             }
           }, timeoutTime);
-          io.sockets.emit('projectilesFired', datas, serverSyncFireTime, user.objectID);
+          // io.sockets.emit('projectilesFired', datas, serverSyncFireTime, user.objectID);
+          messageToClient('public', util.makePacketForm('projectilesFired', datas, serverSyncFireTime, user.objectID));
         }
       }
-    } catch (e) {
-      if(user){
-        try {
-          var rankDatas = GM.processScoreDatas(user.objectID);
-          io.sockets.emit('userLeave', user.objectID, rankDatas);
-        } catch (er) {
-          console.log(er.message);
-        } finally {
-          GM.stopUser(user);
-          GM.kickUser(user);
-          console.log('projectilesFired2');
-          console.log(Date.now());
-          console.log(e.message);
-          socket.disconnect();
-        }
-      }else{
-        console.log('projectilesFired3');
-        console.log(Date.now());
-        console.log(e.message);
-        socket.disconnect();
-      }
-    }
-  });
+    // } catch (e) {
+    //   if(user){
+    //     try {
+    //       var rankDatas = GM.processScoreDatas(user.objectID);
+    //       io.sockets.emit('userLeave', user.objectID, rankDatas);
+    //     } catch (er) {
+    //       console.log(er.message);
+    //     } finally {
+    //       GM.stopUser(user);
+    //       GM.kickUser(user);
+    //       console.log('projectilesFired2');
+    //       console.log(Date.now());
+    //       console.log(e.message);
+    //       socket.disconnect();
+    //     }
+    //   }else{
+    //     console.log('projectilesFired3');
+    //     console.log(Date.now());
+    //     console.log(e.message);
+    //     socket.disconnect();
+    //   }
+    // }
+  }
   // socket.on('castCanceled', function(userData){
   //   GM.updateUserData(userData);
   //
   //   socket.broadcast.emit('castCanceled', userData.objectID);
   // });
-  socket.on('upgradeSkill', function(skillIndex){
-    try {
+  // socket.on('upgradeSkill', function(skillIndex){
+  function upgradeSkill(skillIndex){
+    // try {
       if(user){
         GM.upgradeSkill(user, skillIndex);
       }else{
         if(!isReconnecting){
           isReconnecting = true;
-          socket.emit('reqReconnectResource');
+          messageToClient('private', util.makePacketForm('reqReconnectResource'), client);
+          // socket.emit('reqReconnectResource');
         }
         // throw "user isn`t instantiated";
       }
-    } catch (e) {
-      if(user){
-        try {
-          var rankDatas = GM.processScoreDatas(user.objectID);
-          io.sockets.emit('userLeave', user.objectID, rankDatas);
-        } catch (e) {
-          console.log(e.message);
-        } finally {
-          GM.stopUser(user);
-          GM.kickUser(user);
-          console.log('upgradeSkill1');
-          console.log(Date.now());
-          console.log(e.message);
-          socket.disconnect();
-        }
-      }else{
-        console.log('upgradeSkill2');
-        console.log(Date.now());
-        console.log(e);
-        socket.disconnect();
-      }
-    }
-  });
-  socket.on('exchangePassive', function(beforeBuffGID, afterBuffGID){
-    try {
+    // } catch (e) {
+    //   if(user){
+    //     try {
+    //       var rankDatas = GM.processScoreDatas(user.objectID);
+    //       io.sockets.emit('userLeave', user.objectID, rankDatas);
+    //     } catch (e) {
+    //       console.log(e.message);
+    //     } finally {
+    //       GM.stopUser(user);
+    //       GM.kickUser(user);
+    //       console.log('upgradeSkill1');
+    //       console.log(Date.now());
+    //       console.log(e.message);
+    //       socket.disconnect();
+    //     }
+    //   }else{
+    //     console.log('upgradeSkill2');
+    //     console.log(Date.now());
+    //     console.log(e);
+    //     socket.disconnect();
+    //   }
+    // }
+  }
+  // socket.on('exchangePassive', function(beforeBuffGID, afterBuffGID){
+  function exchangePassive(beforeBuffGID, afterBuffGID){
+    // try {
       if(user){
         GM.exchangePassive(user, beforeBuffGID, afterBuffGID);
       }else{
         if(!isReconnecting){
           isReconnecting = true;
-          socket.emit('reqReconnectResource');
+          // socket.emit('reqReconnectResource');
+          messageToClient('private', util.makePacketForm('reqReconnectResource'), client);
         }
         // throw "user isn`t instantiated";
       }
-    } catch (e) {
-      if(user){
-        try {
-          var rankDatas = GM.processScoreDatas(user.objectID);
-          io.sockets.emit('userLeave', user.objectID, rankDatas);
-        } catch (e) {
-          console.log(e.message);
-        } finally {
-          GM.stopUser(user);
-          GM.kickUser(user);
-          console.log('exchangePassive1');
-          console.log(Date.now());
-          console.log(e.message);
-          socket.disconnect();
-        }
-      }else{
-        console.log('exchangePassive2');
-        console.log(Date.now());
-        console.log(e);
-        socket.disconnect();
-      }
-    }
-  });
-  socket.on('equipPassive', function(buffGroupIndex){
-    try {
+    // } catch (e) {
+    //   if(user){
+    //     try {
+    //       var rankDatas = GM.processScoreDatas(user.objectID);
+    //       io.sockets.emit('userLeave', user.objectID, rankDatas);
+    //     } catch (e) {
+    //       console.log(e.message);
+    //     } finally {
+    //       GM.stopUser(user);
+    //       GM.kickUser(user);
+    //       console.log('exchangePassive1');
+    //       console.log(Date.now());
+    //       console.log(e.message);
+    //       socket.disconnect();
+    //     }
+    //   }else{
+    //     console.log('exchangePassive2');
+    //     console.log(Date.now());
+    //     console.log(e);
+    //     socket.disconnect();
+    //   }
+    // }
+  }
+  // socket.on('equipPassive', function(buffGroupIndex){
+  function equipPassive(buffGroupIndex){
+    // try {
       if(user){
         GM.equipPassive(user, buffGroupIndex);
       }else{
         if(!isReconnecting){
           isReconnecting = true;
-          socket.emit('reqReconnectResource');
+          // socket.emit('reqReconnectResource');
+          messageToClient('private', util.makePacketForm('reqReconnectResource'), client);
         }
         // throw "user isn`t instantiated";
       }
-    } catch (e) {
-      if(user){
-        try {
-          var rankDatas = GM.processScoreDatas(user.objectID);
-          io.sockets.emit('userLeave', user.objectID, rankDatas);
-        } catch (e) {
-          console.log(e.message);
-        } finally {
-          GM.stopUser(user);
-          GM.kickUser(user);
-          console.log('equipPassive1');
-          console.log(Date.now());
-          console.log(e.message);
-          socket.disconnect();
-        }
-      }else{
-        console.log('equipPassive2');
-        console.log(Date.now());
-        console.log(e);
-        socket.disconnect();
-      }
-    }
-  });
-  socket.on('unequipPassive', function(buffGroupIndex){
-    try {
+    // } catch (e) {
+    //   if(user){
+    //     try {
+    //       var rankDatas = GM.processScoreDatas(user.objectID);
+    //       io.sockets.emit('userLeave', user.objectID, rankDatas);
+    //     } catch (e) {
+    //       console.log(e.message);
+    //     } finally {
+    //       GM.stopUser(user);
+    //       GM.kickUser(user);
+    //       console.log('equipPassive1');
+    //       console.log(Date.now());
+    //       console.log(e.message);
+    //       socket.disconnect();
+    //     }
+    //   }else{
+    //     console.log('equipPassive2');
+    //     console.log(Date.now());
+    //     console.log(e);
+    //     socket.disconnect();
+    //   }
+    // }
+  }
+  // socket.on('unequipPassive', function(buffGroupIndex){
+  function unequipPassive(buffGroupIndex){
+    // try {
       if(user){
         GM.unequipPassive(user, buffGroupIndex);
       }else{
         if(!isReconnecting){
           isReconnecting = true;
-          socket.emit('reqReconnectResource');
+          // socket.emit('reqReconnectResource');
+          messageToClient('private', util.makePacketForm('reqReconnectResource'), client);
         }
         // throw "user isn`t instantiated";
       }
-    } catch (e) {
-      if(user){
-        try {
-          var rankDatas = GM.processScoreDatas(user.objectID);
-          io.sockets.emit('userLeave', user.objectID, rankDatas);
-        } catch (e) {
-          console.log(e.message);
-        } finally {
-          GM.stopUser(user);
-          GM.kickUser(user);
-          console.log('unequipPassive1');
-          console.log(Date.now());
-          console.log(e.message);
-          socket.disconnect();
-        }
-      }else{
-        console.log('unequipPassive2');
-        console.log(Date.now());
-        console.log(e);
-        socket.disconnect();
-      }
-    }
-  });
-  socket.on('killme', function(){
+    // } catch (e) {
+    //   if(user){
+    //     try {
+    //       var rankDatas = GM.processScoreDatas(user.objectID);
+    //       io.sockets.emit('userLeave', user.objectID, rankDatas);
+    //     } catch (e) {
+    //       console.log(e.message);
+    //     } finally {
+    //       GM.stopUser(user);
+    //       GM.kickUser(user);
+    //       console.log('unequipPassive1');
+    //       console.log(Date.now());
+    //       console.log(e.message);
+    //       socket.disconnect();
+    //     }
+    //   }else{
+    //     console.log('unequipPassive2');
+    //     console.log(Date.now());
+    //     console.log(e);
+    //     socket.disconnect();
+    //   }
+    // }
+  }
+  // socket.on('killme', function(){
+  function killme(){
     GM.killme(user.objectID);
-  });
-  socket.on('giveExp', function(){
+  }
+  // socket.on('giveExp', function(){
+  function giveExp(){
     GM.giveExp(user.objectID);
-  });
-  socket.on('giveResources', function(){
+  }
+  // socket.on('giveResources', function(){
+  function giveResources(){
     GM.giveResources(user.objectID);
-  });
-  socket.on('giveAllSkill', function(){
+  }
+  // socket.on('giveAllSkill', function(){
+  function giveAllSkill(){
     var baseSkills = [];
     var passiveSkills = [];
     var allSkills = [];
@@ -1087,121 +1284,196 @@ io.on('connection', function(socket){
     }
     // console.log(allSkills);
     GM.giveAllSkill(user.objectID, allSkills);
-  });
-  socket.on('firePing', function(date){
-    socket.emit('firePong', date, Date.now());
-  });
-  socket.on('chatting', function(msg){
-    try {
+  }
+  // socket.on('firePing', function(date){
+  function firePing(date){
+    // socket.emit('firePong', date, Date.now());
+    messageToClient('private', util.makePacketForm('firePong', date, Date.now()), client);
+  }
+  // socket.on('chatting', function(msg){
+  function chatting(msg){
+    // try {
       var msg = util.processMessage(msg, gameConfig.CHAT_MESSAGE_LENGTH);
-      io.sockets.emit('chatting', user.objectID, msg);
-    } catch (e) {
-      if(user){
-        try {
-          var rankDatas = GM.processScoreDatas(user.objectID);
-          io.sockets.emit('userLeave', user.objectID, rankDatas);
-        } catch (e) {
-          console.log(e.message);
-        } finally {
-          GM.stopUser(user);
-          GM.kickUser(user);
-          console.log('chatting');
-          console.log(Date.now());
-          console.log(e.message);
-          socket.disconnect();
-        }
-      }
-    }
-  });
-  socket.on('updateUserTimeDiff', function(clientDate, userLatency){
+      // io.sockets.emit('chatting', user.objectID, msg);
+      messageToClient('public', util.makePacketForm('chatting', user.objectID, msg));
+    // } catch (e) {
+    //   if(user){
+    //     try {
+    //       var rankDatas = GM.processScoreDatas(user.objectID);
+    //       io.sockets.emit('userLeave', user.objectID, rankDatas);
+    //     } catch (e) {
+    //       console.log(e.message);
+    //     } finally {
+    //       GM.stopUser(user);
+    //       GM.kickUser(user);
+    //       console.log('chatting');
+    //       console.log(Date.now());
+    //       console.log(e.message);
+    //       socket.disconnect();
+    //     }
+    //   }
+    // }
+  }
+  // socket.on('updateUserTimeDiff', function(clientDate, userLatency){
+  function updateUserTimeDiff(clientDate, userLatency){
     var timeDiff = Date.now() - (clientDate + userLatency/2);
-    try {
+    // try {
       GM.updateUserTimeDiff(user.objectID, timeDiff);
       GM.updateUserLatency(user.objectID, userLatency);
-    }catch (e) {
-      if(user){
-        try {
-          var rankDatas = GM.processScoreDatas(user.objectID);
-          io.sockets.emit('userLeave', user.objectID, rankDatas);
-        } catch (e) {
-          console.log(e.message);
-        } finally {
-          GM.stopUser(user);
-          GM.kickUser(user);
-          console.log('updateUserTimeDiff');
-          console.log(Date.now());
-          console.log(e.message);
-          socket.disconnect();
-        }
-      }
-    }
-  });
-  socket.on('completeTwitter', function(){
-    try {
+    // }catch (e) {
+    //   if(user){
+    //     try {
+    //       var rankDatas = GM.processScoreDatas(user.objectID);
+    //       io.sockets.emit('userLeave', user.objectID, rankDatas);
+    //     } catch (e) {
+    //       console.log(e.message);
+    //     } finally {
+    //       GM.stopUser(user);
+    //       GM.kickUser(user);
+    //       console.log('updateUserTimeDiff');
+    //       console.log(Date.now());
+    //       console.log(e.message);
+    //       socket.disconnect();
+    //     }
+    //   }
+    // }
+  }
+  // socket.on('completeTwitter', function(){
+  function completeTwitter(){
+    // try {
       GM.giveTwitterGold(user.objectID, 5000);
-    } catch (e) {
-      if(user){
-        try {
-          var rankDatas = GM.processScoreDatas(user.objectID);
-          io.sockets.emit('userLeave', user.objectID, rankDatas);
-        } catch (e) {
-          console.log(e.message);
-        } finally {
-          GM.stopUser(user);
-          GM.kickUser(user);
-          console.log('completeTwitter1');
-          console.log(Date.now());
-          console.log(e.message);
-          socket.disconnect();
-        }
-      }else{
-        console.log('completeTwitter2');
-        console.log(Date.now());
-        console.log(e.message);
-        socket.disconnect();
-      }
-    }
-  });
-  socket.on('completeFacebook', function(){
-    try {
+    // } catch (e) {
+    //   if(user){
+    //     try {
+    //       var rankDatas = GM.processScoreDatas(user.objectID);
+    //       io.sockets.emit('userLeave', user.objectID, rankDatas);
+    //     } catch (e) {
+    //       console.log(e.message);
+    //     } finally {
+    //       GM.stopUser(user);
+    //       GM.kickUser(user);
+    //       console.log('completeTwitter1');
+    //       console.log(Date.now());
+    //       console.log(e.message);
+    //       socket.disconnect();
+    //     }
+    //   }else{
+    //     console.log('completeTwitter2');
+    //     console.log(Date.now());
+    //     console.log(e.message);
+    //     socket.disconnect();
+    //   }
+    // }
+  }
+  // socket.on('completeFacebook', function(){
+  function completeFacebook(){
+    // try {
       GM.giveFacebookJewel(user.objectID, 5);
-    } catch (e) {
-      if(user){
-        try {
-          var rankDatas = GM.processScoreDatas(user.objectID);
-          io.sockets.emit('userLeave', user.objectID, rankDatas);
-        } catch (e) {
-          console.log(e.message);
-        } finally {
-          GM.stopUser(user);
-          GM.kickUser(user);
-          console.log('completeFacebook1');
-          console.log(Date.now());
-          console.log(e.message);
-          socket.disconnect();
-        }
-      }else{
-        console.log('completeFacebook2');
-        console.log(Date.now());
-        console.log(e.message);
-        socket.disconnect();
-      }
-    }
-  });
-  socket.on('disconnect', function(reason){
-    try {
-      var rankDatas = GM.processScoreDatas(user.objectID);
-      io.sockets.emit('userLeave', user.objectID, rankDatas);
-      GM.stopUser(user);
-      GM.kickUser(user);
-    } catch (e) {
-      console.log('disconnect');
-      console.log(reason);
-      console.log(Date.now());
-      console.log(e.message);
-    } finally {
-      socket.disconnect();
-      user = null;
-    }
-  });
+    // } catch (e) {
+    //   if(user){
+    //     try {
+    //       var rankDatas = GM.processScoreDatas(user.objectID);
+    //       io.sockets.emit('userLeave', user.objectID, rankDatas);
+    //     } catch (e) {
+    //       console.log(e.message);
+    //     } finally {
+    //       GM.stopUser(user);
+    //       GM.kickUser(user);
+    //       console.log('completeFacebook1');
+    //       console.log(Date.now());
+    //       console.log(e.message);
+    //       socket.disconnect();
+    //     }
+    //   }else{
+    //     console.log('completeFacebook2');
+    //     console.log(Date.now());
+    //     console.log(e.message);
+    //     socket.disconnect();
+    //   }
+    // }
+  }
+  // socket.on('disconnect', function(reason){
+  //   try {
+  //     var rankDatas = GM.processScoreDatas(user.objectID);
+  //     io.sockets.emit('userLeave', user.objectID, rankDatas);
+  //     GM.stopUser(user);
+  //     GM.kickUser(user);
+  //   } catch (e) {
+  //     console.log('disconnect');
+  //     console.log(reason);
+  //     console.log(Date.now());
+  //     console.log(e.message);
+  //   } finally {
+  //     socket.disconnect();
+  //     user = null;
+  //   }
+  // });
 });
+// messageToClient('public', util.makePacketForm());
+// messageToClient('broadcast', util.makePacketForm(), client);
+// messageToClient('private', util.makePacketForm(), client);
+
+function messageToClient(msgType, msg, thisClient){
+  try {
+    if(msgType === 'public'){
+      wss.clients.forEach(function(client){
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(msg, function(err){
+            if(err){
+              var time = new Date();
+              console.log('error at ' + msgType + " " + time + " " + err);
+            }
+          });
+        }
+      });
+    }else if(msgType === 'broadcast'){
+      wss.clients.forEach(function(client){
+        if (client !== thisClient && client.readyState === WebSocket.OPEN) {
+          client.send(msg, function(err){
+            if(err){
+              var time = new Date();
+              console.log('error at ' + msgType + " " + time + " " + err);
+            }
+          });
+        }
+      });
+    }else if(msgType === 'private'){
+      if(thisClient.readyState === WebSocket.OPEN){
+        thisClient.send(msg, function(err){
+          if(err){
+            var time = new Date();
+            console.log('error at ' + msgType + " " + time + " " + err);
+          }
+        });
+      }
+    }else{
+      console.log('msgType error', msgType);
+    }
+  } catch (e) {
+    var time = new Date();
+    console.log('At messageToClient ' + msgType + " " + time);
+  }
+}
+function heartbeat(){
+  this.isAlive = true;
+};
+var pingpongInterval = setInterval(function(){
+  wss.clients.forEach(function(client){
+    if(client.isAlive === false){
+      console.log('ping timeout');
+      return client.terminate();
+    }
+    client.isAlive = false;
+    client.ping();
+  });
+}, 30000);
+// function makePacketForm(type){
+//   var vars = [];
+//   for(var i=1; i<arguments.length; i++){
+//     vars.push(arguments[i]);
+//   }
+//   return JSON.stringify({
+//     type: type,
+//     vars: vars
+//   });
+// }
