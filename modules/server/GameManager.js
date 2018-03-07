@@ -12,10 +12,13 @@ var ProjectileCollider = SkillColliders.ProjectileCollider;
 var csvJson = require('../public/csvjson.js');
 
 var dataJson = require('../public/data.json');
+var serverDataJson = require('./serverData.json');
 
 var skillTable = csvJson.toObject(dataJson.skillData, {delimiter : ',', quote : '"'});
 var chestTable = csvJson.toObject(dataJson.chestData, {delimiter : ',', quote : '"'});
 var obstacleTable = csvJson.toObject(dataJson.obstacleData, {delimiter : ',', quote : '"'});
+var mobTable = csvJson.toObject(dataJson.mobData, {delimiter : ',', quote : '"'});
+var mobGenTable = csvJson.toObject(serverDataJson.mobGenData, {delimiter : ',', quote : '"'});
 // var map = require('../public/map.json');
 
 var OBJs = require('./OBJs.js');
@@ -62,6 +65,7 @@ var auraCheckTimer = Date.now();
 
 function GameManager(){
   this.users = [];
+  this.monsters = [];
 
   this.skills = [];
   this.projectiles = [];
@@ -479,6 +483,24 @@ GameManager.prototype.createBoxsToRandomPosition = function(count){
   if(createdObjs.length){
     this.onNeedInformCreateObjs(createdObjs);
   }
+};
+GameManager.prototype.createMobs = function(count, type){
+  // var mobs = [];
+  //
+  // var mobData = ;
+  // for(var i=0; i<count; i++){
+  //   mobs.push(this.createMob(type));
+  // }
+  // this.onNeedInformMobsCreate(mobs);
+};
+GameManager.prototype.createMob = function(type){
+  // if(type === serverConfig.MOB_GEN_TYPE_SMALL){
+  //   // var randomID = SUtil.generateRandomUniqueID(this.monsters, gameConfig.PREFIX_MONSTER);
+  //   // var mobData = ;
+  //   // var mobGenData = ;
+  //   //
+  //   // var mob = new Monster();
+  // }
 };
 GameManager.prototype.getObj = function(objID, affectNum, userID, treeObj){
   if(userID in this.users && !this.users[userID].isDead){
@@ -1548,6 +1570,10 @@ function longTimeIntervalHandler(){
   setChestIndexAndDoCreateChest.call(this);
     // setTimeout(setChestIndexAndDoCreateChest.bind(this), serverConfig.CHEST_CHAIN_CREATE_TIME);
   // }
+  var additionalMobCount = (serverConfig.MOB_SMALL_COUNT + Math.floor(Object.keys(this.users).length * serverConfig.ADDITIONAL_MOB_SMALL_PER_USER) - this.monsters.length);
+  if(additionalMobCount > 0){
+    this.createMobs(additionalMobCount, serverConfig.MOB_TYPE_SMALL);
+  }
 };
 var setChestIndexAndDoCreateChest = function(){
   if(this.checkCreateChest()){
