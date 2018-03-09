@@ -422,8 +422,8 @@ wss.on('connection', function(client, req){
           break;
         case 'reconnectSuccess':
           isReconnecting = false;
-          console.log('reconnectSuccess');
-          console.log(new Date());
+          var time = new Date();
+          console.log('reconnectSuccess ', time);
           break;
         case 'needReconnect':
           needReconnect();
@@ -687,8 +687,8 @@ wss.on('connection', function(client, req){
   }
   // socket.on('reqReconnect', function(userName, charType, stat, skills, killCount, totalKillCount, position, resources){
   function reqReconnect(userName, charType, stat, skills, killCount, totalKillCount, position, resources){
-    console.log('reqReconnect Start');
-    console.log(new Date());
+    var time = new Date();
+    console.log('reqReconnect Start ' + time);
     // try {
       if(!user){
         if(charType === gameConfig.CHAR_TYPE_FIRE || charType === gameConfig.CHAR_TYPE_FROST || charType === gameConfig.CHAR_TYPE_ARCANE){
@@ -1423,7 +1423,7 @@ function messageToClient(msgType, msg, thisClient){
       wss.clients.forEach(function(client){
         if (client.readyState === WebSocket.OPEN) {
           client.send(msg, function(err){
-            if(err && err !== 'write EPIPE'){
+            if(err && err !== 'Error: write EPIPE'){
               var time = new Date();
               console.log('error at ' + msgType + " " + time + " " + err);
             }
@@ -1434,7 +1434,7 @@ function messageToClient(msgType, msg, thisClient){
       wss.clients.forEach(function(client){
         if (client !== thisClient && client.readyState === WebSocket.OPEN) {
           client.send(msg, function(err){
-            if(err && err !== 'write EPIPE'){
+            if(err && err !== 'Error: write EPIPE'){
               var time = new Date();
               console.log('error at ' + msgType + " " + time + " " + err);
             }
@@ -1444,7 +1444,7 @@ function messageToClient(msgType, msg, thisClient){
     }else if(msgType === 'private'){
       if(thisClient.readyState === WebSocket.OPEN){
         thisClient.send(msg, function(err){
-          if(err && err !== 'write EPIPE'){
+          if(err && err !== 'Error: write EPIPE'){
             var time = new Date();
             console.log('error at ' + msgType + " " + time + " " + err);
           }
@@ -1462,15 +1462,21 @@ function heartbeat(){
   this.isAlive = true;
 };
 var pingpongInterval = setInterval(function(){
-  wss.clients.forEach(function(client){
-    if(client.isAlive === false){
-      console.log('ping timeout');
-      console.log(new Date());
-      return client.terminate();
-    }
-    client.isAlive = false;
-    client.ping();
-  });
+  try {
+    wss.clients.forEach(function(client){
+      if(client.isAlive === false){
+        console.log('ping timeout');
+        console.log(new Date());
+        return client.terminate();
+      }
+      client.isAlive = false;
+      if(client.readyState === WebSocket.OPEN){
+        client.ping();
+      }
+    });
+  } catch (e) {
+    console.log('pingpongInterval Error');
+  }
 }, 30000);
 // function makePacketForm(type){
 //   var vars = [];
