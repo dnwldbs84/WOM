@@ -688,7 +688,7 @@ wss.on('connection', function(client, req){
   // socket.on('reqReconnect', function(userName, charType, stat, skills, killCount, totalKillCount, position, resources){
   function reqReconnect(userName, charType, stat, skills, killCount, totalKillCount, position, resources){
     var time = new Date();
-    console.log('reqReconnect Start ' + time);
+    console.log('reqReconnect Start ', time);
     // try {
       if(!user){
         if(charType === gameConfig.CHAR_TYPE_FIRE || charType === gameConfig.CHAR_TYPE_FROST || charType === gameConfig.CHAR_TYPE_ARCANE){
