@@ -834,6 +834,18 @@ exports.getCookie = function(cookie, key){
   }
   return '';
 };
+exports.setCookie = function(key, value){
+  var date = new Date();
+  date.setTime(date.getTime() + (7*24*60*60*1000));
+  var expires = "expires="+ date.toUTCString();
+  document.cookie = key + "=" + value + ";" + expires + ";path=/";
+};
+// function setCookie(cname, cvalue, exdays) {
+//     var d = new Date();
+//     d.setTime(d.getTime() + (exdays*24*60*60*1000));
+//     var expires = "expires="+ d.toUTCString();
+//     document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+// }
 exports.isRender = function(user, otherUser, targetPosition){
   if(otherUser.center.x - user.center.x > 900 && targetPosition.x - user.center.x > 900){
     return false;
@@ -906,6 +918,14 @@ exports.setRandomName = function(charType){
 exports.charToKeyCode = function(char){
   var keyCodeTable = require('./keyCodeTable');
   return keyCodeTable[char.toLowerCase()];
+};
+exports.keyCodeToChar = function(keyCode){
+  var keyCodeTable = require('./keyCodeTable');
+  for(var index in keyCodeTable){
+    if(keyCodeTable[index] == keyCode){
+      return index.toUpperCase();
+    }
+  }
 };
 exports.makeCacheCanvas = function(level, name, scaleFactor){
   var cacheCanvas = document.createElement('canvas');

@@ -44,6 +44,7 @@ function User(socketID, userName, userStat, userBase, exp){
   this.gold = 0;
   this.jewel = 0;
 
+  this.cooldownSkills = [];
   //use when projectile tick and tick explosion
   this.skillTick = 0;
 
@@ -1598,6 +1599,28 @@ User.prototype.setReconnectHPMP = function(HP, MP){
       this.MP = this.maxMP;
     }
   }
+};
+User.prototype.applyCooldown = function(skillData){
+  var cooltime = skillData.cooldown * (100 - this.cooldownReduceRate) / 100 - 15;
+  if(util.isNumeric(cooltime)){
+    this.cooldownSkills.push(skillData.index);
+    var thisCooldownSkills = this.cooldownSkills;
+    var skillIndex = skillData.index;
+    setTimeout(function(){
+      var index = thisCooldownSkills.indexOf(skillIndex);
+      if(index > -1){
+        thisCooldownSkills.splice(index, 1);
+      }
+    }, cooltime);
+  }
+};
+User.prototype.checkCooldown = function(index){
+  for(var i=0; i<this.cooldownSkills.length; i++){
+    if(this.cooldownSkills[i] === index){
+      return false;
+    }
+  }
+  return true;
 };
 function getSkillScoreFactor(tier){
   switch (tier) {

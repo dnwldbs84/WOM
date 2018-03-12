@@ -94,6 +94,30 @@ exports.generateNearPos = function(position, range, tree, id, radius){
   // //
   // return {x : position.x + addPosX, y : position.y + addPosY};
 };
+exports.generateInsidePos = function(position, range, tree, id, radius){
+  var isCollision = true;
+  var repeatCount = 1;
+  while(isCollision){
+    repeatCount ++;
+    isCollision = false;
+
+    var addPosX = (Math.random() < 0.5 ? -1 : 1) * Math.floor(Math.random() * (range + 1));
+    var addPosY = (Math.random() < 0.5 ? -1 : 1) * Math.floor(Math.random() * (range + 1));
+    var randomPos = {x : position.x + addPosX, y : position.y + addPosY};
+
+    // var collisionObjs = util.checkCircleCollision(tree, randomPos.x - radius, randomPos.y - radius, radius, id);
+    // if(collisionObjs.length){
+    //   isCollision = true;
+    // }else if(randomPos.x < radius || randomPos.y < radius || randomPos.x + radius > gameConfig.CANVAS_MAX_SIZE.width || randomPos.y + radius > gameConfig.CANVAS_MAX_SIZE.height){
+    //   isCollision = true;
+    // }
+    // if(repeatCount > 20){
+    //   isCollision = false;
+    //   randomPos = 0;
+    // }
+  }
+  return randomPos;
+};
 exports.findAndSetBuffs = function(buffGroupData, actorID){
   var returnVal = [];
   for(var i=0; i<10; i++){

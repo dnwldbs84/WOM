@@ -408,6 +408,7 @@ wss.on('connection', function(client, req){
 
   client.on('message', function(msg){
     try {
+      client.isAlive = true;
       var data = JSON.parse(msg);
       var vars = data.vars;
       switch (data.type) {
@@ -500,19 +501,24 @@ wss.on('connection', function(client, req){
           GM.kickUser(user);
         }
       } catch (e) {
-        console.log('In try catch ' + e.message);
+        console.log('In on message ' + e.message);
       } finally {
         client.close();
       }
     }
   });
   client.on('error', function(err){
-    if(err.errno){
-      return;
-    }else{
-      if(err.message !== 'RSV1 must be clear'){
-        console.log(err);
+    try {
+      client.close();
+      if(err.errno){
+        return;
+      }else{
+        if(err.message !== 'RSV1 must be clear'){
+          console.log(err);
+        }
       }
+    } catch (e) {
+      console.log('In on error' + e.message);
     }
   });
   client.on('close', function(){
@@ -1423,9 +1429,9 @@ function messageToClient(msgType, msg, thisClient){
       wss.clients.forEach(function(client){
         if (client.readyState === WebSocket.OPEN) {
           client.send(msg, function(err){
-            if(err && err !== 'Error: write EPIPE'){
-              var time = new Date();
-              console.log('error at ' + msgType + " " + time + " " + err);
+            if(err){
+              // var time = new Date();
+              // console.log('error at ' + msgType + " " + time + " " + err);
             }
           });
         }
@@ -1434,9 +1440,9 @@ function messageToClient(msgType, msg, thisClient){
       wss.clients.forEach(function(client){
         if (client !== thisClient && client.readyState === WebSocket.OPEN) {
           client.send(msg, function(err){
-            if(err && err !== 'Error: write EPIPE'){
-              var time = new Date();
-              console.log('error at ' + msgType + " " + time + " " + err);
+            if(err){
+              // var time = new Date();
+              // console.log('error at ' + msgType + " " + time + " " + err);
             }
           });
         }
@@ -1444,9 +1450,9 @@ function messageToClient(msgType, msg, thisClient){
     }else if(msgType === 'private'){
       if(thisClient.readyState === WebSocket.OPEN){
         thisClient.send(msg, function(err){
-          if(err && err !== 'Error: write EPIPE'){
-            var time = new Date();
-            console.log('error at ' + msgType + " " + time + " " + err);
+          if(err){
+            // var time = new Date();
+            // console.log('error at ' + msgType + " " + time + " " + err);
           }
         });
       }

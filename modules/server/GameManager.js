@@ -494,7 +494,11 @@ GameManager.prototype.createMobs = function(count, type){
   // this.onNeedInformMobsCreate(mobs);
 };
 GameManager.prototype.createMob = function(type){
-  // if(type === serverConfig.MOB_GEN_TYPE_SMALL){
+  if(type === serverCheck.MOB_TYPE_SMALL){
+    //set gen type
+
+  }
+  // if(type === serverConfig.MOB_GEN_TYPE_SMALL1){
   //   // var randomID = SUtil.generateRandomUniqueID(this.monsters, gameConfig.PREFIX_MONSTER);
   //   // var mobData = ;
   //   // var mobGenData = ;
@@ -671,41 +675,44 @@ GameManager.prototype.initializeUser = function(user, baseSkill, possessSkills, 
 };
 GameManager.prototype.applySkill = function(userID, skillData){
   if(userID in this.users && !this.users[userID].isDead){
-    //check buff
-    SUtil.checkUserBuff(this.users[userID], skillData);
+    if(this.users[userID].checkCooldown(skillData.index)){
+      this.users[userID].applyCooldown(skillData);
+      //check buff
+      SUtil.checkUserBuff(this.users[userID], skillData);
 
-    this.users[userID].consumeMP(skillData.consumeMP);
-    if(skillData.buffToSelf){
-      this.users[userID].addBuff(skillData.buffToSelf, userID);
-    }
-    if(skillData.additionalBuffToSelf){
-      this.users[userID].addBuff(skillData.additionalBuffToSelf, userID);
-    }
-
-    //doDamageToSelf
-    if(skillData.doDamageToSelf){
-      var fireDamage = skillData.fireDamage * skillData.damageToSelfRate/100;
-      var frostDamage = skillData.frostDamage * skillData.damageToSelfRate/100;
-      var arcaneDamage = skillData.arcaneDamage * skillData.damageToSelfRate/100;
-      var damageToMP = 0;
-      this.users[userID].takeDamage(userID, fireDamage, frostDamage, arcaneDamage, damageToMP, skillData.hitBuffList, skillData.index);
-      if(skillData.buffToTarget){
-        this.users[userID].addBuff(skillData.buffToTarget, userID);
+      this.users[userID].consumeMP(skillData.consumeMP);
+      if(skillData.buffToSelf){
+        this.users[userID].addBuff(skillData.buffToSelf, userID);
       }
-    }
-
-    //healHP, MP
-    var healHPAmount = (util.isNumeric(skillData.healHP) ? skillData.healHP : 0) + this.users[userID].maxHP * (util.isNumeric(skillData.healHPRate) ? skillData.healHPRate : 0) / 100;
-    var healMPAmount = (util.isNumeric(skillData.healMP) ? skillData.healMP : 0) + this.users[userID].maxMP * (util.isNumeric(skillData.healMPRate) ? skillData.healMPRate : 0) / 100;
-    if(healHPAmount > 0 || healMPAmount > 0){
-      this.users[userID].healHPMP(healHPAmount, healMPAmount);
-    }
-    if(skillData.type !== gameConfig.SKILL_TYPE_SELF){
-      var skillCollider = new SkillCollider(this.users[userID], skillData);
-      if(skillData.additionalBuffToTarget){
-        skillCollider.additionalBuffToTarget = skillData.additionalBuffToTarget;
+      if(skillData.additionalBuffToSelf){
+        this.users[userID].addBuff(skillData.additionalBuffToSelf, userID);
       }
-      this.skills.push(skillCollider);
+
+      //doDamageToSelf
+      if(skillData.doDamageToSelf){
+        var fireDamage = skillData.fireDamage * skillData.damageToSelfRate/100;
+        var frostDamage = skillData.frostDamage * skillData.damageToSelfRate/100;
+        var arcaneDamage = skillData.arcaneDamage * skillData.damageToSelfRate/100;
+        var damageToMP = 0;
+        this.users[userID].takeDamage(userID, fireDamage, frostDamage, arcaneDamage, damageToMP, skillData.hitBuffList, skillData.index);
+        if(skillData.buffToTarget){
+          this.users[userID].addBuff(skillData.buffToTarget, userID);
+        }
+      }
+
+      //healHP, MP
+      var healHPAmount = (util.isNumeric(skillData.healHP) ? skillData.healHP : 0) + this.users[userID].maxHP * (util.isNumeric(skillData.healHPRate) ? skillData.healHPRate : 0) / 100;
+      var healMPAmount = (util.isNumeric(skillData.healMP) ? skillData.healMP : 0) + this.users[userID].maxMP * (util.isNumeric(skillData.healMPRate) ? skillData.healMPRate : 0) / 100;
+      if(healHPAmount > 0 || healMPAmount > 0){
+        this.users[userID].healHPMP(healHPAmount, healMPAmount);
+      }
+      if(skillData.type !== gameConfig.SKILL_TYPE_SELF){
+        var skillCollider = new SkillCollider(this.users[userID], skillData);
+        if(skillData.additionalBuffToTarget){
+          skillCollider.additionalBuffToTarget = skillData.additionalBuffToTarget;
+        }
+        this.skills.push(skillCollider);
+      }
     }
   }else{
     // console.log('cant find user data');
@@ -713,47 +720,50 @@ GameManager.prototype.applySkill = function(userID, skillData){
 };
 GameManager.prototype.applyProjectile = function(userID, projectileDatas){
   if(userID in this.users && !this.users[userID].isDead){
-    //check buff
-    SUtil.checkUserBuff(this.users[userID], projectileDatas[0]);
+    if(this.users[userID].checkCooldown(projectileDatas[0].index)){
+      this.users[userID].applyCooldown(projectileDatas[0]);
+      //check buff
+      SUtil.checkUserBuff(this.users[userID], projectileDatas[0]);
 
-    this.users[userID].consumeMP(projectileDatas[0].consumeMP);
-    if(projectileDatas[0].buffToSelf){
-      this.users[userID].addBuff(projectileDatas[0].buffToSelf, userID);
-    }
-    if(projectileDatas[0].additionalBuffToSelf){
-      this.users[userID].addBuff(projectileDatas[0].additionalBuffToSelf, userID);
-    }
-    //doDamageToSelf
-    if(projectileDatas[0].doDamageToSelf){
-      var fireDamage = projectileDatas[0].fireDamage * projectileDatas[0].damageToSelfRate/100;
-      var frostDamage = projectileDatas[0].frostDamage * projectileDatas[0].damageToSelfRate/100;
-      var arcaneDamage = projectileDatas[0].arcaneDamage * projectileDatas[0].damageToSelfRate/100;
-      var damageToMP = 0;
-      this.users[userID].takeDamage(userID, fireDamage, frostDamage, arcaneDamage, damageToMP, projectileDatas[0].hitBuffList, projectileDatas[0].index);
-      if(projectileDatas[0].buffToTarget){
-        this.users[userID].addBuff(projectileDatas[0].buffToTarget, userID);
+      this.users[userID].consumeMP(projectileDatas[0].consumeMP);
+      if(projectileDatas[0].buffToSelf){
+        this.users[userID].addBuff(projectileDatas[0].buffToSelf, userID);
       }
-    }
-    //healHP, MP
-    var healHPAmount = (util.isNumeric(projectileDatas[0].healHP) ? projectileDatas[0].healHP : 0) + this.users[userID].maxHP * (util.isNumeric(projectileDatas[0].healHPRate) ? projectileDatas[0].healHPRate : 0) / 100;
-    var healMPAmount = (util.isNumeric(projectileDatas[0].healMP) ? projectileDatas[0].healMP : 0) + this.users[userID].maxMP * (util.isNumeric(projectileDatas[0].healMPRate) ? projectileDatas[0].healMPRate : 0) / 100;
-    if(healHPAmount > 0 || healMPAmount > 0){
-      this.users[userID].healHPMP(healHPAmount, healMPAmount);
-    }
-
-    for(var i=0; i<projectileDatas.length; i++){
-      var projectileCollider = new ProjectileCollider(this.users[userID], projectileDatas[i]);
-      if(i !== 0){
-        projectileCollider.fireDamage = projectileDatas[0].fireDamage;
-        projectileCollider.frostDamage = projectileDatas[0].frostDamage;
-        projectileCollider.arcaneDamage = projectileDatas[0].arcaneDamage;
-        projectileCollider.damageToMP = projectileDatas[0].damageToMP;
+      if(projectileDatas[0].additionalBuffToSelf){
+        this.users[userID].addBuff(projectileDatas[0].additionalBuffToSelf, userID);
       }
-      if(projectileDatas[0].additionalBuffToTarget){
-        projectileCollider.additionalBuffToTarget = projectileDatas[0].additionalBuffToTarget;
+      //doDamageToSelf
+      if(projectileDatas[0].doDamageToSelf){
+        var fireDamage = projectileDatas[0].fireDamage * projectileDatas[0].damageToSelfRate/100;
+        var frostDamage = projectileDatas[0].frostDamage * projectileDatas[0].damageToSelfRate/100;
+        var arcaneDamage = projectileDatas[0].arcaneDamage * projectileDatas[0].damageToSelfRate/100;
+        var damageToMP = 0;
+        this.users[userID].takeDamage(userID, fireDamage, frostDamage, arcaneDamage, damageToMP, projectileDatas[0].hitBuffList, projectileDatas[0].index);
+        if(projectileDatas[0].buffToTarget){
+          this.users[userID].addBuff(projectileDatas[0].buffToTarget, userID);
+        }
+      }
+      //healHP, MP
+      var healHPAmount = (util.isNumeric(projectileDatas[0].healHP) ? projectileDatas[0].healHP : 0) + this.users[userID].maxHP * (util.isNumeric(projectileDatas[0].healHPRate) ? projectileDatas[0].healHPRate : 0) / 100;
+      var healMPAmount = (util.isNumeric(projectileDatas[0].healMP) ? projectileDatas[0].healMP : 0) + this.users[userID].maxMP * (util.isNumeric(projectileDatas[0].healMPRate) ? projectileDatas[0].healMPRate : 0) / 100;
+      if(healHPAmount > 0 || healMPAmount > 0){
+        this.users[userID].healHPMP(healHPAmount, healMPAmount);
       }
 
-      this.projectiles.push(projectileCollider);
+      for(var i=0; i<projectileDatas.length; i++){
+        var projectileCollider = new ProjectileCollider(this.users[userID], projectileDatas[i]);
+        if(i !== 0){
+          projectileCollider.fireDamage = projectileDatas[0].fireDamage;
+          projectileCollider.frostDamage = projectileDatas[0].frostDamage;
+          projectileCollider.arcaneDamage = projectileDatas[0].arcaneDamage;
+          projectileCollider.damageToMP = projectileDatas[0].damageToMP;
+        }
+        if(projectileDatas[0].additionalBuffToTarget){
+          projectileCollider.additionalBuffToTarget = projectileDatas[0].additionalBuffToTarget;
+        }
+
+        this.projectiles.push(projectileCollider);
+      }
     }
   }else{
     // console.log('cant find user data');
@@ -866,7 +876,26 @@ GameManager.prototype.setUserPosition = function(userID){
   if(userID in this.users){
     var randomPos = SUtil.generateRandomPos(staticTree, 400, 400, gameConfig.CANVAS_MAX_SIZE.width - 400, gameConfig.CANVAS_MAX_SIZE.height - 400,
                                             this.users[userID].size.width/2, this.users[userID].size.width/2, userID);
-    this.users[userID].setPosition(randomPos.x, randomPos.y);
+    if(randomPos){
+      this.users[userID].setPosition(randomPos.x, randomPos.y);
+    }else{
+      this.users[userID].setPosition(100, 100);
+    }
+    // var randVal = Math.floor(Math.random() * 2);
+    // var pos = {x : 0, y : 0};
+    // if(randVal === 0){
+    //   pos.x = serverConfig.USER_START_POSITION_1.x;
+    //   pos.y = serverConfig.USER_START_POSITION_1.y;
+    // }else{
+    //   pos.x = serverConfig.USER_START_POSITION_2.x;
+    //   pos.y = serverConfig.USER_START_POSITION_2.y;
+    // }
+    // var newPos = SUtil.generateInsidePos(pos, 32, staticTree, userID, 32);
+    // if(newPos){
+    //   this.users[userID].setPosition(newPos.x, newPos.y);
+    // }else{
+    //   this.users[userID].setPosition(pos.x, pos.y);
+    // }
   }
 };
 GameManager.prototype.startUserUpdate = function(userID){
@@ -1570,9 +1599,9 @@ function longTimeIntervalHandler(){
   setChestIndexAndDoCreateChest.call(this);
     // setTimeout(setChestIndexAndDoCreateChest.bind(this), serverConfig.CHEST_CHAIN_CREATE_TIME);
   // }
-  var additionalMobCount = (serverConfig.MOB_SMALL_COUNT + Math.floor(Object.keys(this.users).length * serverConfig.ADDITIONAL_MOB_SMALL_PER_USER) - this.monsters.length);
-  if(additionalMobCount > 0){
-    this.createMobs(additionalMobCount, serverConfig.MOB_TYPE_SMALL);
+  var additionalSmallMobCount = (serverConfig.MOB_SMALL_COUNT + Math.floor(Object.keys(this.users).length * serverConfig.ADDITIONAL_MOB_SMALL_PER_USER) - this.monsters.length);
+  if(additionalSmallMobCount > 0){
+    // this.createMobs(additionalMobCount, serverConfig.MOB_TYPE_SMALL);
   }
 };
 var setChestIndexAndDoCreateChest = function(){
