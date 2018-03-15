@@ -675,7 +675,7 @@ GameManager.prototype.initializeUser = function(user, baseSkill, possessSkills, 
 };
 GameManager.prototype.applySkill = function(userID, skillData){
   if(userID in this.users && !this.users[userID].isDead){
-    if(this.users[userID].checkCooldown(skillData.index)){
+    if(this.users[userID].checkCooldown(skillData)){
       this.users[userID].applyCooldown(skillData);
       //check buff
       SUtil.checkUserBuff(this.users[userID], skillData);
@@ -720,7 +720,7 @@ GameManager.prototype.applySkill = function(userID, skillData){
 };
 GameManager.prototype.applyProjectile = function(userID, projectileDatas){
   if(userID in this.users && !this.users[userID].isDead){
-    if(this.users[userID].checkCooldown(projectileDatas[0].index)){
+    if(this.users[userID].checkCooldown(projectileDatas[0])){
       this.users[userID].applyCooldown(projectileDatas[0]);
       //check buff
       SUtil.checkUserBuff(this.users[userID], projectileDatas[0]);

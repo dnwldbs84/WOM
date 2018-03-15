@@ -1614,10 +1614,14 @@ User.prototype.applyCooldown = function(skillData){
     }, cooltime);
   }
 };
-User.prototype.checkCooldown = function(index){
+User.prototype.checkCooldown = function(skillData){
   for(var i=0; i<this.cooldownSkills.length; i++){
-    if(this.cooldownSkills[i] === index){
-      return false;
+    if(this.cooldownSkills[i] === skillData.index){
+      if(skillData.repeatCount){
+        return true;
+      }else{
+        return false;
+      }
     }
   }
   return true;
