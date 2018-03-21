@@ -6,8 +6,5 @@
   "ASIA" : "",
   "ASIA 1" : { "SERVER" : "ASIA", "IP" : "13.115.229.58" },
   "EUROPE" : "",
-  "EUROPE 1" : { "SERVER" : "EUROPE", "IP" : "52.59.225.91" },
-  "TEST" : "",
-  "TEST 1" : { "SERVER" : "TEST", "IP" : "localhost" },
-  "TEST 2" : { "SERVER" : "TEST", "IP" : "54.238.98.1" }
+  "EUROPE 1" : { "SERVER" : "EUROPE", "IP" : "52.59.225.91" }
 }

@@ -19,8 +19,10 @@ var chestTable = csvJson.toObject(dataJson.chestData, {delimiter : ',', quote : 
 var obstacleTable = csvJson.toObject(dataJson.obstacleData, {delimiter : ',', quote : '"'});
 var mobTable = csvJson.toObject(dataJson.mobData, {delimiter : ',', quote : '"'});
 var mobGenTable = csvJson.toObject(serverDataJson.mobGenData, {delimiter : ',', quote : '"'});
+var dropGroupTable = csvJson.toObject(serverDataJson.dropGroupData, {delimiter : ',', quote : '"'});
 // var map = require('../public/map.json');
 
+var Monster = require('./Monster.js');
 var OBJs = require('./OBJs.js');
 // var OBJExp = OBJs.OBJExp;
 var OBJSkill = OBJs.OBJSkill;
@@ -42,6 +44,7 @@ var entityTree;
 // var entityBefore300msTree;
 
 var userEles = [];
+var mobEles = [];
 // var userBefore150msEles = [];
 // var userBefore300msEles = [];
 
@@ -61,6 +64,7 @@ var staticTree;
 var staticEles = [];
 var affectedEles = [];
 
+// var mobOrderTimer = Date.now();
 var auraCheckTimer = Date.now();
 
 function GameManager(){
@@ -118,6 +122,9 @@ function GameManager(){
   this.onNeedInformSkillData = new Function();
   this.onNeedInformProjectileDelete = new Function();
   this.onNeedInformProjectileExplode = new Function();
+
+  this.onNeedInformMobsCreate = new Function();
+  this.onNeedInfromMobChangeState = new Function();
 };
 
 GameManager.prototype.start = function(){
@@ -221,7 +228,7 @@ GameManager.prototype.setChestsLocation = function(){
     var tempGround = new Obstacle(chestGrounds[i].posX, chestGrounds[i].posY, chestGrounds[i].radius, chestGrounds[i].id);
 
     this.chestLocations.push(tempGround);
-    // staticEles.push(tempGround.staticEle);
+    staticEles.push(tempGround.staticEle);
   }
 };
 GameManager.prototype.setStaticTreeEle = function(){
@@ -485,20 +492,68 @@ GameManager.prototype.createBoxsToRandomPosition = function(count){
   }
 };
 GameManager.prototype.createMobs = function(count, type){
-  // var mobs = [];
-  //
-  // var mobData = ;
-  // for(var i=0; i<count; i++){
-  //   mobs.push(this.createMob(type));
-  // }
-  // this.onNeedInformMobsCreate(mobs);
+  var mobs = [];
+  for(var i=0; i<count; i++){
+    var mob = this.createMob(type);
+    if(mob){
+      mobs.push(mob);
+    }
+  }
+  this.onNeedInformMobsCreate(mobs);
 };
 GameManager.prototype.createMob = function(type){
-  if(type === serverCheck.MOB_TYPE_SMALL){
+  if(type === serverConfig.MOB_GEN_TYPE_SMALL || type === serverConfig.MOB_GEN_TYPE_MEDIUM){
     //set gen type
+    var mobGenDatas = objectAssign({}, util.findAllDatas(mobGenTable, 'mobGenType', type));
+    if(Object.keys(mobGenDatas).length){
+      var index = Math.floor(Math.random() * Object.keys(mobGenDatas).length);
+      var mobGenData = mobGenDatas[index];
+      var mobDatas = util.getMobs(mobGenData, mobTable);
+      if(mobDatas.length){
+        var mobIndex = Math.floor(Math.random() * mobDatas.length);
+        var mobData = mobDatas[mobIndex];
 
+        var mob = new Monster(mobData, mobGenData);
+        var randomID = SUtil.generateRandomUniqueID(this.monsters, gameConfig.PREFIX_MONSTER);
+
+        mob.assignID(randomID);
+        mob.setSize(mobData.size, mobData.size);
+        var randomDirection = Math.random() > 0.5 ? 1 : -1 * Math.floor(Math.random() * 180);
+
+        mob.setDirection(randomDirection);
+        var insidePosition = SUtil.generateInsidePos({x : mobGenData.genPosX, y : mobGenData.genPosY}, mobGenData.freeMoveRange, staticTree, randomID, mobData.size, true);
+        if(insidePosition){
+          mob.setPosition(insidePosition.x, insidePosition.y);
+          mob.initEntityEle();
+          var dropData = objectAssign({}, util.findData(dropGroupTable, 'index', mobData.dropIndex));
+          mob.initDropData(dropData);
+
+          mob.onNeedToGetMobTarget = getMobTarget.bind(this);
+          mob.onNeedToGetMobTargetPos = SUtil.getMobTargetPos.bind(this);
+          mob.onNeedToGetMobDirection = SUtil.getMobDirection.bind(this);
+          mob.onChangeState = SUtil.onMobChangeState.bind(this);
+          mob.onAttackUser = SUtil.onMobAttackUser.bind(this);
+
+          mob.onMove = onMoveCalcCompelPos.bind(mob);
+          mob.onTakeDamage = SUtil.onMobTakeDamage.bind(this);
+          mob.onBuffExchange = SUtil.onMobBuffExchange.bind(this);
+          mob.onDeath = SUtil.onMobDeath.bind(this);
+
+          this.monsters[mob.objectID] = mob;
+          // this.monsters.push(mob);
+          mob.startUpdate();
+          mob.changeState(gameConfig.OBJECT_STATE_IDLE);
+          return mob;
+        }else{
+          return false;
+        }
+      }
+    }else{
+      return false;
+    }
   }
-  // if(type === serverConfig.MOB_GEN_TYPE_SMALL1){
+  return false;
+  // if(type === serverConfig.MOB_GEN_TYPE_SMALL){
   //   // var randomID = SUtil.generateRandomUniqueID(this.monsters, gameConfig.PREFIX_MONSTER);
   //   // var mobData = ;
   //   // var mobGenData = ;
@@ -617,7 +672,7 @@ GameManager.prototype.joinUser = function(user){
   this.users[user.objectID] = user;
   this.users[user.objectID].onBuffExchange = SUtil.onUserBuffExchange.bind(this);
   this.users[user.objectID].onSkillUpgrade = SUtil.onUserSkillUpgrade.bind(this);
-  this.users[user.objectID].onMove = onMoveCalcCompelPos.bind(this);
+  // this.users[user.objectID].onMove = onMoveCalcCompelPos.bind(this);
   this.users[user.objectID].onChangePrivateStat = SUtil.onUserChangePrivateStat.bind(this);
   this.users[user.objectID].onChangeStat = SUtil.onUserChangeStat.bind(this);
   this.users[user.objectID].onTakeDamage = SUtil.onUserTakeDamage.bind(this);
@@ -675,44 +730,42 @@ GameManager.prototype.initializeUser = function(user, baseSkill, possessSkills, 
 };
 GameManager.prototype.applySkill = function(userID, skillData){
   if(userID in this.users && !this.users[userID].isDead){
-    if(this.users[userID].checkCooldown(skillData)){
-      this.users[userID].applyCooldown(skillData);
-      //check buff
-      SUtil.checkUserBuff(this.users[userID], skillData);
+    this.users[userID].applyCooldown(skillData);
+    //check buff
+    SUtil.checkUserBuff(this.users[userID], skillData);
 
-      this.users[userID].consumeMP(skillData.consumeMP);
-      if(skillData.buffToSelf){
-        this.users[userID].addBuff(skillData.buffToSelf, userID);
-      }
-      if(skillData.additionalBuffToSelf){
-        this.users[userID].addBuff(skillData.additionalBuffToSelf, userID);
-      }
+    this.users[userID].consumeMP(skillData.consumeMP);
+    if(skillData.buffToSelf){
+      this.users[userID].addBuff(skillData.buffToSelf, userID);
+    }
+    if(skillData.additionalBuffToSelf){
+      this.users[userID].addBuff(skillData.additionalBuffToSelf, userID);
+    }
 
-      //doDamageToSelf
-      if(skillData.doDamageToSelf){
-        var fireDamage = skillData.fireDamage * skillData.damageToSelfRate/100;
-        var frostDamage = skillData.frostDamage * skillData.damageToSelfRate/100;
-        var arcaneDamage = skillData.arcaneDamage * skillData.damageToSelfRate/100;
-        var damageToMP = 0;
-        this.users[userID].takeDamage(userID, fireDamage, frostDamage, arcaneDamage, damageToMP, skillData.hitBuffList, skillData.index);
-        if(skillData.buffToTarget){
-          this.users[userID].addBuff(skillData.buffToTarget, userID);
-        }
+    //doDamageToSelf
+    if(skillData.doDamageToSelf){
+      var fireDamage = skillData.fireDamage * skillData.damageToSelfRate/100;
+      var frostDamage = skillData.frostDamage * skillData.damageToSelfRate/100;
+      var arcaneDamage = skillData.arcaneDamage * skillData.damageToSelfRate/100;
+      var damageToMP = 0;
+      this.users[userID].takeDamage(userID, fireDamage, frostDamage, arcaneDamage, damageToMP, skillData.hitBuffList, skillData.index);
+      if(skillData.buffToTarget){
+        this.users[userID].addBuff(skillData.buffToTarget, userID);
       }
+    }
 
-      //healHP, MP
-      var healHPAmount = (util.isNumeric(skillData.healHP) ? skillData.healHP : 0) + this.users[userID].maxHP * (util.isNumeric(skillData.healHPRate) ? skillData.healHPRate : 0) / 100;
-      var healMPAmount = (util.isNumeric(skillData.healMP) ? skillData.healMP : 0) + this.users[userID].maxMP * (util.isNumeric(skillData.healMPRate) ? skillData.healMPRate : 0) / 100;
-      if(healHPAmount > 0 || healMPAmount > 0){
-        this.users[userID].healHPMP(healHPAmount, healMPAmount);
+    //healHP, MP
+    var healHPAmount = (util.isNumeric(skillData.healHP) ? skillData.healHP : 0) + this.users[userID].maxHP * (util.isNumeric(skillData.healHPRate) ? skillData.healHPRate : 0) / 100;
+    var healMPAmount = (util.isNumeric(skillData.healMP) ? skillData.healMP : 0) + this.users[userID].maxMP * (util.isNumeric(skillData.healMPRate) ? skillData.healMPRate : 0) / 100;
+    if(healHPAmount > 0 || healMPAmount > 0){
+      this.users[userID].healHPMP(healHPAmount, healMPAmount);
+    }
+    if(skillData.type !== gameConfig.SKILL_TYPE_SELF){
+      var skillCollider = new SkillCollider(this.users[userID], skillData);
+      if(skillData.additionalBuffToTarget){
+        skillCollider.additionalBuffToTarget = skillData.additionalBuffToTarget;
       }
-      if(skillData.type !== gameConfig.SKILL_TYPE_SELF){
-        var skillCollider = new SkillCollider(this.users[userID], skillData);
-        if(skillData.additionalBuffToTarget){
-          skillCollider.additionalBuffToTarget = skillData.additionalBuffToTarget;
-        }
-        this.skills.push(skillCollider);
-      }
+      this.skills.push(skillCollider);
     }
   }else{
     // console.log('cant find user data');
@@ -720,50 +773,48 @@ GameManager.prototype.applySkill = function(userID, skillData){
 };
 GameManager.prototype.applyProjectile = function(userID, projectileDatas){
   if(userID in this.users && !this.users[userID].isDead){
-    if(this.users[userID].checkCooldown(projectileDatas[0])){
-      this.users[userID].applyCooldown(projectileDatas[0]);
-      //check buff
-      SUtil.checkUserBuff(this.users[userID], projectileDatas[0]);
+    this.users[userID].applyCooldown(projectileDatas[0]);
+    //check buff
+    SUtil.checkUserBuff(this.users[userID], projectileDatas[0]);
 
-      this.users[userID].consumeMP(projectileDatas[0].consumeMP);
-      if(projectileDatas[0].buffToSelf){
-        this.users[userID].addBuff(projectileDatas[0].buffToSelf, userID);
+    this.users[userID].consumeMP(projectileDatas[0].consumeMP);
+    if(projectileDatas[0].buffToSelf){
+      this.users[userID].addBuff(projectileDatas[0].buffToSelf, userID);
+    }
+    if(projectileDatas[0].additionalBuffToSelf){
+      this.users[userID].addBuff(projectileDatas[0].additionalBuffToSelf, userID);
+    }
+    //doDamageToSelf
+    if(projectileDatas[0].doDamageToSelf){
+      var fireDamage = projectileDatas[0].fireDamage * projectileDatas[0].damageToSelfRate/100;
+      var frostDamage = projectileDatas[0].frostDamage * projectileDatas[0].damageToSelfRate/100;
+      var arcaneDamage = projectileDatas[0].arcaneDamage * projectileDatas[0].damageToSelfRate/100;
+      var damageToMP = 0;
+      this.users[userID].takeDamage(userID, fireDamage, frostDamage, arcaneDamage, damageToMP, projectileDatas[0].hitBuffList, projectileDatas[0].index);
+      if(projectileDatas[0].buffToTarget){
+        this.users[userID].addBuff(projectileDatas[0].buffToTarget, userID);
       }
-      if(projectileDatas[0].additionalBuffToSelf){
-        this.users[userID].addBuff(projectileDatas[0].additionalBuffToSelf, userID);
+    }
+    //healHP, MP
+    var healHPAmount = (util.isNumeric(projectileDatas[0].healHP) ? projectileDatas[0].healHP : 0) + this.users[userID].maxHP * (util.isNumeric(projectileDatas[0].healHPRate) ? projectileDatas[0].healHPRate : 0) / 100;
+    var healMPAmount = (util.isNumeric(projectileDatas[0].healMP) ? projectileDatas[0].healMP : 0) + this.users[userID].maxMP * (util.isNumeric(projectileDatas[0].healMPRate) ? projectileDatas[0].healMPRate : 0) / 100;
+    if(healHPAmount > 0 || healMPAmount > 0){
+      this.users[userID].healHPMP(healHPAmount, healMPAmount);
+    }
+
+    for(var i=0; i<projectileDatas.length; i++){
+      var projectileCollider = new ProjectileCollider(this.users[userID], projectileDatas[i]);
+      if(i !== 0){
+        projectileCollider.fireDamage = projectileDatas[0].fireDamage;
+        projectileCollider.frostDamage = projectileDatas[0].frostDamage;
+        projectileCollider.arcaneDamage = projectileDatas[0].arcaneDamage;
+        projectileCollider.damageToMP = projectileDatas[0].damageToMP;
       }
-      //doDamageToSelf
-      if(projectileDatas[0].doDamageToSelf){
-        var fireDamage = projectileDatas[0].fireDamage * projectileDatas[0].damageToSelfRate/100;
-        var frostDamage = projectileDatas[0].frostDamage * projectileDatas[0].damageToSelfRate/100;
-        var arcaneDamage = projectileDatas[0].arcaneDamage * projectileDatas[0].damageToSelfRate/100;
-        var damageToMP = 0;
-        this.users[userID].takeDamage(userID, fireDamage, frostDamage, arcaneDamage, damageToMP, projectileDatas[0].hitBuffList, projectileDatas[0].index);
-        if(projectileDatas[0].buffToTarget){
-          this.users[userID].addBuff(projectileDatas[0].buffToTarget, userID);
-        }
-      }
-      //healHP, MP
-      var healHPAmount = (util.isNumeric(projectileDatas[0].healHP) ? projectileDatas[0].healHP : 0) + this.users[userID].maxHP * (util.isNumeric(projectileDatas[0].healHPRate) ? projectileDatas[0].healHPRate : 0) / 100;
-      var healMPAmount = (util.isNumeric(projectileDatas[0].healMP) ? projectileDatas[0].healMP : 0) + this.users[userID].maxMP * (util.isNumeric(projectileDatas[0].healMPRate) ? projectileDatas[0].healMPRate : 0) / 100;
-      if(healHPAmount > 0 || healMPAmount > 0){
-        this.users[userID].healHPMP(healHPAmount, healMPAmount);
+      if(projectileDatas[0].additionalBuffToTarget){
+        projectileCollider.additionalBuffToTarget = projectileDatas[0].additionalBuffToTarget;
       }
 
-      for(var i=0; i<projectileDatas.length; i++){
-        var projectileCollider = new ProjectileCollider(this.users[userID], projectileDatas[i]);
-        if(i !== 0){
-          projectileCollider.fireDamage = projectileDatas[0].fireDamage;
-          projectileCollider.frostDamage = projectileDatas[0].frostDamage;
-          projectileCollider.arcaneDamage = projectileDatas[0].arcaneDamage;
-          projectileCollider.damageToMP = projectileDatas[0].damageToMP;
-        }
-        if(projectileDatas[0].additionalBuffToTarget){
-          projectileCollider.additionalBuffToTarget = projectileDatas[0].additionalBuffToTarget;
-        }
-
-        this.projectiles.push(projectileCollider);
-      }
+      this.projectiles.push(projectileCollider);
     }
   }else{
     // console.log('cant find user data');
@@ -874,28 +925,28 @@ GameManager.prototype.setUserSkill = function(userID, charType, baseSkill, passi
 };
 GameManager.prototype.setUserPosition = function(userID){
   if(userID in this.users){
-    var randomPos = SUtil.generateRandomPos(staticTree, 400, 400, gameConfig.CANVAS_MAX_SIZE.width - 400, gameConfig.CANVAS_MAX_SIZE.height - 400,
-                                            this.users[userID].size.width/2, this.users[userID].size.width/2, userID);
-    if(randomPos){
-      this.users[userID].setPosition(randomPos.x, randomPos.y);
+    // var randomPos = SUtil.generateRandomPos(staticTree, 400, 400, gameConfig.CANVAS_MAX_SIZE.width - 400, gameConfig.CANVAS_MAX_SIZE.height - 400,
+    //                                         this.users[userID].size.width/2, this.users[userID].size.width/2, userID);
+    // if(randomPos){
+    //   this.users[userID].setPosition(randomPos.x, randomPos.y);
+    // }else{
+    //   this.users[userID].setPosition(100, 100);
+    // }
+    var randVal = Math.floor(Math.random() * 2);
+    var pos = {x : 0, y : 0};
+    if(randVal === 0){
+      pos.x = serverConfig.USER_START_POSITION_1.x;
+      pos.y = serverConfig.USER_START_POSITION_1.y;
     }else{
-      this.users[userID].setPosition(100, 100);
+      pos.x = serverConfig.USER_START_POSITION_2.x;
+      pos.y = serverConfig.USER_START_POSITION_2.y;
     }
-    // var randVal = Math.floor(Math.random() * 2);
-    // var pos = {x : 0, y : 0};
-    // if(randVal === 0){
-    //   pos.x = serverConfig.USER_START_POSITION_1.x;
-    //   pos.y = serverConfig.USER_START_POSITION_1.y;
-    // }else{
-    //   pos.x = serverConfig.USER_START_POSITION_2.x;
-    //   pos.y = serverConfig.USER_START_POSITION_2.y;
-    // }
-    // var newPos = SUtil.generateInsidePos(pos, 32, staticTree, userID, 32);
-    // if(newPos){
-    //   this.users[userID].setPosition(newPos.x, newPos.y);
-    // }else{
-    //   this.users[userID].setPosition(pos.x, pos.y);
-    // }
+    var newPos = SUtil.generateInsidePos(pos, 32, staticTree, userID, 32);
+    if(newPos){
+      this.users[userID].setPosition(newPos.x, newPos.y);
+    }else{
+      this.users[userID].setPosition(pos.x, pos.y);
+    }
   }
 };
 GameManager.prototype.startUserUpdate = function(userID){
@@ -1146,6 +1197,53 @@ GameManager.prototype.processBuffDataSetting = function(user){
     throw e;
   }
 };
+GameManager.prototype.processCreatedMobDatas = function(mobs){
+  var returnVal = [];
+  for(var i=0; i<mobs.length; i++){
+    returnVal.push(this.processMobData(mobs[i]));
+  }
+  return returnVal;
+};
+GameManager.prototype.processMobData = function(mob){
+  return {
+    index : mob.index,
+
+    objectID : mob.objectID,
+    currentState : mob.currentState,
+    position : mob.position,
+    targetPosition : mob.targetPosition,
+    maxSpeed : mob.maxSpeed,
+    direction : mob.direction,
+    rotateSpeed : mob.rotateSpeed,
+    size : mob.size,
+    attackTime : mob.attackTime,
+
+    maxHP : mob.maxHP,
+    HP : mob.HP,
+    conditions : mob.conditions,
+    buffList : mob.buffList
+  };
+};
+GameManager.prototype.processMobDatas = function(){
+  var returnVal = [];
+  for(var index in this.monsters){
+    returnVal.push(this.processMobData(this.monsters[index]));
+  }
+  // for(var i=0; i<this.monsters.length; i++){
+  //   returnVal.push(this.processMobData(this.monsters[i]));
+  // }
+  return returnVal;
+};
+GameManager.prototype.processMobBuffData = function(mob){
+  var buffList = [];
+  for(var i=0; i<mob.buffList.length; i++){
+    buffList.push(mob.buffList[i].index);
+  }
+  return {
+    objectID : mob.objectID,
+    buffList : buffList
+  };
+};
 GameManager.prototype.addSkillData = function(userData){
   if(userData.objectID in this.users){
     userData.baseSkill = this.users[userData.objectID].baseSkill;
@@ -1323,24 +1421,6 @@ GameManager.prototype.checkCreateChest = function(){
   }else{
     return false;
   }
-  // if(Object.keys(this.users).length < 10){
-  //   if(this.chests.length < 3){
-  //     return true;
-  //   }else{
-  //     return false;
-  //   }
-  // }else if(Object.keys(this.users).length > 30){
-  //   if(this.chest.length < 7){
-  //     return true;
-  //   }else{
-  //     return false;
-  //   }
-  // }else if(Object.keys(this.users).length / 5 > this.chests.length){
-  //   return true;
-  // }else{
-  //   return false;
-  // }
-  // return false;
 };
 GameManager.prototype.upgradeSkill = function(user, skillIndex){
   try {
@@ -1402,6 +1482,11 @@ GameManager.prototype.checkSkillCondition = function(userID, skillData){
     }else{
       return false;
     }
+  }
+};
+GameManager.prototype.checkSkillCooldown = function(userID, skillData){
+  if(userID in this.users){
+    return this.users[userID].checkCooldown(skillData);
   }
 };
 // GameManager.prototype.cancelBlur = function(userID){
@@ -1599,9 +1684,22 @@ function longTimeIntervalHandler(){
   setChestIndexAndDoCreateChest.call(this);
     // setTimeout(setChestIndexAndDoCreateChest.bind(this), serverConfig.CHEST_CHAIN_CREATE_TIME);
   // }
-  var additionalSmallMobCount = (serverConfig.MOB_SMALL_COUNT + Math.floor(Object.keys(this.users).length * serverConfig.ADDITIONAL_MOB_SMALL_PER_USER) - this.monsters.length);
+  var smallMobCount = 0;
+  var mediumMobcount = 0;
+  for(var index in this.monsters){
+    if(this.monsters[index].mobGenType === serverConfig.MOB_GEN_TYPE_SMALL){
+      smallMobCount ++;
+    }else if(this.monsters[index].mobGenType === serverConfig.MOB_GEN_TYPE_MEDIUM){
+      mediumMobcount ++;
+    }
+  }
+  var additionalSmallMobCount = (serverConfig.MOB_SMALL_COUNT + Math.floor(Object.keys(this.users).length * serverConfig.ADDITIONAL_MOB_SMALL_PER_USER) - smallMobCount);
   if(additionalSmallMobCount > 0){
-    // this.createMobs(additionalMobCount, serverConfig.MOB_TYPE_SMALL);
+    this.createMobs(additionalSmallMobCount, serverConfig.MOB_GEN_TYPE_SMALL);
+  }
+  var additionalMediumMobcount = (serverConfig.MOB_MEDIUM_COUNT + Math.floor(Object.keys(this.users).length * serverConfig.ADDITIONAL_MOB_MEDIUM_PER_USER) - mediumMobcount);
+  if( additionalMediumMobcount > 0){
+    this.createMobs(additionalMediumMobcount, serverConfig.MOB_GEN_TYPE_MEDIUM);
   }
 };
 var setChestIndexAndDoCreateChest = function(){
@@ -1635,16 +1733,7 @@ function updateIntervalHandler(){
   for(var i=0; i<colliderEles.length; i++){
     //tempCollider == skill and projectile
     var tempCollider = colliderEles[i];
-    //collision with user or chest
-    // if(tempCollider.latency >= 225){
-    //   var collisionObjs = util.checkCircleCollision(entityBefore300msTree, tempCollider.x, tempCollider.y, tempCollider.width/2, tempCollider.id);
-    //   // console.log('check collision to entityBefore300msTree');
-    // }else if(tempCollider.latency >= 75){
-    //   collisionObjs = util.checkCircleCollision(entityBefore150msTree, tempCollider.x, tempCollider.y, tempCollider.width/2, tempCollider.id);
-    //   // console.log('check collision to entityBefore150msTree');
-    // }else {
     collisionObjs = util.checkCircleCollision(entityTree, tempCollider.x, tempCollider.y, tempCollider.width/2, tempCollider.id);
-    // }
     if(collisionObjs.length > 0){
       for(var j = 0; j<collisionObjs.length; j++){
         if(tempCollider.type === gameConfig.SKILL_TYPE_PROJECTILE || tempCollider.type === gameConfig.SKILL_TYPE_INSTANT_PROJECTILE){
@@ -1654,6 +1743,8 @@ function updateIntervalHandler(){
               affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_USER));
             }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_CHEST){
               affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST));
+            }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_MONSTER){
+              affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_MONSTER));
             }else{
               console.log('check id' + collisionObjs[j].id);
             }
@@ -1667,6 +1758,8 @@ function updateIntervalHandler(){
               affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_USER));
             }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_CHEST){
               affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST));
+            }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_MONSTER){
+              affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_MONSTER));
             }else{
               console.log('check id' + collisionObjs[j].id);
             }
@@ -1677,6 +1770,8 @@ function updateIntervalHandler(){
               affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_USER));
             }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_CHEST){
               affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST));
+            }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_MONSTER){
+              affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_MONSTER));
             }else{
               console.log('check id' + collisionObjs[j].id);
             }
@@ -1689,6 +1784,8 @@ function updateIntervalHandler(){
             affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_USER));
           }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_CHEST){
             affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST));
+          }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_MONSTER){
+            affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_MONSTER));
           }else{
             console.log('check id' + collisionObjs[j].id);
           }
@@ -1766,16 +1863,11 @@ function updateIntervalHandler(){
   for(var i=0; i<userEles.length; i++){
     entityTree.remove(userEles[i]);
   }
-  // for(var i=0; i<userBefore150msEles.length; i++){
-  //   entityBefore150msTree.remove(userBefore150msEles[i]);
-  // }
-  // for(var i=0; i<userBefore300msEles.length; i++){
-  //   entityBefore300msTree.remove(userBefore300msEles[i]);
-  // }
+  for(var i=0; i<mobEles.length; i++){
+    entityTree.remove(mobEles[i]);
+  }
   for(var i=0; i<chestEles.length; i++){
     entityTree.remove(chestEles[i]);
-    // entityBefore150msTree.remove(chestEles[i]);
-    // entityBefore300msTree.remove(chestEles[i]);
   }
 
   for(var i=0; i<removeOBJs.length; i++){
@@ -1787,8 +1879,7 @@ function updateIntervalHandler(){
   }
 
   userEles = [];
-  // userBefore150msEles = [];
-  // userBefore300msEles = [];
+  mobEles = [];
   chestEles = [];
   colliderEles = [];
   removeOBJs = [];
@@ -1800,33 +1891,18 @@ function updateIntervalHandler(){
       this.users[index].setEntityEle();
       userEles.push(this.users[index].entityTreeEle);
     }
-    // this.users[index].setBefore150msEntitiyEle();
-    // userBefore150msEles.push(this.users[index].entityBefore150msTreeEle);
-
-    // this.users[index].setBefore300msEntityEle();
-    // userBefore300msEles.push(this.users[index].entityBefore300msTreeEle);
   }
+  for(var index in this.monsters){
+    this.monsters[index].setEntityEle();
+    mobEles.push(this.monsters[index].entityTreeEle);
+  }
+  // for(var i=0; i<this.monsters.length; i++){
+  //   this.monsters[i].setEntityEle();
+  //   mobEles.push(this.monsters[i].entityTreeEle);
+  // }
   for(var i=0; i<this.chests.length; i++){
     chestEles.push(this.chests[i].entityTreeEle);
   }
-  //update collectable objects array
-  // var addExpCounts = this.objExpsCount -this.objExps.length;
-  // var addSkillCounts = this.objSkillsCount - this.objSkills.length;
-  // var addGoldCounts = this.objGoldsCount - this.objGolds.length;
-  // if(addExpCounts > 0){
-  //   var createdObjs = this.createOBJs(addExpCounts, gameConfig.PREFIX_OBJECT_EXP);
-  //   this.onNeedInformCreateObjs(createdObjs);
-  // }
-  // if(addSkillCounts > 0){
-  //   var createdObjs = this.createOBJs(addSkillCounts, gameConfig.PREFIX_OBJECT_SKILL);
-  //   this.onNeedInformCreateObjs(createdObjs);
-  // }
-  // if(addGoldCounts > 0){
-  //   var createdObjs = this.createOBJs(addGoldCounts, gameConfig.PREFIX_OBJECT_GOLD);
-  //   if(createdObjs.length){
-  //     this.onNeedInformCreateObjs(createdObjs);
-  //   }
-  // }
 
   var addedObjEles = [];
   // for(var i=0; i<this.addedObjExps.length; i++){
@@ -1900,10 +1976,6 @@ function updateIntervalHandler(){
           colliderEles.push(this.projectiles[i]);
         }
       }
-      // }else{
-      //   this.projectiles[i].move();
-      //   colliderEles.push(this.projectiles[i]);
-      // }
     }
   }
   //update skills array
@@ -1916,15 +1988,9 @@ function updateIntervalHandler(){
   }
   //put users data to tree
   entityTree.pushAll(userEles);
+  entityTree.pushAll(mobEles);
   entityTree.pushAll(chestEles);
 
-  // entityBefore150msTree.pushAll(userBefore150msEles);
-  // entityBefore150msTree.pushAll(chestEles);
-
-  // entityBefore300msTree.pushAll(userBefore300msEles);
-  // entityBefore300msTree.pushAll(chestEles);
-
-  // collectionTree.pushAll(collectionEles);
   collectionTree.pushAll(addedObjEles);
 };
 function staticIntervalHandler(){
@@ -1935,19 +2001,19 @@ function staticIntervalHandler(){
     //collision with tree or stone
     if(collisionObjs.length > 0){
       for(var j = 0; j<collisionObjs.length; j++){
-        if(collisionObjs[j].id.substr(0, 3) !== gameConfig.PREFIX_ENVIRONMENT_IMMORTAL_GROUND && collisionObjs[j].id.substr(0, 3) !== gameConfig.PREFIX_ENVIRONMENT_PORTAL){
+        if(collisionObjs[j].id.substr(0, 3) !== gameConfig.PREFIX_ENVIRONMENT_IMMORTAL_GROUND && collisionObjs[j].id.substr(0, 3) !== gameConfig.PREFIX_ENVIRONMENT_PORTAL
+           && collisionObjs[j].id.substr(0, 3) !== gameConfig.PREFIX_OBSTACLE_CHEST_GROUND){
           if(tempCollider.type === gameConfig.SKILL_TYPE_PROJECTILE || tempCollider.type === gameConfig.SKILL_TYPE_INSTANT_PROJECTILE){
             if(!tempCollider.isCollide){
               tempCollider.isCollide = true;
               if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_TREE){
                 affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_TREE));
-                // affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_USER));
               }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_ROCK){
                 affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_ROCK));
-                // affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST));
-              }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_CHEST_GROUND){
-                affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST_GROUND));
               }
+              // else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_CHEST_GROUND){
+              //   affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST_GROUND));
+              // }
             }
           }else if(tempCollider.type === gameConfig.SKILL_TYPE_PROJECTILE_EXPLOSION){
             if(!tempCollider.isCollide){
@@ -1956,39 +2022,33 @@ function staticIntervalHandler(){
             }else if(tempCollider.isCollide){
               if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_TREE){
                 affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_TREE));
-                // affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_USER));
               }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_ROCK){
                 affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_ROCK));
-                // affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST));
-              }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_CHEST_GROUND){
-                affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST_GROUND));
               }
+              // else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_CHEST_GROUND){
+              //   affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST_GROUND));
+              // }
             }
           }else if((tempCollider.type === gameConfig.SKILL_TYPE_PROJECTILE_TICK || tempCollider.type === gameConfig.SKILL_TYPE_PROJECTILE_TICK_EXPLOSION)){
             if(!tempCollider.isCollide){
               if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_TREE){
                 affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_TREE, true));
-                // affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_USER));
               }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_ROCK){
                 affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_ROCK, true));
-                // affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST));
-              }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_CHEST_GROUND){
-                affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST_GROUND, true));
               }
-              // if(collisionObjs.length - 1 === j){
-              //   tempCollider.isCollide = true;
+              // else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_CHEST_GROUND){
+              //   affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST_GROUND, true));
               // }
             }
           }else{
             if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_TREE){
               affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_TREE));
-              // affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_USER));
             }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_ROCK){
               affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_ROCK));
-              // affectedEles.push(SUtil.setAffectedEleColSkillWithEntity(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST));
-            }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_CHEST_GROUND){
-              affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST_GROUND));
             }
+            // else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBSTACLE_CHEST_GROUND){
+            //   affectedEles.push(SUtil.setAffectedEleColSkillWithObject(tempCollider, collisionObjs[j].id, serverConfig.COLLISION_SKILL_WITH_CHEST_GROUND));
+            // }
           }
         }
       }
@@ -1998,8 +2058,6 @@ function staticIntervalHandler(){
 
 function affectedIntervalHandler(){
   var i = affectedEles.length;
-  // console.log('affectedEles.length');
-  // console.log(affectedEles.length);
   if(i > 0){
     while(i--){
       if(affectedEles[i].collisionType === serverConfig.COLLISION_SKILL_WITH_USER){
@@ -2036,6 +2094,56 @@ function affectedIntervalHandler(){
             break;
           }
         }
+      }else if(affectedEles[i].collisionType === serverConfig.COLLISION_SKILL_WITH_MONSTER){
+        if(affectedEles[i].affectedID in this.monsters){
+          var dmg = 0;
+          if(affectedEles[i].fireDamage){
+            dmg += affectedEles[i].fireDamage;
+          }
+          if(affectedEles[i].frostDamage){
+            dmg += affectedEles[i].frostDamage;
+          }
+          if(affectedEles[i].arcaneDamage){
+            dmg += affectedEles[i].arcaneDamage;
+          }
+          this.monsters[affectedEles[i].affectedID].takeDamage(affectedEles[i].actorID, dmg, affectedEles[i].skillIndex);
+          if(affectedEles[i].buffToTarget){
+            if(this.monsters[affectedEles[i].affectedID]){
+              this.monsters[affectedEles[i].affectedID].addBuff(affectedEles[i].buffToTarget, affectedEles[i].actorID);
+            }
+          }
+          if(affectedEles[i].additionalBuffToTarget){
+            if(this.monsters[affectedEles[i].affectedID]){
+              this.monsters[affectedEles[i].affectedID].addBuff(affectedEles[i].additionalBuffToTarget, affectedEles[i].actorID);
+            }
+          }
+        }
+        // for(var j=0; j<this.monsters.length; j++){
+        //   if(this.monsters[j].objectID === affectedEles[i].affectedID){
+        //     var dmg = 0;
+        //     if(affectedEles[i].fireDamage){
+        //       dmg += affectedEles[i].fireDamage;
+        //     }
+        //     if(affectedEles[i].frostDamage){
+        //       dmg += affectedEles[i].frostDamage;
+        //     }
+        //     if(affectedEles[i].arcaneDamage){
+        //       dmg += affectedEles[i].arcaneDamage;
+        //     }
+        //     this.monsters[j].takeDamage(affectedEles[i].actorID, dmg, affectedEles[i].skillIndex);
+        //     if(affectedEles[i].buffToTarget){
+        //       if(this.monsters[j]){
+        //         this.monsters[j].addBuff(affectedEles[i].buffToTarget, affectedEles[i].actorID);
+        //       }
+        //     }
+        //     if(affectedEles[i].additionalBuffToTarget){
+        //       if(this.monsters[j]){
+        //         this.monsters[j].addBuff(affectedEles[i].additionalBuffToTarget, affectedEles[i].actorID);
+        //       }
+        //     }
+        //     break;
+        //   }
+        // }
       }
       // else if(affectedEles[i].collisionType === serverConfig.COLLISION_USER_WITH_COLLECTION_EXP){
       //   this.getObj(affectedEles[i].affectedID, affectedEles[i].expAmount, affectedEles[i].actorID);
@@ -2106,38 +2214,35 @@ function affectedIntervalHandler(){
         console.log('affectedEle is not specified');
         console.log(affectedEles[i]);
       }
-      // if(affectedEles[i].type === 'hitObj'){
-      //   if(affectedEles[i].hitObj.substr(0, 3) === gameConfig.PREFIX_USER){
-      //     if(affectedEles[i].hitObj in this.users){
-      //       //case hit user
-      //       this.users[affectedEles[i].hitObj].takeDamage(affectedEles[i].attackUser, affectedEles[i].damage);
-      //       //buff and debuff apply
-      //       this.users[affectedEles[i].hitObj].addBuff(affectedEles[i].buffsToTarget);
-      //     }
-      //   }else if(affectedEles[i].hitObj.substr(0, 3) === gameConfig.PREFIX_CHEST){
-      //     //case hit chest
-      //     for(var i=0; i<this.chests.length; i++){
-      //       if(this.chests[i].objectID === affectedEles[i].hitObj){
-      //         SUtil.handlingAffectedEleColSkillWithChest();
-      //         this.chests[i].takeDamage(affectedEles[i].attackUser, affectedEles[i].damage);
-      //         break;
-      //       }
-      //     }
-      //   }
-      // }else{
-      //   this.getObj(affectedEles[i]);
-      // }
       affectedEles.splice(i, 1);
     }
   }
 };
 
-var onMoveCalcCompelPos = function(user){
-  var collisionObjs = util.checkCircleCollision(staticTree, user.entityTreeEle.x, user.entityTreeEle.y, user.entityTreeEle.width/2, user.entityTreeEle.id);
+var onMoveCalcCompelPos = function(){
+  var collisionObjs = util.checkCircleCollision(staticTree, this.entityTreeEle.x, this.entityTreeEle.y, this.entityTreeEle.width/2, this.entityTreeEle.id);
+  for(var i=collisionObjs.length - 1; i>=0; i--){
+    if(collisionObjs[i].id.substr(0, 3) === gameConfig.PREFIX_ENVIRONMENT_PORTAL ||
+    collisionObjs[i].id.substr(0, 3) === gameConfig.PREFIX_ENVIRONMENT_IMMORTAL_GROUND){
+      collisionObjs.splice(i, 1);
+    }
+  }
   if(collisionObjs.length > 0 ){
-    var addPos = util.calcCompelPos(user.entityTreeEle, collisionObjs);
+    var addPos = util.calcCompelPos(this.entityTreeEle, collisionObjs);
   }
   return addPos;
 };
+var getMobTarget = function(mob, range){
+  var collisionObjs = util.checkCircleCollision(entityTree, mob.entityTreeEle.x + mob.entityTreeEle.width/2 - range/2, mob.entityTreeEle.y + mob.entityTreeEle.width/2 - range/2, mob.entityTreeEle.width/2 + range/2, mob.entityTreeEle.id);
+  for(var i=collisionObjs.length - 1; i>=0; i--){
+    if(collisionObjs[i].id.substr(0, 3) !== gameConfig.PREFIX_USER){
+      collisionObjs.splice(i, 1);
+    }
+  }
+  if(collisionObjs.length){
+    return collisionObjs[0].id;
+  }
+  return false;
+}
 
 module.exports = GameManager;

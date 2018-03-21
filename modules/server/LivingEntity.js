@@ -124,6 +124,9 @@ LivingEntity.prototype.constructor = LivingEntity;
 // };
 
 // initialize method
+LivingEntity.prototype.setDirection = function(x){
+  this.direction = x;
+};
 LivingEntity.prototype.setRotateSpeed = function(x){
   this.rotateSpeed = x;
 };

@@ -89,7 +89,7 @@ exports.move = function(deltaTime, isMoveSlight){
     if(Math.abs(distY) < Math.abs(this.speed.y) * deltaTime){
       this.speed.y = distY / deltaTime;
     }
-    var addPos = this.onMove(this);
+    var addPos = this.onMove();
     if(addPos){
       if(exports.isNumeric(addPos.x) && exports.isNumeric(addPos.y)){
         this.position.x += addPos.x;
@@ -625,6 +625,16 @@ exports.getBuffs = function(buffGroupData){
   }
   return returnVal;
 };
+exports.getMobs = function(mobGenData, mobTable){
+  var returnVal = [];
+  for(var i=0; i<5; i++){
+    if(mobGenData['genMob' + (i + 1)]){
+      var mobData = exports.findData(mobTable, 'index', mobGenData['genMob' + (i + 1)]);
+      returnVal.push(mobData);
+    }
+  }
+  return returnVal;
+};
 exports.setResourceData = function(resourceTable, buffImgData){
   var resourceDataList = [];
   buffImgData.resourceLength = 0;
@@ -836,7 +846,7 @@ exports.getCookie = function(cookie, key){
 };
 exports.setCookie = function(key, value){
   var date = new Date();
-  date.setTime(date.getTime() + (7*24*60*60*1000));
+  date.setTime(date.getTime() + (7 * 24 * 60 * 60 * 1000));
   var expires = "expires="+ date.toUTCString();
   document.cookie = key + "=" + value + ";" + expires + ";path=/";
 };
@@ -846,10 +856,12 @@ exports.setCookie = function(key, value){
 //     var expires = "expires="+ d.toUTCString();
 //     document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
 // }
-exports.isRender = function(user, otherUser, targetPosition){
-  if(otherUser.center.x - user.center.x > 900 && targetPosition.x - user.center.x > 900){
+exports.isRender = function(user, otherUser, targetPosition, x, y){
+  var rangeX = x ? x : 900;
+  var rangeY = y ? y : 600;
+  if(Math.abs(otherUser.center.x - user.center.x) > rangeX && Math.abs(targetPosition.x - user.center.x) > rangeX){
     return false;
-  }else if(otherUser.center.y - user.center.y > 600 && targetPosition.y - user.center.y > 600){
+  }else if(Math.abs(otherUser.center.y - user.center.y) > rangeY && Math.abs(targetPosition.y - user.center.y) > rangeY){
     return false;
   }else{
     return true;
@@ -898,6 +910,31 @@ exports.setDrawUser = function(users, user, gameConfig){
     }
   }
   return drawUsers;
+};
+exports.setDrawMobs = function(monsters, gameConfig){
+  var drawMobs = [];
+  // for(var i=0; i<monsters.length; i++){
+  for(var i in monsters){
+    var center = exports.worldToLocalPosition(monsters[i].center, gameConfig.userOffset, gameConfig.scaleFactor);
+    if(exports.isObjInCanvas(center, monsters[i].size.width, gameConfig)){
+      var position = exports.worldToLocalPosition(monsters[i].position, gameConfig.userOffset, gameConfig.scaleFactor);
+      drawMobs.push({
+        objectID: monsters[i].objectID,
+        HP: monsters[i].HP,
+        maxHP: monsters[i].maxHP,
+        localCenter: center,
+        localPosition: position,
+        direction: monsters[i].direction + monsters[i].attackDegree,
+
+        effectIndex: monsters[i].effectIndex,
+        effectRotateDegree: monsters[i].effectRotateDegree,
+        imgData: monsters[i].imgData,
+        buffImgDataList: monsters[i].buffImgDataList,
+        hitImgDataList: monsters[i].hitImgDataList
+      });
+    }
+  }
+  return drawMobs;
 };
 exports.setRandomName = function(charType){
   var suffix = "";

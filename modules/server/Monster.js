@@ -3,31 +3,52 @@ var LivingEntity = require('./LivingEntity.js');
 var util = require('../public/util.js');
 var SUtil = require('./ServerUtil.js');
 
-var gameConfig = require('../public/gameConfig.json');
+var csvJson = require('../public/csvjson');
 var objectAssign = require('../public/objectAssign');
+
+var gameConfig = require('../public/gameConfig.json');
+var serverConfig = require('./serverConfig.json');
+
+var dataJson = require('../public/data.json');
+var serverDataJson = require('./serverData.json');
+
+var buffGroupTable = csvJson.toObject(dataJson.buffGroupData, {delimiter : ',', quote : '"'});
+// var buffTable = csvJson.toObject(serverDataJson.buffData, {delimiter : ',', quote : '"'});
 
 var INTERVAL_TIMER = 1000/10;
 
+// var lastOrderTime = Date.now();
+// var completeOrderTime = false;
+
 function Monster(mobData, mobGenData){
   LivingEntity.call(this);
+  this.index = mobData.index;
+  this.name = mobData.mobName;
 
+  this.mobGenType = mobGenData.mobGenType;
+
+  this.isAttack = false;
   this.isDead = false;
 
   this.targetUserID = null;
   this.attackUsers = [];
+  this.target = false;
 
   this.genPos = {x : mobGenData.genPosX, y : mobGenData.genPosY};
   this.maxMoveRange = mobGenData.maxMoveRange;
   this.freeMoveRange = mobGenData.freeMoveRange;
+  this.autoAttackRange = mobGenData.autoAttackRange;
   this.attackRange = mobData.attackRange;
   this.maxHitRange = mobData.maxHitRange;
 
+  this.baseMoveSpeed = mobData.moveSpeed;
+  this.baseRotateSpeed = mobData.rotateSpeed;
+
   this.moveSpeed = mobData.moveSpeed;
   this.rotateSpeed = mobData.rotateSpeed;
-  this.attackSpeed = mobData.attackSpeed;
-  this.HP = mobData.HP;
+  this.attackTime = mobData.attackTime;
+  this.HP = mobData.maxHP;
   this.maxHP = mobData.maxHP;
-  this.HPRegen = mobData.HPRegen;
   this.damage = mobData.damage;
   this.resistAll = mobData.resistAll;
 
@@ -39,15 +60,25 @@ function Monster(mobData, mobGenData){
   this.buffList = [];
   this.passiveList = [];
 
+  this.provideGold = 0;
+  this.provideExp = 0;
+  this.provideJewel = 0;
+  this.provideScore = 0;
   this.golds = [];
-  this.jewels = [];
+  this.jewelCount = 0;
   this.skills = [];
+  this.boxCount = 0;
 
   this.currentState = gameConfig.OBJECT_STATE_IDLE;
 
   this.updateInterval = false;
   this.buffUpdateInterval = false;
-  this.regenInterval = false;
+  this.attackTimeout = false;
+  this.attackEndTimeout = false;
+  // this.regenInterval = false;
+  this.lastOrderTime = Date.now();
+  this.findTargetTime = Date.now();
+  this.completeOrderTime = false;
 
   this.updateFunction = new Function();
   this.timer = Date.now();
@@ -56,10 +87,16 @@ function Monster(mobData, mobGenData){
   this.setMaxSpeed(this.moveSpeed);
   this.setRotateSpeed(this.rotateSpeed);
 
-  this.onChangeStat = new Function();
+  this.onAttackUser = new Function();
+
+  this.onMove = new Function();
   this.onBuffExchange = new Function();
   this.onTakeDamage = new Function();
   this.onDeath = new Function();
+
+  this.onChangeState = new Function();
+  this.onNeedToGetMobTargetPos = new Function();
+  this.onNeedToGetMobDirection = new Function();
 }
 Monster.prototype = Object.create(LivingEntity.prototype);
 Monster.prototype.constructor = Monster;
@@ -67,9 +104,11 @@ Monster.prototype.constructor = Monster;
 Monster.prototype.changeState = function(newState){
   this.currentState = newState;
 
+  this.completeOrderTime = false;
   this.stop();
   switch (this.currentState) {
     case gameConfig.OBJECT_STATE_IDLE:
+      this.completeOrderTime = Date.now();
       this.updateFunction = this.idle.bind(this);
       break;
     case gameConfig.OBJECT_STATE_MOVE:
@@ -110,6 +149,15 @@ Monster.prototype.move = function(deltaTime, isMoveSlight){
     util.move.call(this, deltaTime);
   }
 };
+Monster.prototype.setFreeMoveTargetPosition = function(){
+  var addPosX = (Math.random() < 0.5 ? -1 : 1) * Math.floor(Math.random() * this.freeMoveRange);
+  var addPosY = (Math.random() < 0.5 ? -1 : 1) * Math.floor(Math.random() * this.freeMoveRange);
+
+  this.targetPosition = {
+    x : this.genPos.x + addPosX,
+    y : this.genPos.y + addPosY
+  };
+};
 Monster.prototype.setTargetDirection = function(){
   util.setTargetDirection.call(this);
 };
@@ -117,34 +165,184 @@ Monster.prototype.setSpeed = function(){
   util.setSpeed.call(this);
 };
 Monster.prototype.attack = function(){
-  this.doEveryTick();
+  if(!this.isAttack && !this.conditions[gameConfig.USER_CONDITION_FREEZE]){
+    this.isAttack = true;
+
+    var self = this;
+    this.attackTimeout = setTimeout(function(){
+      self.onAttackUser(self);
+    }, this.attackTime/2);
+    this.attackEndTimeout = setTimeout(function(){
+      self.changeState(gameConfig.OBJECT_STATE_IDLE);
+      self.onChangeState(self);
+    }, this.attackTime);
+    this.doEveryTick();
+  }
 };
 Monster.prototype.doEveryTick = function(){
   this.timer = Date.now();
+
+  if(this.currentState !== gameConfig.OBJECT_STATE_ATTACK && !this.conditions[gameConfig.USER_CONDITION_FREEZE]){
+    //update target
+    var beforeTarget = this.target;
+    this.target = false;
+    for(var index in this.attackUsers){
+      if(Date.now() - this.attackUsers[index].startTime > 180000){
+        delete this.attackUsers[index];
+      }else{
+        if(this.target){
+          if(this.attackUsers[index].damage > this.attackUsers[this.target].damage){
+            this.target = index;
+          }
+        }else{
+          this.target = index;
+        }
+      }
+    }
+    if(!this.target && Date.now() - this.findTargetTime > 500){
+      this.findTargetTime = Date.now();
+
+      var newTarget = this.onNeedToGetMobTarget(this, this.autoAttackRange);
+      if(newTarget && !(newTarget in this.attackUsers)){
+        this.attackUsers[newTarget] = {
+          damage : 0,
+          startTime : Date.now()
+        };
+        this.target = newTarget;
+      }
+    }
+    if(this.target && Date.now() - this.lastOrderTime > 1000){
+      this.lastOrderTime = Date.now();
+      this.completeOrderTime = false;
+
+      var targetPosition = {x : this.genPos.x, y : this.genPos.y};
+      var newPos = this.onNeedToGetMobTargetPos(this);
+      if(newPos){
+        targetPosition = newPos;
+      }else{
+        delete this.attackUsers[this.target];
+        this.target = false;
+      }
+
+      //distance check
+      var distanceSquare = Math.pow(targetPosition.x - this.genPos.x, 2) + Math.pow(targetPosition.y - this.genPos.y, 2);
+      if(distanceSquare > Math.pow(this.maxMoveRange, 2)){
+        if(this.target){
+          delete this.attackUsers[this.target];
+          this.target = false;
+        }
+        targetPosition = {x : this.genPos.x, y : this.genPos.y};
+      }
+
+      distanceSquare = Math.pow(targetPosition.x - this.center.x, 2) + Math.pow(targetPosition.y - this.center.y, 2);
+      if(this.target && distanceSquare < Math.pow(this.attackRange, 2)){
+        // this.targetPosition = targetPosition;
+        var direction = this.onNeedToGetMobDirection(this);
+        if(direction){
+          this.direction = direction;
+        }
+        this.setCenter();
+        // this.setTargetDirection();
+        // this.setSpeed();
+        this.changeState(gameConfig.OBJECT_STATE_ATTACK);
+
+        this.onChangeState(this);
+      }else{
+        this.targetPosition = targetPosition;
+        this.setCenter();
+        this.setTargetDirection();
+        this.setSpeed();
+        this.changeState(gameConfig.OBJECT_STATE_MOVE);
+
+        this.onChangeState(this);
+      }
+    }else if(beforeTarget !== this.target || (this.timer - this.lastOrderTime > 10000) || (this.completeOrderTime && this.timer - this.completeOrderTime > 2000)){
+      this.lastOrderTime = Date.now();
+      this.completeOrderTime = false;
+      if(this.target){
+        var targetPosition = {x : this.genPos.x, y : this.genPos.y};
+        var newPos = this.onNeedToGetMobTargetPos(this);
+        if(newPos){
+          targetPosition = newPos;
+        }else{
+          delete this.attackUsers[this.target];
+          this.target = false;
+        }
+        //distance check
+        var distanceSquare = Math.pow(targetPosition.x - this.genPos.x, 2) + Math.pow(targetPosition.y - this.genPos.y, 2);
+        if(distanceSquare > Math.pow(this.maxMoveRange, 2)){
+          if(this.target){
+            delete this.attackUsers[this.target];
+            this.target = false;
+          }
+          targetPosition = {x : this.genPos.x, y : this.genPos.y};
+        }
+
+        distanceSquare = Math.pow(targetPosition.x - this.center.x, 2) + Math.pow(targetPosition.y - this.center.y, 2);
+        if(this.target && distanceSquare < Math.pow(this.attackRange, 2)){
+          // this.targetPosition = targetPosition;
+          var direction = this.onNeedToGetMobDirection(this);
+          if(direction){
+            this.direction = direction;
+          }
+          this.setCenter();
+          // this.setTargetDirection();
+          // this.setSpeed();
+          this.changeState(gameConfig.OBJECT_STATE_ATTACK);
+
+          this.onChangeState(this);
+        }else{
+          this.targetPosition = targetPosition;
+          this.setCenter();
+          this.setTargetDirection();
+          this.setSpeed();
+          this.changeState(gameConfig.OBJECT_STATE_MOVE);
+
+          this.onChangeState(this);
+        }
+      }else{
+        this.setFreeMoveTargetPosition();
+        this.setCenter();
+        this.setTargetDirection();
+        this.setSpeed();
+        this.changeState(gameConfig.OBJECT_STATE_MOVE);
+
+        this.onChangeState(this);
+      }
+    }
+  }
 };
 Monster.prototype.stop = function(){
+  this.isAttack = false;
   if(this.updateInterval){
     clearInterval(this.updateInterval);
     this.updateInterval = false;
   }
+  if(this.attackTimeout){
+    clearTimeout(this.attackTimeout);
+    this.attackTimeout = false;
+    clearTimeout(this.attackEndTimeout);
+    this.attackEndTimeout = false;
+  }
 };
-Monster.prototype.takeDamage = function(attackUserID, fireDamage, frostDamage, arcaneDamage, skillIndex){
-  var dmg = 0;
-  if(fireDamage && util.isNumeric(fireDamage)){
-    dmg += (fireDamage * (1 - this.resistAll/100));
-  }
-  if(frostDamage && util.isNumeric(frostDamage)){
-    dmg += (frostDamage * (1 - this.resistAll/100));
-  }
-  if(arcaneDamage && util.isNumeric(arcaneDamage)){
-    dmg += (arcaneDamage * (1 - this.resistAll/100));
-  }
+Monster.prototype.takeDamage = function(attackUserID, damage, skillIndex){
+  var dmg = damage * (1 - this.resistAll/100);
   if(dmg < 0 || !util.isNumeric(dmg)){
     dmg = 1;
   }
 
   this.HP -= dmg;
-  this.onTakeDamage(this, dmg, skillIndex);
+  if(attackUserID in this.attackUsers){
+    this.attackUsers[attackUserID].damage += dmg;
+    this.attackUsers[attackUserID].startTime = Date.now();
+  }else{
+    this.attackUsers[attackUserID] = {
+      damage : dmg,
+      startTime : Date.now()
+    };
+  }
+
+  this.onTakeDamage(this, skillIndex);
   if(this.HP <= 0){
     this.death(attackUserID);
   }
@@ -215,7 +413,33 @@ Monster.prototype.addBuff = function(buffGroupIndex, actorID){
     }
   }
 };
+Monster.prototype.igniteHP = function(attackUserID, timeRate){
+  var igniteDamage = timeRate * this.maxHP * serverConfig.IGNITE_DAMAGE_RATE/100;
+  this.takeDamage(attackUserID, igniteDamage);
+};
+Monster.prototype.initDropData = function(dropData){
+  this.provideGold = dropData.provideGold;
+  this.provideExp = dropData.provideExp;
+  this.provideJewel = dropData.provideJewel;
+  this.provideScore = dropData.provideScore;
 
+  var goldCount = Math.floor(Math.random() * (dropData.goldDropMaxCount - dropData.goldDropMinCount + 1) + dropData.goldDropMinCount);
+  for(var i=0; i<goldCount; i++){
+    var goldAmount = Math.floor(Math.random() * (dropData.goldDropMax - dropData.goldDropMin + 1) + dropData.goldDropMin);
+    this.golds.push(goldAmount);
+  }
+  var isJewelDrop = dropData.jewelDropCheckRate > Math.floor((Math.random() * 100)) ? true : false;
+  if(isJewelDrop){
+    var jewelCount = Math.floor(Math.random() * (dropData.jewelDropMaxCount - dropData.jewelDropMinCount + 1) + dropData.jewelDropMinCount);
+    this.jewelCount = jewelCount;
+  }
+
+  var isBoxDrop = dropData.boxDropCheckRate > Math.floor((Math.random() * 100)) ? true : false;
+  if(isBoxDrop){
+    var boxCount = Math.floor(Math.random() * (dropData.boxDropMaxCount - dropData.boxDropMinCount + 1) + dropData.boxDropMinCount);
+    this.boxCount = boxCount;
+  }
+};
 function buffUpdateHandler(){
   var beforeConditionChill = this.conditions[gameConfig.USER_CONDITION_CHILL];
   var beforeConditionFreeze = this.conditions[gameConfig.USER_CONDITION_FREEZE];
@@ -254,7 +478,7 @@ function buffUpdateHandler(){
   var buffIndex = buffList.length;
   if(buffIndex > 0){
     while(buffIndex--){
-      switch (buffList[buffIndex].bufftype) {
+      switch (buffList[buffIndex].buffType) {
         case serverConfig.BUFF_TYPE_SET_CONDITION:
           if(buffList[buffIndex].buffEffectType === serverConfig.BUFF_EFFECT_TYPE_SET_CONDITION_CHILL){
             this.conditions[gameConfig.USER_CONDITION_CHILL] = buffList[buffIndex].actorID;
@@ -276,12 +500,13 @@ function buffUpdateHandler(){
   if(this.conditions[gameConfig.USER_CONDITION_FREEZE]){
     this.moveSpeed = 0;
     this.rotateSpeed = 0;
-    this.castSpeed = 0;
   }else if(this.conditions[gameConfig.USER_CONDITION_CHILL]){
     var decreaseFactor = (100 - serverConfig.CONDITION_CHILL_DECREASE_RATE)/100;
-    this.moveSpeed = this.moveSpeed * decreaseFactor;
-    this.rotateSpeed = this.rotateSpeed * decreaseFactor;
-    this.castSpeed = this.castSpeed * decreaseFactor;
+    this.moveSpeed = this.baseMoveSpeed * decreaseFactor;
+    this.rotateSpeed = this.baseRotateSpeed * decreaseFactor;
+  }else{
+    this.moveSpeed = this.baseMoveSpeed;
+    this.rotateSpeed = this.baseRotateSpeed;
   }
   if(this.moveSpeed > serverConfig.MAX_MOVE_SPEED){
     this.moveSpeed = serverConfig.MAX_MOVE_SPEED;
@@ -292,20 +517,25 @@ function buffUpdateHandler(){
   this.setMaxSpeed(this.moveSpeed);
   this.setRotateSpeed(this.rotateSpeed);
 
+  if( this.conditions[gameConfig.USER_CONDITION_FREEZE] && beforeConditionFreeze !== this.conditions[gameConfig.USER_CONDITION_FREEZE]){
+    this.changeState(gameConfig.OBJECT_STATE_IDLE);
+  }
   if( beforeConditionChill !== this.conditions[gameConfig.USER_CONDITION_CHILL] ||
       beforeConditionFreeze !== this.conditions[gameConfig.USER_CONDITION_FREEZE] ||
       beforeConditionIgnite !== this.conditions[gameConfig.USER_CONDITION_IGNITE]){
-          this.onChangeStat(this);
+          this.onChangeState(this);
   }
+
   if( beforeBuffListLength !== this.buffList.length){
     this.onBuffExchange(this);
   }
 };
 function regenIntervalHandler(){
   var timeRate = (Date.now() - this.regenTimer) / 1000;
-  this.regenHP(timeRate);
+  // this.regenHP(timeRate);
   if(this.conditions[gameConfig.USER_CONDITION_IGNITE]){
     this.igniteHP(this.conditions[gameConfig.USER_CONDITION_IGNITE], timeRate);
   }
   this.regenTimer = Date.now();
 };
+module.exports = Monster;

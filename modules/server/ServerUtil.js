@@ -94,7 +94,7 @@ exports.generateNearPos = function(position, range, tree, id, radius){
   // //
   // return {x : position.x + addPosX, y : position.y + addPosY};
 };
-exports.generateInsidePos = function(position, range, tree, id, radius){
+exports.generateInsidePos = function(position, range, tree, id, radius, isCheckCollision){
   var isCollision = true;
   var repeatCount = 1;
   while(isCollision){
@@ -105,16 +105,18 @@ exports.generateInsidePos = function(position, range, tree, id, radius){
     var addPosY = (Math.random() < 0.5 ? -1 : 1) * Math.floor(Math.random() * (range + 1));
     var randomPos = {x : position.x + addPosX, y : position.y + addPosY};
 
-    // var collisionObjs = util.checkCircleCollision(tree, randomPos.x - radius, randomPos.y - radius, radius, id);
-    // if(collisionObjs.length){
-    //   isCollision = true;
-    // }else if(randomPos.x < radius || randomPos.y < radius || randomPos.x + radius > gameConfig.CANVAS_MAX_SIZE.width || randomPos.y + radius > gameConfig.CANVAS_MAX_SIZE.height){
-    //   isCollision = true;
-    // }
-    // if(repeatCount > 20){
-    //   isCollision = false;
-    //   randomPos = 0;
-    // }
+    if(isCheckCollision){
+      var collisionObjs = util.checkCircleCollision(tree, randomPos.x - radius, randomPos.y - radius, radius, id);
+      if(collisionObjs.length){
+        isCollision = true;
+      }else if(randomPos.x < radius || randomPos.y < radius || randomPos.x + radius > gameConfig.CANVAS_MAX_SIZE.width || randomPos.y + radius > gameConfig.CANVAS_MAX_SIZE.height){
+        isCollision = true;
+      }
+      if(repeatCount > 20){
+        isCollision = false;
+        randomPos = 0;
+      }
+    }
   }
   return randomPos;
 };
@@ -151,8 +153,8 @@ exports.onUserChangePrivateStat = function(user){
 exports.onUserChangeStat = function(user){
   this.onNeedInformUserChangeStat(user);
 };
-exports.onUserTakeDamage = function(user, dmg, skillIndex){
-  this.onNeedInformUserTakeDamage(user, dmg, skillIndex);
+exports.onUserTakeDamage = function(user, skillIndex){
+  this.onNeedInformUserTakeDamage(user, skillIndex);
 };
 exports.onUserReduceMP = function(user){
   this.onNeedInformUserReduceMP(user);
@@ -185,7 +187,7 @@ exports.onUserDeath = function(user, attackUserID, deadUserID, deadUserName){
   var loseResource = user.decreaseResource(dropData.resourceReductionRate, dropData.goldReductionMin, dropData.jewelReductionMin);
 
   //give resource to kill user
-  if(attackUserID !== deadUserID){
+  if(attackUserID !== deadUserID && attackUserID.substr(0, 3) === gameConfig.PREFIX_USER){
     if(attackUserID in this.users){
       this.users[attackUserID].getExp(dropData.provideExp, dropData.provideScore);
       if(dropData.provideGold){
@@ -244,15 +246,139 @@ exports.onUserDeath = function(user, attackUserID, deadUserID, deadUserName){
       }
     }
   }
-  var attackUserType = this.getUserType(attackUserID);
+  if(attackUserID.substr(0, 3) === gameConfig.PREFIX_USER){
+    var attackUserType = this.getUserType(attackUserID);
+    var killFeedBackLevel = this.calcKillFeedBackLevel(attackUserID);
+    var attackUserName = this.getUserName(attackUserID);
+  }else if(attackUserID.substr(0, 3) === gameConfig.PREFIX_MONSTER){
+    attackUserType = gameConfig.CHAR_TYPE_MOB;
+    killFeedBackLevel = gameConfig.KILL_FEEDBACK_LEVEL_0;
+    if(attackUserID in this.monsters){
+      attackUserName = this.monsters[attackUserID].name;
+    }else{
+      attackUserName = "Mob";
+    }
+  }
   var deadUserType = this.getUserType(deadUserID);
-  var killFeedBackLevel = this.calcKillFeedBackLevel(attackUserID);
-  var attackUserName = this.getUserName(attackUserID);
 
   this.onNeedInformUserDeath({userID : attackUserID, userType : attackUserType, feedBackLevel : killFeedBackLevel, userName : attackUserName},
                              {userID : deadUserID, userType : deadUserType, userName : deadUserName}
                              , loseResource, skillIndexes);
   userDrop.call(this, golds, jewels, skills, user.center);
+};
+exports.onMobTakeDamage = function(mob, skillIndex){
+  this.onNeedInformMobTakeDamage(mob, skillIndex);
+};
+exports.onMobBuffExchange = function(mob){
+  this.onNeedInformMobBuffExchange(mob);
+};
+exports.onMobDeath = function(mob, attackUserID){
+  if(mob.objectID in this.monsters){
+    delete this.monsters[mob.objectID];
+    this.onNeedInformMobDeath(mob.objectID);
+  }
+  if(attackUserID in this.users && !this.users[attackUserID].isDead){
+    this.users[attackUserID].getExp(mob.provideExp, 0, 0, mob.provideScore);
+    if(mob.provideGold){
+      this.users[attackUserID].getGold(mob.provideGold);
+    }
+    if(mob.provideJewel){
+      this.users[attackUserID].getJewel(mob.provideJewel);
+    }
+  }
+  var createdObjs = [];
+  for(var i=0; i<mob.golds.length; i++){
+    var objGold = this.createOBJs(1, gameConfig.PREFIX_OBJECT_GOLD, mob.golds[i], mob.center, 20)
+    if(objGold.length){
+      createdObjs.push(objGold[0]);
+    }
+  }
+  for(var i=0; i<mob.jewelCount; i++){
+    var objJewel = this.createOBJs(1, gameConfig.PREFIX_OBJECT_JEWEL, 1, mob.center, 20);
+    if(objJewel.length){
+      createdObjs.push(objJewel[0]);
+    }
+  }
+  for(var i=0; i<mob.boxCount; i++){
+    var objBox = this.createOBJs(1, gameConfig.PREFIX_OBJECT_BOX, 1, mob.center, 20);
+    if(objBox.length){
+      createdObjs.push(objBox[0]);
+    }
+  }
+  if(createdObjs.length){
+    this.onNeedInformCreateObjs(createdObjs);
+  }
+  // for(var i=0; i<this.monsters.length; i++){
+  //   if(this.monsters[i].objectID === mobID){
+  //     this.monsters.splice(i, 1);
+  //     this.onNeedInformMobDeath(mobID);
+  //     return;
+  //   }
+  // }
+};
+exports.onMobChangeState = function(mob){
+  // var mobData = this.processMobData(mob);
+  this.onNeedInfromMobChangeState(mob);
+};
+exports.getMobTargetPos = function(mob){
+  if(mob.target in this.users){
+    var userPosX = Math.floor(this.users[mob.target].center.x);
+    var userPosY = Math.floor(this.users[mob.target].center.y);
+    var mobPosX = Math.floor(mob.center.x);
+    var mobPosY = Math.floor(mob.center.y);
+
+    var vecX = userPosX - mobPosX;
+    var vecY = userPosY - mobPosY;
+
+    var dist = Math.sqrt(Math.pow(vecX, 2) + Math.pow(vecY, 2));
+    var attackRange = Math.sqrt(Math.pow(mob.attackRange, 2));
+
+    var newVecX = vecX * (dist - attackRange)/dist;
+    var newVecY = vecY * (dist - attackRange)/dist;
+
+    return {
+      x : mobPosX + newVecX,
+      y : mobPosY + newVecY
+    }
+  }
+};
+exports.getMobDirection = function(mob){
+  if(mob.target in this.users){
+    var distX = this.users[mob.target].center.x - mob.center.x;
+    var distY = this.users[mob.target].center.y - mob.center.y;
+
+    var tangentDegree = Math.atan(distY/distX) * 180 / Math.PI;
+    if(isNaN(tangentDegree)){
+      return mob.direction;
+    }else{
+      if(distX < 0 && distY >= 0){
+        return tangentDegree + 180;
+      }else if(distX < 0 && distY < 0){
+        return tangentDegree - 180;
+      }else{
+        return tangentDegree;
+      }
+    }
+  }
+};
+exports.onMobAttackUser = function(mob){
+  if(mob.target in this.users){
+    var userPosX = Math.floor(this.users[mob.target].center.x);
+    var userPosY = Math.floor(this.users[mob.target].center.y);
+    var mobPosX = Math.floor(mob.center.x);
+    var mobPosY = Math.floor(mob.center.y);
+
+    var vecX = userPosX - mobPosX;
+    var vecY = userPosY - mobPosY;
+
+    var dist = Math.sqrt(Math.pow(vecX, 2) + Math.pow(vecY, 2));
+    var attackRange = Math.sqrt(Math.pow(mob.attackRange, 2));
+
+    //do damage to user
+    if(dist < mob.maxHitRange){
+      this.users[mob.target].takeDamage(mob.objectID, mob.damage);
+    }
+  }
 };
 exports.setAffectedEleColSkillWithEntity = function(skill, affectedID, collisionType){
   return {
@@ -486,7 +612,7 @@ exports.checkUserBuff = function(user, skillData){
 };
 
 exports.onChestDestroy = function(cht, attackUserID){
-  if(attackUserID in this.users){
+  if(attackUserID in this.users && !this.users[attackUserID].isDead){
     this.users[attackUserID].getExp(cht.chestData.provideExp, 0, cht.chestData.provideScore);
     if(cht.chestData.provideGold){
       this.users[attackUserID].getGold(cht.chestData.provideGold);

@@ -58,8 +58,6 @@ app.get('/', function(req, res){
   if(!req.cookies.facebook){
     res.cookie('facebook', false, { maxAge: 7 * 24 * 60 * 60 * 1000 });
   }
-  // res.cookie('twitter', req.cookies.twitter ? '' : 'checked'); // set cookie
-  // console.log('Cookies: ', req.cookies)
   fs.readFile('html/index.html', 'utf8', function(err, data){
     res.writeHead(200, {'Content-Type': 'text/html'});
     res.end(data);
@@ -207,11 +205,11 @@ GM.onUserEnterPortal = function(userID, randomPos){
   // io.sockets.emit('moveUserToNewPos', userID, randomPos);
   messageToClient('public', util.makePacketForm('moveUserToNewPos', userID, randomPos));
 };
-GM.onNeedInformUserTakeDamage = function(user, dmg, skillIndex){
+GM.onNeedInformUserTakeDamage = function(user, skillIndex){
   try {
     if(user){
       var userData = GM.processChangedUserStat(user);
-      userData.damagedAmount = dmg;
+      // userData.damagedAmount = dmg;
       // io.sockets.emit('userDamaged', userData, skillIndex);
       messageToClient('public', util.makePacketForm('userDamaged', userData, skillIndex));
     }
@@ -398,7 +396,25 @@ GM.onNeedInformProjectileExplode = function(projectileData){
   // io.sockets.emit('explodeProjectile', projectileData.objectID, projectileData.id, {x : projectileData.x, y : projectileData.y});
   messageToClient('public', util.makePacketForm('explodeProjectile', projectileData.objectID, projectileData.id, {x : projectileData.x, y : projectileData.y}));
 };
-
+GM.onNeedInformMobsCreate = function(mobs){
+  var mobDatas = GM.processCreatedMobDatas(mobs);
+  messageToClient('public', util.makePacketForm('mobCreated', mobDatas));
+};
+GM.onNeedInfromMobChangeState = function(mob){
+  var mobData = GM.processMobData(mob);
+  messageToClient('public', util.makePacketForm('mobChangeState', mobData));
+};
+GM.onNeedInformMobTakeDamage = function(mob, skillIndex){
+  var mobData = GM.processMobData(mob);
+  messageToClient('public', util.makePacketForm('mobTakeDamage', mobData, skillIndex));
+};
+GM.onNeedInformMobBuffExchange = function(mob){
+  var buffData = GM.processMobBuffData(mob);
+  messageToClient('public', util.makePacketForm('mobUpdateBuff', buffData));
+};
+GM.onNeedInformMobDeath = function(mobID){
+  messageToClient('public', util.makePacketForm('mobDead', mobID));
+};
 wss.on('connection', function(client, req){
   var user;
   var warnCount = 0;
@@ -492,7 +508,7 @@ wss.on('connection', function(client, req){
       }
     } catch (e) {
       var time = new Date();
-      console.log('error at onmessage ' + data.type + " " + time + " " + e);
+      console.log('error at onmessage ' + data + " " + time + " " + e);
       try {
         if(user){
           var rankDatas = GM.processScoreDatas(user.objectID);
@@ -503,6 +519,7 @@ wss.on('connection', function(client, req){
       } catch (e) {
         console.log('In on message ' + e.message);
       } finally {
+        user = null;
         client.close();
       }
     }
@@ -533,7 +550,8 @@ wss.on('connection', function(client, req){
       var time = new Date();
       console.log('At onclose ' + e.message + " " + time);
     } finally {
-      client.close();
+      user = null;
+      // client.terminate();
     }
   });
 
@@ -579,6 +597,7 @@ wss.on('connection', function(client, req){
         // var projectileDatas = GM.processProjectilesDataSettings();
         var objDatas = GM.processOBJDataSettings();
         var chestDatas = GM.processChestDataSettings();
+        var mobDatas = GM.processMobDatas();
 
         GM.addSkillData(userData);
         GM.addPrivateData(userData);
@@ -588,7 +607,7 @@ wss.on('connection', function(client, req){
         // socket.emit('syncAndSetSkills', userData);
         messageToClient('private', util.makePacketForm('syncAndSetSkills', userData), client);
         // socket.emit('resStartGame', userDatas, buffDatas, objDatas, chestDatas, rankDatas);
-        messageToClient('private', util.makePacketForm('resStartGame', userDatas, buffDatas, objDatas, chestDatas, rankDatas), client);
+        messageToClient('private', util.makePacketForm('resStartGame', userDatas, buffDatas, objDatas, chestDatas, rankDatas, mobDatas), client);
         GM.setStartBuff(user);
         if(twitter){
           GM.giveTwitterGold(user.objectID, 5000);
@@ -729,6 +748,7 @@ wss.on('connection', function(client, req){
 
           var objDatas = GM.processOBJDataSettings();
           var chestDatas = GM.processChestDataSettings();
+          var mobDatas = GM.processMobDatas();
 
           GM.addPrivateData(userData);
           var passiveList = [];
@@ -740,7 +760,7 @@ wss.on('connection', function(client, req){
           }
           GM.equipPassives(user.objectID, passiveList);
           // socket.emit('resReconnect', userData, userDatas, buffDatas, objDatas, chestDatas, rankDatas);
-          messageToClient('private', util.makePacketForm('resReconnect', userData, userDatas, buffDatas, objDatas, chestDatas, rankDatas), client);
+          messageToClient('private', util.makePacketForm('resReconnect', userData, userDatas, buffDatas, objDatas, chestDatas, rankDatas, mobDatas), client);
         }
       }
     // } catch (e) {
@@ -992,7 +1012,7 @@ wss.on('connection', function(client, req){
     // try {
       if(GM.checkSkillPossession(user.objectID, data.skillIndex)){
         var skillData = objectAssign({}, util.findData(skillTable, 'index', data.skillIndex));
-        if(GM.checkSkillCondition(user.objectID, skillData)){
+        if(GM.checkSkillCondition(user.objectID, skillData) && GM.checkSkillCooldown(user.objectID, skillData)){
           skillData.targetPosition = data.skillTargetPosition;
 
           var serverSyncFireTime = data.syncFireTime + GM.getUserTimeDiff(user.objectID);
@@ -1050,7 +1070,7 @@ wss.on('connection', function(client, req){
     // try {
       if(GM.checkSkillPossession(user.objectID, datas[0].skillIndex)){
         var skillData = objectAssign({}, util.findData(skillTable, 'index', datas[0].skillIndex));
-        if(GM.checkSkillCondition(user.objectID, skillData)){
+        if(GM.checkSkillCondition(user.objectID, skillData) && GM.checkSkillCooldown(user.objectID, skillData)){
           var serverSyncFireTime = syncFireTime + GM.getUserTimeDiff(user.objectID);
           var timeoutTime = serverSyncFireTime - Date.now();
           if(timeoutTime < serverConfig.MINIMUM_LATENCY){

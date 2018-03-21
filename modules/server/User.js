@@ -36,6 +36,7 @@ function User(socketID, userName, userStat, userBase, exp){
   this.killScore = 0;
   this.skillScore = 0;
   this.chestScore = 0;
+  this.mobScore = 0;
 
   this.score = 0;
 
@@ -978,95 +979,104 @@ User.prototype.checkSkillPossession = function(skillIndex){
 };
 User.prototype.takeDamage = function(attackUserID, fireDamage, frostDamage, arcaneDamage, damageToMP, hitBuffList, skillIndex){
   if(!this.conditions[gameConfig.USER_CONDITION_IMMORTAL]){
-    // if(this.conditions[gameConfig.USER_CONDITION_BLUR]){
-    //   this.cancelBlur();
-    // }
-    var additionalDamage = 0,
-    additionalFireDamage = 0,
-    additionalFrostDamage = 0,
-    additionalArcaneDamage = 0,
-    additionalDamageRate = 100,
-    additionalFireDamageRate = 100,
-    additionalFrostDamageRate = 100,
-    additionalArcaneDamageRate = 100;
-    if(hitBuffList){
-      var buffList = [];
-      for(var i=0; i<hitBuffList.length; i++){
-        var buffs = SUtil.findAndSetBuffs(hitBuffList[i], attackUserID);
-        for(var j=0; j<buffs.length; j++){
-          if(buffs[j].buffAdaptTime === serverConfig.BUFF_ADAPT_TIME_FIRE_AND_HIT){
-            if(buffs[j].hitUserCondition){
-              if(this.conditions[buffs[j].hitUserCondition]){
+    if(attackUserID.substr(0, 3) === gameConfig.PREFIX_MONSTER){
+      var dmg = fireDamage * (1 - this.resistAll/100);
+      this.HP -= dmg;
+      this.onTakeDamage(this);
+      if(this.HP <= 0){
+        this.death(attackUserID);
+      }
+    }else{
+      // if(this.conditions[gameConfig.USER_CONDITION_BLUR]){
+      //   this.cancelBlur();
+      // }
+      var additionalDamage = 0,
+      additionalFireDamage = 0,
+      additionalFrostDamage = 0,
+      additionalArcaneDamage = 0,
+      additionalDamageRate = 100,
+      additionalFireDamageRate = 100,
+      additionalFrostDamageRate = 100,
+      additionalArcaneDamageRate = 100;
+      if(hitBuffList){
+        var buffList = [];
+        for(var i=0; i<hitBuffList.length; i++){
+          var buffs = SUtil.findAndSetBuffs(hitBuffList[i], attackUserID);
+          for(var j=0; j<buffs.length; j++){
+            if(buffs[j].buffAdaptTime === serverConfig.BUFF_ADAPT_TIME_FIRE_AND_HIT){
+              if(buffs[j].hitUserCondition){
+                if(this.conditions[buffs[j].hitUserCondition]){
+                  buffList.push(buffs[j]);
+                }
+              }else{
                 buffList.push(buffs[j]);
               }
-            }else{
-              buffList.push(buffs[j]);
+            }
+          }
+        }
+
+        for(var i=0; i<buffList.length; i++){
+          if(buffList[i].buffType === serverConfig.BUFF_TYPE_ADD_SECONDARY_STAT){
+            if(buffList[i].buffEffectType === serverConfig.BUFF_EFFECT_TYPE_ADD_SECONDARY_STAT_DAMAGE){
+              additionalDamage += buffList[i].buffAmount;
+            }else if(buffList[i].buffEffectType === serverConfig.BUFF_EFFECT_TYPE_ADD_SECONDARY_STAT_FIRE_DAMAGE){
+              additionalFireDamage += buffList[i].buffAmount;
+            }else if(buffList[i].buffEffectType === serverConfig.BUFF_EFFECT_TYPE_ADD_SECONDARY_STAT_FROST_DAMAGE){
+              additionalFrostDamage += buffList[i].buffAmount;
+            }else if(buffList[i].buffEffectType === serverConfig.BUFF_EFFECT_TYPE_ADD_SECONDARY_STAT_ARCANE_DAMAGE){
+              additionalArcaneDamage += buffList[i].buffAmount;
+            }else if(buffList[i].buffEffectType === serverConfig.BUFF_EFFECT_TYPE_ADD_SECONDARY_STAT_DAMAGE_RATE){
+              additionalDamageRate += buffList[i].buffAmount;
+            }else if(buffList[i].buffEffectType === serverConfig.BUFF_EFFECT_TYPE_ADD_SECONDARY_STAT_FIRE_DAMAGE_RATE){
+              additionalFireDamageRate += buffList[i].buffAmount;
+            }else if(buffList[i].buffEffectType === serverConfig.BUFF_EFFECT_TYPE_ADD_SECONDARY_STAT_FROST_DAMAGE_RATE){
+              additionalFrostDamageRate += buffList[i].buffAmount;
+            }else if(buffList[i].buffEffectType === serverConfig.BUFF_EFFECT_TYPE_ADD_SECONDARY_STAT_ARCANE_DAMAGE_RATE){
+              additionalArcaneDamageRate += buffList[i].buffAmount;
             }
           }
         }
       }
 
-      for(var i=0; i<buffList.length; i++){
-        if(buffList[i].buffType === serverConfig.BUFF_TYPE_ADD_SECONDARY_STAT){
-          if(buffList[i].buffEffectType === serverConfig.BUFF_EFFECT_TYPE_ADD_SECONDARY_STAT_DAMAGE){
-            additionalDamage += buffList[i].buffAmount;
-          }else if(buffList[i].buffEffectType === serverConfig.BUFF_EFFECT_TYPE_ADD_SECONDARY_STAT_FIRE_DAMAGE){
-            additionalFireDamage += buffList[i].buffAmount;
-          }else if(buffList[i].buffEffectType === serverConfig.BUFF_EFFECT_TYPE_ADD_SECONDARY_STAT_FROST_DAMAGE){
-            additionalFrostDamage += buffList[i].buffAmount;
-          }else if(buffList[i].buffEffectType === serverConfig.BUFF_EFFECT_TYPE_ADD_SECONDARY_STAT_ARCANE_DAMAGE){
-            additionalArcaneDamage += buffList[i].buffAmount;
-          }else if(buffList[i].buffEffectType === serverConfig.BUFF_EFFECT_TYPE_ADD_SECONDARY_STAT_DAMAGE_RATE){
-            additionalDamageRate += buffList[i].buffAmount;
-          }else if(buffList[i].buffEffectType === serverConfig.BUFF_EFFECT_TYPE_ADD_SECONDARY_STAT_FIRE_DAMAGE_RATE){
-            additionalFireDamageRate += buffList[i].buffAmount;
-          }else if(buffList[i].buffEffectType === serverConfig.BUFF_EFFECT_TYPE_ADD_SECONDARY_STAT_FROST_DAMAGE_RATE){
-            additionalFrostDamageRate += buffList[i].buffAmount;
-          }else if(buffList[i].buffEffectType === serverConfig.BUFF_EFFECT_TYPE_ADD_SECONDARY_STAT_ARCANE_DAMAGE_RATE){
-            additionalArcaneDamageRate += buffList[i].buffAmount;
-          }
+      var dmg = 0;
+      var dmgToMP = 0;
+      if(fireDamage && util.isNumeric(fireDamage)){
+        var dmgFire = (fireDamage + additionalDamage + additionalFireDamage - (this.reductionAll + this.reductionFire)) * additionalDamageRate/100 * additionalFireDamageRate/100 * (1 - this.resistAll/100) * (1 - this.resistFire/100) ;
+        if(dmgFire <= 0){
+          dmgFire = 1;
+        }
+        dmg += dmgFire;
+      }
+      if(frostDamage && util.isNumeric(frostDamage)){
+        var dmgFrost = (frostDamage + additionalDamage + additionalFrostDamage - (this.reductionAll + this.reductionFrost)) * additionalDamageRate/100 * additionalFrostDamageRate/100 * (1 - this.resistAll/100) * (1 - this.resistFrost/100);
+        if(dmgFrost <= 0){
+          dmgFrost = 1;
+        }
+        dmg += dmgFrost;
+      }
+      if(arcaneDamage && util.isNumeric(arcaneDamage)){
+        var dmgArcane = (arcaneDamage + additionalDamage + additionalArcaneDamage - (this.reductionAll + this.reductionArcane)) * additionalDamageRate/100 * additionalFrostDamageRate/100 * (1 - this.resistAll/100) * (1 - this.resistArcane/100);
+        if(dmgArcane <= 0){
+          dmgArcane = 1 ;
+        }
+        dmg += dmgArcane;
+        if(util.isNumeric(damageToMP)){
+          dmgToMP = damageToMP;
         }
       }
-    }
+      if(dmg <= 0){
+        //minimum damage
+        dmg = 1;
+      }
 
-    var dmg = 0;
-    var dmgToMP = 0;
-    if(fireDamage && util.isNumeric(fireDamage)){
-      var dmgFire = (fireDamage + additionalDamage + additionalFireDamage - (this.reductionAll + this.reductionFire)) * additionalDamageRate/100 * additionalFireDamageRate/100 * (1 - this.resistAll/100) * (1 - this.resistFire/100) ;
-      if(dmgFire <= 0){
-        dmgFire = 1;
+      this.HP -= dmg;
+      this.onTakeDamage(this, skillIndex);
+      if(dmgToMP > 0){
+        this.takeDamageToMP(dmgToMP);
       }
-      dmg += dmgFire;
-    }
-    if(frostDamage && util.isNumeric(frostDamage)){
-      var dmgFrost = (frostDamage + additionalDamage + additionalFrostDamage - (this.reductionAll + this.reductionFrost)) * additionalDamageRate/100 * additionalFrostDamageRate/100 * (1 - this.resistAll/100) * (1 - this.resistFrost/100);
-      if(dmgFrost <= 0){
-        dmgFrost = 1;
+      if(this.HP <= 0){
+        this.death(attackUserID);
       }
-      dmg += dmgFrost;
-    }
-    if(arcaneDamage && util.isNumeric(arcaneDamage)){
-      var dmgArcane = (arcaneDamage + additionalDamage + additionalArcaneDamage - (this.reductionAll + this.reductionArcane)) * additionalDamageRate/100 * additionalFrostDamageRate/100 * (1 - this.resistAll/100) * (1 - this.resistArcane/100);
-      if(dmgArcane <= 0){
-        dmgArcane = 1 ;
-      }
-      dmg += dmgArcane;
-      if(util.isNumeric(damageToMP)){
-        dmgToMP = damageToMP;
-      }
-    }
-    if(dmg <= 0){
-      //minimum damage
-      dmg = 1;
-    }
-
-    this.HP -= dmg;
-    this.onTakeDamage(this, dmg, skillIndex);
-    if(dmgToMP > 0){
-      this.takeDamageToMP(dmgToMP);
-    }
-    if(this.HP <= 0){
-      this.death(attackUserID);
     }
   }
 };
@@ -1290,7 +1300,7 @@ User.prototype.lossSkills = function(lossRate){
 //   }
 //   this.onChangeStat(this);
 // };
-User.prototype.getExp = function(exp, killScore, chestScore){
+User.prototype.getExp = function(exp, killScore, chestScore, mobScore){
   if(!this.isDead){
     var userLevelData = objectAssign({}, util.findDataWithTwoColumns(userStatTable, 'type', this.type, 'level', this.level));
     if(userLevelData.needExp === -1){
@@ -1312,6 +1322,11 @@ User.prototype.getExp = function(exp, killScore, chestScore){
     }
     if(chestScore){
       this.chestScore += chestScore;
+      this.calcUserScore();
+      this.onScoreChange();
+    }
+    if(mobScore){
+      this.mobScore += mobScore;
       this.calcUserScore();
       this.onScoreChange();
     }
@@ -1510,7 +1525,7 @@ User.prototype.calcUserScore = function(){
     skillScore += getSkillScoreFactor(skillData.tier) * skillData.level;
   }
   this.skillScore = util.isNumeric(skillScore) ? skillScore : 0;
-  this.score = this.skillScore + this.killScore + this.chestScore + levelScore + jewelScore - serverConfig.SCORE_FACTOR_START;
+  this.score = this.skillScore + this.killScore + this.chestScore + this.mobScore + levelScore + jewelScore - serverConfig.SCORE_FACTOR_START;
 };
 User.prototype.addSkillTick = function(){
   this.skillTick++;
@@ -1548,6 +1563,7 @@ User.prototype.clearAll = function(){
   this.killScore = 0;
   this.killCount = 0;
   this.chestScore = 0;
+  this.mobScore = 0;
 };
 User.prototype.setReconnectLevel = function(level, exp){
   this.level = level;
@@ -1601,24 +1617,54 @@ User.prototype.setReconnectHPMP = function(HP, MP){
   }
 };
 User.prototype.applyCooldown = function(skillData){
-  var cooltime = skillData.cooldown * (100 - this.cooldownReduceRate) / 100 - 15;
+  var cooltime = skillData.cooldown * (100 - this.cooldownReduceRate) / 100 - 50;
   if(util.isNumeric(cooltime)){
-    this.cooldownSkills.push(skillData.index);
+    var isRepeatSkill = skillData.repeatCount;
+    if(isRepeatSkill){
+      var isExist = false;
+      for(var i=0; i<this.cooldownSkills.length; i++){
+        if(this.cooldownSkills[i].index === skillData.index){
+          isExist = true;
+          this.cooldownSkills[i].repeatCount ++;
+        }
+      }
+      if(!isExist){
+        this.cooldownSkills.push({
+          index : skillData.index,
+          repeatCount : 1
+        });
+      }
+    }else{
+      this.cooldownSkills.push({
+        index : skillData.index,
+        repeatCount : 1
+      });
+    }
     var thisCooldownSkills = this.cooldownSkills;
     var skillIndex = skillData.index;
     setTimeout(function(){
-      var index = thisCooldownSkills.indexOf(skillIndex);
-      if(index > -1){
-        thisCooldownSkills.splice(index, 1);
+      for(var i=0; i<thisCooldownSkills.length; i++){
+        if(thisCooldownSkills[i].index === skillIndex){
+          thisCooldownSkills.splice(i, 1);
+          break;
+        }
       }
+      // var index = thisCooldownSkills.indexOf(skillIndex);
+      // if(index > -1){
+      //   thisCooldownSkills.splice(index, 1);
+      // }
     }, cooltime);
   }
 };
 User.prototype.checkCooldown = function(skillData){
   for(var i=0; i<this.cooldownSkills.length; i++){
-    if(this.cooldownSkills[i] === skillData.index){
+    if(this.cooldownSkills[i].index === skillData.index){
       if(skillData.repeatCount){
-        return true;
+        if(this.cooldownSkills[i].repeatCount > skillData.repeatCount){
+          return false;
+        }else{
+          return true;
+        }
       }else{
         return false;
       }
