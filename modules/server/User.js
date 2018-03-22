@@ -1360,7 +1360,7 @@ User.prototype.levelUp = function(){
   var userLevelData = objectAssign({}, util.findDataWithTwoColumns(userStatTable, 'type', this.type, 'level', this.level));
   //add levelBonus
   //additional level up check.
-  this.updateUserBaseStat();
+  this.updateUserBaseStat(userLevelData);
   // this.initStat();
   // this.restoreWhenLevelUp();
   // this.getExp(0);
@@ -1503,8 +1503,8 @@ User.prototype.getInherentPassiveSkill = function(charType){
   }
 };
 //execute when level up or down
-User.prototype.updateUserBaseStat = function(){
-  var userLevelData = objectAssign({}, util.findDataWithTwoColumns(userStatTable, 'type', this.type, 'level', this.level));
+User.prototype.updateUserBaseStat = function(userLevelData){
+  // var userLevelData = objectAssign({}, util.findDataWithTwoColumns(userStatTable, 'type', this.type, 'level', this.level));
 
   this.basePower = userLevelData.power;
   this.baseMagic = userLevelData.magic;

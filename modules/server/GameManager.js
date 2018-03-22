@@ -2181,19 +2181,19 @@ function affectedIntervalHandler(){
           }
         }
       }else if(affectedEles[i].collisionType === serverConfig.COLLISION_SKILL_WITH_CHEST_GROUND){
-        if(affectedEles[i].actorID in this.users){
-          if(affectedEles[i].fireDamage || affectedEles[i].frostDamage || affectedEles[i].arcaneDamage){
-            if(affectedEles[i].isTick){
+        // if(affectedEles[i].actorID in this.users){
+          // if(affectedEles[i].fireDamage || affectedEles[i].frostDamage || affectedEles[i].arcaneDamage){
+            // if(affectedEles[i].isTick){
               // var isMeetCondition = this.addUserSkillTick(affectedEles[i].actorID);
               // if(isMeetCondition){
               //   this.addUserExp(affectedEles[i].actorID, serverConfig.OBSTACLE_CHEST_GROUND_EXP);
               // }
-            }else{
+            // }else{
               // this.addUserExp(affectedEles[i].actorID, serverConfig.OBSTACLE_CHEST_GROUND_EXP);
               // this.users[affectedEles[i].actorID].getExp(serverConfig.OBSTACLE_CHEST_GROUND_EXP);
-            }
-          }
-        }
+            // }
+          // }
+        // }
       }else if(affectedEles[i].collisionType === serverConfig.COLLISION_USER_WITH_COLLECTION_SKILL){
         this.getObj(affectedEles[i].affectedID, affectedEles[i].skillIndex, affectedEles[i].actorID, affectedEles[i].affectedObj);
       }else if(affectedEles[i].collisionType === serverConfig.COLLISION_USER_WITH_COLLECTION_GOLD){

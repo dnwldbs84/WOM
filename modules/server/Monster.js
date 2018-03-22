@@ -486,8 +486,6 @@ function buffUpdateHandler(){
             this.conditions[gameConfig.USER_CONDITION_FREEZE] = buffList[buffIndex].actorID;
           }else if(buffList[buffIndex].buffEffectType === serverConfig.BUFF_EFFECT_TYPE_SET_CONDITION_IGNITE){
             this.conditions[gameConfig.USER_CONDITION_IGNITE] = buffList[buffIndex].actorID;
-          }else{
-            console.log('check buff index : ' + buffList[buffIndex]);
           }
           break;
       }
