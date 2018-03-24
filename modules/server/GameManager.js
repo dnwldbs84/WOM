@@ -502,7 +502,9 @@ GameManager.prototype.createMobs = function(count, type){
   this.onNeedInformMobsCreate(mobs);
 };
 GameManager.prototype.createMob = function(type){
-  if(type === serverConfig.MOB_GEN_TYPE_SMALL || type === serverConfig.MOB_GEN_TYPE_MEDIUM){
+  if(type === serverConfig.MOB_GEN_TYPE_SMALL ||
+     type === serverConfig.MOB_GEN_TYPE_SMALL_CENTER ||
+     type === serverConfig.MOB_GEN_TYPE_MEDIUM){
     //set gen type
     var mobGenDatas = objectAssign({}, util.findAllDatas(mobGenTable, 'mobGenType', type));
     if(Object.keys(mobGenDatas).length){
@@ -1685,10 +1687,13 @@ function longTimeIntervalHandler(){
     // setTimeout(setChestIndexAndDoCreateChest.bind(this), serverConfig.CHEST_CHAIN_CREATE_TIME);
   // }
   var smallMobCount = 0;
+  var smallCenterMobCount = 0;
   var mediumMobcount = 0;
   for(var index in this.monsters){
     if(this.monsters[index].mobGenType === serverConfig.MOB_GEN_TYPE_SMALL){
       smallMobCount ++;
+    }else if(this.monsters[index].mobGenType === serverConfig.MOB_GEN_TYPE_SMALL_CENTER){
+      smallCenterMobCount ++;
     }else if(this.monsters[index].mobGenType === serverConfig.MOB_GEN_TYPE_MEDIUM){
       mediumMobcount ++;
     }
@@ -1696,6 +1701,10 @@ function longTimeIntervalHandler(){
   var additionalSmallMobCount = (serverConfig.MOB_SMALL_COUNT + Math.floor(Object.keys(this.users).length * serverConfig.ADDITIONAL_MOB_SMALL_PER_USER) - smallMobCount);
   if(additionalSmallMobCount > 0){
     this.createMobs(additionalSmallMobCount, serverConfig.MOB_GEN_TYPE_SMALL);
+  }
+  var additionalCenterSmallMobCount = (serverConfig.MOB_SMALL_CENTER_COUNT + Math.floor(Object.keys(this.users).length * serverConfig.ADDITIONAL_MOB_SMALL_CENTER_PER_USER) - smallCenterMobCount);
+  if(additionalCenterSmallMobCount > 0){
+    this.createMobs(additionalCenterSmallMobCount, serverConfig.MOB_GEN_TYPE_SMALL_CENTER);
   }
   var additionalMediumMobcount = (serverConfig.MOB_MEDIUM_COUNT + Math.floor(Object.keys(this.users).length * serverConfig.ADDITIONAL_MOB_MEDIUM_PER_USER) - mediumMobcount);
   if( additionalMediumMobcount > 0){
