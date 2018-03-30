@@ -374,6 +374,7 @@ GM.onNeedInformCreateObjs = function(objs){
     // io.sockets.emit('createOBJs', objDatas);
     messageToClient('public', util.makePacketForm('createOBJs', objDatas));
   } catch (e) {
+    var time = new Date();
     console.log('onNeedInformCreateObjs ' + time);
   }
 };
@@ -386,6 +387,7 @@ GM.onNeedInformSkillData = function(socketID, possessSkills){
     // io.to(socketID).emit('updateSkillPossessions', possessSkills);
     messageToClient('private', util.makePacketForm('updateSkillPossessions', possessSkills), socketID);
   } catch (e) {
+    var time = new Date();
     console.log('onNeedInformSkillData ' + time);
   }
 };
@@ -417,6 +419,7 @@ GM.onNeedInformMobDeath = function(mobID){
   messageToClient('public', util.makePacketForm('mobDead', mobID));
 };
 wss.on('connection', function(client, req){
+  // client.binaryType = 'arraybuffer';
   var user;
   var warnCount = 0;
   var isReconnecting = false;
@@ -426,7 +429,7 @@ wss.on('connection', function(client, req){
   client.on('message', function(msg){
     try {
       client.isAlive = true;
-      var data = JSON.parse(msg);
+      var data = util.decodePacket(msg);
       var vars = data.vars;
       switch (data.type) {
         case 'reqStartGame':
@@ -1119,6 +1122,14 @@ var pingpongInterval = setInterval(function(){
     console.log('pingpongInterval Error');
   }
 }, 30000);
+//
+// var report = function(){
+//   gc();
+//   var rss = process.memoryUsage().rss / 1024 / 1024;
+//   console.log('clients: %d, rss: %d', wss.clients.size, rss);
+// }
+// setInterval(report, 30000);
+// report();
 // function makePacketForm(type){
 //   var vars = [];
 //   for(var i=1; i<arguments.length; i++){

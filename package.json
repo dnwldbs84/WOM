@@ -21,8 +21,9 @@
     "cookie-parser": "^1.4.3",
     "csvjson": "^4.3.4",
     "express": "^4.15.4",
+    "msgpack-js": "^0.3.0",
     "quadtree-lib": "^1.0.7",
-    "socket.io": "^2.0.3"
+    "ws": "^5.1.0"
   },
   "devDependencies": {
     "grunt": "^1.0.1",

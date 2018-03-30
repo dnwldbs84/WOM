@@ -1,6 +1,7 @@
 var gameConfig = require('./gameConfig.json');
 var radianFactor = Math.PI/180;
 var objectAssign = require('../../modules/public/objectAssign.js');
+var msgpack = require('msgpack-js');
 
 //must use with bind or call method
 exports.rotate = function(deltaTime){
@@ -982,8 +983,11 @@ exports.makePacketForm = function(type){
   for(var i=1; i<arguments.length; i++){
     vars.push(arguments[i]);
   }
-  return JSON.stringify({
+  return msgpack.encode({
     type: type,
     vars: vars
   });
-}
+};
+exports.decodePacket = function(data){
+    return msgpack.decode(data);
+};
