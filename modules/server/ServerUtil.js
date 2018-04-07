@@ -165,8 +165,8 @@ exports.onUserGetExp = function(user, resource){
 exports.onUserGetResource = function(user, resource){
   this.onNeedInformUserGetResource(user, resource);
 };
-exports.onUserGetSkill = function(user, skillIndex){
-  this.onNeedInformUserGetSkill(user.socketID, skillIndex);
+exports.onUserGetSkill = function(user, skillIndex, possessSkills){
+  this.onNeedInformUserGetSkill(user.socketID, skillIndex, possessSkills);
 };
 exports.onUserSkillChangeToResource = function(user, skillIndex){
   this.onNeedInformUserSkillChangeToResource(user.socketID, skillIndex);
@@ -197,10 +197,11 @@ exports.onUserDeath = function(user, attackUserID, deadUserID, deadUserName){
         this.users[attackUserID].getJewel(dropData.provideJewel);
       }
       if(skillIndexes.attackUserSkill){
-        var possessSkills = this.users[attackUserID].getSkill(skillIndexes.attackUserSkill);
-        if(possessSkills){
-          this.onNeedInformSkillData(this.users[attackUserID].socketID, possessSkills);
-        }
+        this.users[attackUserID].getSkill(skillIndexes.attackUserSkill);
+        // var possessSkills = this.users[attackUserID].getSkill(skillIndexes.attackUserSkill);
+        // if(possessSkills){
+        //   this.onNeedInformSkillData(this.users[attackUserID].socketID, possessSkills);
+        // }
       }
     }else{
       console.log(attackUserID + ' is not exists');
@@ -261,8 +262,8 @@ exports.onUserDeath = function(user, attackUserID, deadUserID, deadUserName){
   }
   var deadUserType = this.getUserType(deadUserID);
 
-  this.onNeedInformUserDeath({userID : attackUserID, userType : attackUserType, feedBackLevel : killFeedBackLevel, userName : attackUserName},
-                             {userID : deadUserID, userType : deadUserType, userName : deadUserName}
+  this.onNeedInformUserDeath({uID : attackUserID, tp : attackUserType, fl : killFeedBackLevel, nm : attackUserName},
+                             {uID : deadUserID, tp : deadUserType, nm : deadUserName}
                              , loseResource, skillIndexes);
   userDrop.call(this, golds, jewels, skills, user.center);
 };
@@ -303,6 +304,12 @@ exports.onMobDeath = function(mob, attackUserID){
     var objBox = this.createOBJs(1, gameConfig.PREFIX_OBJECT_BOX, 1, mob.center, 20);
     if(objBox.length){
       createdObjs.push(objBox[0]);
+    }
+  }
+  for(var i=0; i<mob.skills.length; i++){
+    var objSkill = this.createOBJs(1, gameConfig.PREFIX_OBJECT_SKILL, mob.skills[i], mob.center, 20);
+    if(objSkill.length){
+      createdObjs.push(objSkill[0]);
     }
   }
   if(createdObjs.length){
@@ -411,7 +418,8 @@ exports.setAffectedEleColUserWithCollection = function(userID, affectedObj, coll
     expAmount : affectedObj.expAmount || 0,
     goldAmount : affectedObj.goldAmount || 0,
     jewelAmount : affectedObj.jewelAmount || 0,
-    skillIndex : affectedObj.skillIndex || 0
+    skillIndex : affectedObj.skillIndex || 0,
+    buffGroupIndex : affectedObj.buffGroupIndex || 0
   };
 };
 exports.setAffectedEleColSkillWithObject = function(skill, affectedObjID, collisionType, isTickSkill){

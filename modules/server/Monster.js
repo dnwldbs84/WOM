@@ -439,6 +439,34 @@ Monster.prototype.initDropData = function(dropData){
     var boxCount = Math.floor(Math.random() * (dropData.boxDropMaxCount - dropData.boxDropMinCount + 1) + dropData.boxDropMinCount);
     this.boxCount = boxCount;
   }
+  var isSkillDrop = dropData.skillDropCheckRate > Math.floor((Math.random() * 100)) ? true : false;
+  if(isSkillDrop){
+    var totalRate = 0;
+    for(var i=0; i<10; i++){
+      if(dropData['skillDropRate' + (i + 1)]){
+        totalRate += dropData['skillDropRate' + (i + 1)];
+      }else{
+        break;
+      }
+    }
+    var skillCount = Math.floor(Math.random() * (dropData.skillDropMaxCount - dropData.skillDropMinCount + 1) + dropData.skillDropMinCount);
+    for(var i=0; i<skillCount; i++){
+      var randVal = Math.floor(Math.random() * totalRate);
+      var sumOfRate = 0;
+      for(var j=0; j<10; j++){
+        if(dropData['skillDropRate' + (j + 1)]){
+          sumOfRate += dropData['skillDropRate' + (j + 1)];
+          if(sumOfRate > randVal){
+            var skillIndex = dropData['dropSkillIndex' + (j + 1)];
+            this.skills.push(skillIndex);
+            break;
+          }
+        }else{
+          break;
+        }
+      }
+    }
+  }
 };
 function buffUpdateHandler(){
   var beforeConditionChill = this.conditions[gameConfig.USER_CONDITION_CHILL];

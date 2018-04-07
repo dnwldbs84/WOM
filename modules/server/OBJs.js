@@ -26,7 +26,7 @@ OBJSkill.prototype.setCollectionEle = function(){
     y : this.position.y,
     width : this.size.width,
     height : this.size.height,
-    skillIndex : this.skillIndex,
+    skillIndex : this.skillIndex
   }
 };
 
@@ -270,3 +270,33 @@ OBJBox.prototype.setCollectionEle = function(){
   }
 };
 module.exports.OBJBox = OBJBox;
+
+function OBJBuff(objID, resourceIndex){
+  GameObject.call(this);
+  this.resourceIndex = resourceIndex;
+  this.objectID = objID;
+  this.startTime = Date.now();
+
+  this.buffGroupIndex = 0;
+
+  this.collectionEle = {};
+}
+OBJBuff.prototype = Object.create(GameObject.prototype);
+OBJBuff.prototype.constructor = OBJBuff;
+
+OBJBuff.prototype.initOBJBuff = function(position, radius, buffGroupIndex){
+  this.setSize(radius * 2, radius * 2);
+  this.setPosition(position.x - radius, position.y - radius);
+  this.buffGroupIndex = buffGroupIndex;
+};
+OBJBuff.prototype.setCollectionEle = function(){
+  this.collectionEle = {
+    id : this.objectID,
+    x : this.position.x,
+    y : this.position.y,
+    width : this.size.width,
+    height : this.size.height,
+    buffGroupIndex : this.buffGroupIndex
+  }
+};
+module.exports.OBJBuff = OBJBuff;
