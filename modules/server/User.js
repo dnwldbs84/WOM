@@ -774,8 +774,8 @@ User.prototype.getSkill = function(index){
     }
     if(!possessSkill){
       this.possessSkills.push(skillData.index);
-      this.onGetSkill(this, index);
-      return this.possessSkills;
+      this.onGetSkill(this, index, this.possessSkills);
+      // return this.possessSkills;
     }else{
       var goldAmount = skillData.exchangeToGold;
       var jewelAmount = skillData.exchangeToJewel;
@@ -1158,8 +1158,8 @@ User.prototype.decreaseResource = function(rate, goldReductionMin, jewelReductio
   this.gold -= loseGoldAmount;
   this.jewel -= loseJewelAmount;
   return{
-    goldLoseAmount : loseGoldAmount,
-    jewelLoseAmount : loseJewelAmount
+    gL : loseGoldAmount,
+    jL : loseJewelAmount
   };
 };
 User.prototype.lossSkills = function(lossRate){
@@ -1274,10 +1274,10 @@ User.prototype.lossSkills = function(lossRate){
         }
 
         return {
-          baseSkill : this.baseSkill,
-          inherentPassiveSkill : this.inherentPassiveSkill,
-          possessSkills : this.possessSkills,
-          lostSkills : lossSkills,
+          bS : this.baseSkill,
+          iPS : this.inherentPassiveSkill,
+          pS : this.possessSkills,
+          lS : lossSkills,
 
           attackUserSkill : attackUserSkillIndex || 0
         };

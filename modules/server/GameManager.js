@@ -10,16 +10,18 @@ var SkillCollider = SkillColliders.SkillCollider;
 var ProjectileCollider = SkillColliders.ProjectileCollider;
 
 var csvJson = require('../public/csvjson.js');
+var csvJsonOption = {delimiter : ',', quote : '"'};
 
 var dataJson = require('../public/data.json');
 var serverDataJson = require('./serverData.json');
 
-var skillTable = csvJson.toObject(dataJson.skillData, {delimiter : ',', quote : '"'});
-var chestTable = csvJson.toObject(dataJson.chestData, {delimiter : ',', quote : '"'});
-var obstacleTable = csvJson.toObject(dataJson.obstacleData, {delimiter : ',', quote : '"'});
-var mobTable = csvJson.toObject(dataJson.mobData, {delimiter : ',', quote : '"'});
-var mobGenTable = csvJson.toObject(serverDataJson.mobGenData, {delimiter : ',', quote : '"'});
-var dropGroupTable = csvJson.toObject(serverDataJson.dropGroupData, {delimiter : ',', quote : '"'});
+var skillTable = csvJson.toObject(dataJson.skillData, csvJsonOption);
+var chestTable = csvJson.toObject(dataJson.chestData, csvJsonOption);
+var obstacleTable = csvJson.toObject(dataJson.obstacleData, csvJsonOption);
+var mobTable = csvJson.toObject(dataJson.mobData, csvJsonOption);
+var mobGenTable = csvJson.toObject(serverDataJson.mobGenData, csvJsonOption);
+var dropGroupTable = csvJson.toObject(serverDataJson.dropGroupData, csvJsonOption);
+var objBuffTable = csvJson.toObject(dataJson.objBuffData, csvJsonOption);
 // var map = require('../public/map.json');
 
 var Monster = require('./Monster.js');
@@ -30,6 +32,7 @@ var OBJGold = OBJs.OBJGold;
 var OBJJewel = OBJs.OBJJewel;
 var OBJChest = OBJs.OBJChest;
 var OBJBox = OBJs.OBJBox;
+var OBJBuff = OBJs.OBJBuff;
 
 var objectAssign = require('../public/objectAssign');
 // var QuadTree = require('quadtree-lib');
@@ -87,7 +90,8 @@ function GameManager(){
   this.addedObjJewels = [];
   this.objBoxs = [];
   this.addedObjBoxs = [];
-
+  this.objBuffs = [];
+  this.addedObjBuffs = [];
   // this.objExpsCount = serverConfig.OBJ_EXP_MIN_COUNT;
   // this.objSkillsCount = serverConfig.OBJ_SKILL_MIN_COUNT;
   // this.objBoxsCount = serverConfig.OBJ_BOX_COUNT;
@@ -119,7 +123,7 @@ function GameManager(){
   this.onNeedInformChestDamaged = new Function();
   this.onNeedInformDeleteChest = new Function();
 
-  this.onNeedInformSkillData = new Function();
+  // this.onNeedInformSkillData = new Function();
   this.onNeedInformProjectileDelete = new Function();
   this.onNeedInformProjectileExplode = new Function();
 
@@ -406,6 +410,31 @@ GameManager.prototype.createOBJs = function(count, type, amount, nearPosition, n
         createdObjs.push(objBox);
       }
     }
+  }else if(type === gameConfig.PREFIX_OBJECT_BUFF){
+    for(var i=0; i<count; i++){
+      var randomID = SUtil.generateRandomUniqueID(this.objBuffs, gameConfig.PREFIX_OBJECT_BUFF);
+      //find buff
+      var objBuffIndex = Math.floor(Math.random() * objBuffTable.length);
+      var objBuffData = objBuffTable[objBuffIndex];
+
+      var objBuff = new OBJBuff(randomID, objBuffData.resourceIndex);
+      var radius = gameConfig.OBJ_BUFF_RADIUS;
+
+      if(nearPosition){
+        var randomPos = SUtil.generateNearPos(nearPosition, range, staticTree, randomID, radius);
+      }else{
+        randomPos = SUtil.generateRandomPos(collectionTree, 0, 0, gameConfig.CANVAS_MAX_SIZE.width - radius, gameConfig.CANVAS_MAX_SIZE.height - radius,
+                                            radius, serverConfig.OBJ_GOLD_RANGE_WITH_OTHERS, randomID, staticTree);
+      }
+      if(randomPos){
+        objBuff.initOBJBuff(randomPos, radius, objBuffData.buffGroupIndex);
+        objBuff.setCollectionEle();
+
+        this.objBuffs.push(objBuff);
+        this.addedObjBuffs.push(objBuff);
+        createdObjs.push(objBuff);
+      }
+    }
   }else{
     console.log('check objs prefix : ' + type);
   }
@@ -491,6 +520,19 @@ GameManager.prototype.createBoxsToRandomPosition = function(count){
     this.onNeedInformCreateObjs(createdObjs);
   }
 };
+GameManager.prototype.createBuffToRandomPosition = function(count){
+  var createdObjs = [];
+  for(var i=0; i<count; i++){
+    var objBuff = this.createOBJs(1, gameConfig.PREFIX_OBJECT_BUFF, 1);
+      // {x : tree.posX + tree.radius, y : tree.posY + tree.radius}, tree.radius + 40);
+    if(objBuff.length){
+      createdObjs.push(objBuff[0]);
+    }
+  }
+  if(createdObjs.length){
+    this.onNeedInformCreateObjs(createdObjs);
+  }
+};
 GameManager.prototype.createMobs = function(count, type){
   var mobs = [];
   for(var i=0; i<count; i++){
@@ -502,58 +544,58 @@ GameManager.prototype.createMobs = function(count, type){
   this.onNeedInformMobsCreate(mobs);
 };
 GameManager.prototype.createMob = function(type){
-  if(type === serverConfig.MOB_GEN_TYPE_SMALL ||
-     type === serverConfig.MOB_GEN_TYPE_SMALL_CENTER ||
-     type === serverConfig.MOB_GEN_TYPE_MEDIUM){
+  // if(type === serverConfig.MOB_GEN_TYPE_SMALL ||
+  //    type === serverConfig.MOB_GEN_TYPE_SMALL_CENTER ||
+  //    type === serverConfig.MOB_GEN_TYPE_MEDIUM){
     //set gen type
-    var mobGenDatas = objectAssign({}, util.findAllDatas(mobGenTable, 'mobGenType', type));
-    if(Object.keys(mobGenDatas).length){
-      var index = Math.floor(Math.random() * Object.keys(mobGenDatas).length);
-      var mobGenData = mobGenDatas[index];
-      var mobDatas = util.getMobs(mobGenData, mobTable);
-      if(mobDatas.length){
-        var mobIndex = Math.floor(Math.random() * mobDatas.length);
-        var mobData = mobDatas[mobIndex];
+  var mobGenDatas = objectAssign({}, util.findAllDatas(mobGenTable, 'mobGenType', type));
+  if(Object.keys(mobGenDatas).length){
+    var index = Math.floor(Math.random() * Object.keys(mobGenDatas).length);
+    var mobGenData = mobGenDatas[index];
+    var mobDatas = util.getMobs(mobGenData, mobTable);
+    if(mobDatas.length){
+      var mobIndex = Math.floor(Math.random() * mobDatas.length);
+      var mobData = mobDatas[mobIndex];
 
-        var mob = new Monster(mobData, mobGenData);
-        var randomID = SUtil.generateRandomUniqueID(this.monsters, gameConfig.PREFIX_MONSTER);
+      var mob = new Monster(mobData, mobGenData);
+      var randomID = SUtil.generateRandomUniqueID(this.monsters, gameConfig.PREFIX_MONSTER);
 
-        mob.assignID(randomID);
-        mob.setSize(mobData.size, mobData.size);
-        var randomDirection = Math.random() > 0.5 ? 1 : -1 * Math.floor(Math.random() * 180);
+      mob.assignID(randomID);
+      mob.setSize(mobData.size, mobData.size);
+      var randomDirection = Math.random() > 0.5 ? 1 : -1 * Math.floor(Math.random() * 180);
 
-        mob.setDirection(randomDirection);
-        var insidePosition = SUtil.generateInsidePos({x : mobGenData.genPosX, y : mobGenData.genPosY}, mobGenData.freeMoveRange, staticTree, randomID, mobData.size, true);
-        if(insidePosition){
-          mob.setPosition(insidePosition.x, insidePosition.y);
-          mob.initEntityEle();
-          var dropData = objectAssign({}, util.findData(dropGroupTable, 'index', mobData.dropIndex));
-          mob.initDropData(dropData);
+      mob.setDirection(randomDirection);
+      var insidePosition = SUtil.generateInsidePos({x : mobGenData.genPosX, y : mobGenData.genPosY}, mobGenData.freeMoveRange, staticTree, randomID, mobData.size, true);
+      if(insidePosition){
+        mob.setPosition(insidePosition.x, insidePosition.y);
+        mob.initEntityEle();
+        var dropData = objectAssign({}, util.findData(dropGroupTable, 'index', mobData.dropIndex));
+        mob.initDropData(dropData);
 
-          mob.onNeedToGetMobTarget = getMobTarget.bind(this);
-          mob.onNeedToGetMobTargetPos = SUtil.getMobTargetPos.bind(this);
-          mob.onNeedToGetMobDirection = SUtil.getMobDirection.bind(this);
-          mob.onChangeState = SUtil.onMobChangeState.bind(this);
-          mob.onAttackUser = SUtil.onMobAttackUser.bind(this);
+        mob.onNeedToGetMobTarget = getMobTarget.bind(this);
+        mob.onNeedToGetMobTargetPos = SUtil.getMobTargetPos.bind(this);
+        mob.onNeedToGetMobDirection = SUtil.getMobDirection.bind(this);
+        mob.onChangeState = SUtil.onMobChangeState.bind(this);
+        mob.onAttackUser = SUtil.onMobAttackUser.bind(this);
 
-          mob.onMove = onMoveCalcCompelPos.bind(mob);
-          mob.onTakeDamage = SUtil.onMobTakeDamage.bind(this);
-          mob.onBuffExchange = SUtil.onMobBuffExchange.bind(this);
-          mob.onDeath = SUtil.onMobDeath.bind(this);
+        mob.onMove = onMoveCalcCompelPos.bind(mob);
+        mob.onTakeDamage = SUtil.onMobTakeDamage.bind(this);
+        mob.onBuffExchange = SUtil.onMobBuffExchange.bind(this);
+        mob.onDeath = SUtil.onMobDeath.bind(this);
 
-          this.monsters[mob.objectID] = mob;
-          // this.monsters.push(mob);
-          mob.startUpdate();
-          mob.changeState(gameConfig.OBJECT_STATE_IDLE);
-          return mob;
-        }else{
-          return false;
-        }
+        this.monsters[mob.objectID] = mob;
+        // this.monsters.push(mob);
+        mob.startUpdate();
+        mob.changeState(gameConfig.OBJECT_STATE_IDLE);
+        return mob;
+      }else{
+        return false;
       }
-    }else{
-      return false;
     }
+  }else{
+    return false;
   }
+  // }
   return false;
   // if(type === serverConfig.MOB_GEN_TYPE_SMALL){
   //   // var randomID = SUtil.generateRandomUniqueID(this.monsters, gameConfig.PREFIX_MONSTER);
@@ -579,10 +621,11 @@ GameManager.prototype.getObj = function(objID, affectNum, userID, treeObj){
     if(objID.substr(0, 3) === gameConfig.PREFIX_OBJECT_SKILL){
       for(var i=0; i<this.objSkills.length; i++){
         if(this.objSkills[i].objectID === objID){
-          var possessSkills = this.users[userID].getSkill(affectNum);
-          if(possessSkills){
-            this.onNeedInformSkillData(this.users[userID].socketID, possessSkills);
-          }
+          this.users[userID].getSkill(affectNum);
+          // var possessSkills = this.users[userID].getSkill(affectNum);
+          // if(possessSkills){
+          //   this.onNeedInformSkillData(this.users[userID].socketID, possessSkills);
+          // }
           this.objSkills.splice(i, 1);
           break;
         }
@@ -625,10 +668,11 @@ GameManager.prototype.getBox = function(objID, box, userID, treeObj){
           this.users[userID].getJewel(box.jewelAmount);
         }
         if(box.skillIndex){
-          var possessSkills = this.users[userID].getSkill(box.skillIndex);
-          if(possessSkills){
-            this.onNeedInformSkillData(this.users[userID].socketID, possessSkills);
-          }
+          this.users[userID].getSkill(box.skillIndex);
+          // var possessSkills = this.users[userID].getSkill(box.skillIndex);
+          // if(possessSkills){
+          //   this.onNeedInformSkillData(this.users[userID].socketID, possessSkills);
+          // }
         }
         this.objBoxs.splice(i, 1);
         this.onNeedInformDeleteObj(objID);
@@ -636,7 +680,20 @@ GameManager.prototype.getBox = function(objID, box, userID, treeObj){
       }
     }
   }
-}
+};
+GameManager.prototype.getBuff = function(objID, buffGroupIndex, userID, treeObj){
+  if(userID in this.users && !this.users[userID].isDead){
+    removeOBJs.push(treeObj);
+    for(var i=0; i<this.objBuffs.length; i++){
+      if(this.objBuffs[i].objectID === objID){
+        this.users[userID].addBuff(buffGroupIndex, userID);
+        this.objBuffs.splice(i, 1);
+        this.onNeedInformDeleteObj(objID);
+        return;
+      }
+    }
+  }
+};
 // GameManager.prototype.deleteObj = function(objID){
 //   if(objID.substr(0,3) === gameConfig.PREFIX_OBJECT_EXP){
 //     for(var i=0; i<this.objExps.length; i++){
@@ -721,7 +778,7 @@ GameManager.prototype.initializeUser = function(user, baseSkill, possessSkills, 
   //initialize variables;
   user.assignID(randomID);
 
-  user.setSize(serverConfig.USER_BODY_SIZE, serverConfig.USER_BODY_SIZE);
+  user.setSize(gameConfig.USER_BODY_SIZE, gameConfig.USER_BODY_SIZE);
   // user.setPosition(10, 10);
   // this.setUserPosition(user.objectID);
 
@@ -835,7 +892,7 @@ GameManager.prototype.checkCheat = function(userData){
       var distY = Math.abs(userData.position.y - lastPosition.y);
       var dist = Math.sqrt(Math.pow(distX,2) + Math.pow(distY,2));
       if(dist > this.users[userData.objectID].maxSpeed * timeSpan * serverConfig.TOLERANCE_LIMIT_RATE){
-        return lastPosition;
+        return { x : Math.floor(lastPosition.x), y : Math.floor(lastPosition.y) };
       }
     }
     return false;
@@ -982,34 +1039,30 @@ GameManager.prototype.getInherentPassiveSkill = function(userID, charType){
   }
 };
 GameManager.prototype.processUserDataSetting = function(user){
-  try {
-    return {
-      objectID : user.objectID,
-      type : user.type,
-      name : user.name,
+  return {
+    oID : user.objectID,
+    tp : user.type,
+    nm : user.name,
 
-      currentState : user.currentState,
-      position : user.position,
-      targetPosition : user.targetPosition,
-      maxSpeed : user.maxSpeed,
-      direction : user.direction,
-      rotateSpeed : user.rotateSpeed,
-      size : user.size,
+    cs : user.currentState,
+    pos : user.position,
+    tpos : user.targetPosition,
+    msp : user.maxSpeed,
+    dir : user.direction,
+    rsp : user.rotateSpeed,
+    // size : user.size,
 
-      level : user.level,
-      exp : user.exp,
+    lv : user.level,
+    ep : user.exp,
 
-      maxHP : user.maxHP,
-      maxMP : user.maxMP,
-      HP : user.HP,
-      MP : user.MP,
-      castSpeed : user.castSpeed,
+    mHP : user.maxHP,
+    mMP : user.maxMP,
+    HP : user.HP,
+    MP : user.MP,
+    csp : user.castSpeed,
 
-      conditions : user.conditions
-    };
-  } catch (e) {
-    throw e;
-  }
+    cdt : user.conditions
+  };
 };
 // data setting for send to client
 GameManager.prototype.processUserDataSettings = function(){
@@ -1022,32 +1075,32 @@ GameManager.prototype.processUserDataSettings = function(){
     // };
     if(!this.users[index].isDead){
       userData.push({
-        objectID : index,
-        type : this.users[index].type,
-        name : this.users[index].name,
+        oID : index,
+        tp : this.users[index].type,
+        nm : this.users[index].name,
 
-        killScore : this.users[index].killScore,
-        totalScore : this.users[index].score,
+        // killScore : this.users[index].killScore,
+        // totalScore : this.users[index].score,
 
-        currentState : this.users[index].currentState,
-        position : this.users[index].position,
-        targetPosition : this.users[index].targetPosition,
+        cs : this.users[index].currentState,
+        pos : this.users[index].position,
+        tpos : this.users[index].targetPosition,
 
-        maxSpeed : this.users[index].maxSpeed,
-        direction : this.users[index].direction,
-        rotateSpeed :  this.users[index].rotateSpeed,
-        size : this.users[index].size,
+        msp : this.users[index].maxSpeed,
+        dir : this.users[index].direction,
+        rsp :  this.users[index].rotateSpeed,
+        // size : this.users[index].size,
 
-        level : this.users[index].level,
-        exp : this.users[index].exp,
+        lv : this.users[index].level,
+        ep : this.users[index].exp,
 
-        maxHP : this.users[index].maxHP,
-        maxMP : this.users[index].maxMP,
+        mHP : this.users[index].maxHP,
+        mMP : this.users[index].maxMP,
         HP : this.users[index].HP,
         MP : this.users[index].MP,
-        castSpeed : this.users[index].castSpeed,
+        csp : this.users[index].castSpeed,
 
-        conditions : this.users[index].conditions,
+        cdt : this.users[index].conditions,
         // buffList : buffIndexList
       });
     }
@@ -1058,40 +1111,40 @@ GameManager.prototype.processUserDataSettings = function(){
 GameManager.prototype.processUserAllTypeLevels = function(userID){
   if(userID in this.users){
     return {
-      pyroLevel : this.users[userID].pyroLevel,
-      frosterLevel : this.users[userID].frosterLevel,
-      mysterLevel :this.users[userID].mysterLevel
+      pLv : this.users[userID].pyroLevel,
+      fLv : this.users[userID].frosterLevel,
+      mLv :this.users[userID].mysterLevel
     };
   }
 };
 GameManager.prototype.processUserAllTypeSkillLevels = function(userID){
   if(userID in this.users){
     return {
-      pyroBaseSkill : this.users[userID].pyroBaseSkill,
-      pyroInherentPassiveSkill : this.users[userID].pyroInherentPassiveSkill,
-      frosterBaseSkill : this.users[userID].frosterBaseSkill,
-      frosterInherentPassiveSkill : this.users[userID].frosterInherentPassiveSkill,
-      mysterBaseSkill : this.users[userID].mysterBaseSkill,
-      mysterInherentPassiveSkill : this.users[userID].mysterInherentPassiveSkill
+      pBS : this.users[userID].pyroBaseSkill,
+      pIPS : this.users[userID].pyroInherentPassiveSkill,
+      fBS : this.users[userID].frosterBaseSkill,
+      fIPS : this.users[userID].frosterInherentPassiveSkill,
+      mBS : this.users[userID].mysterBaseSkill,
+      mIPS : this.users[userID].mysterInherentPassiveSkill
     };
   }
 };
 GameManager.prototype.processChangedUserStat = function(user){
   try {
     return {
-      objectID : user.objectID,
-      type : user.type,
-      level : user.level,
-      exp : user.exp,
-      maxHP : user.maxHP,
-      maxMP : user.maxMP,
+      oID : user.objectID,
+      tp : user.type,
+      lv : user.level,
+      ep : user.exp,
+      mHP : user.maxHP,
+      mMP : user.maxMP,
       HP : user.HP,
       MP : user.MP,
-      castSpeed : user.castSpeed,
-      maxSpeed : user.maxSpeed,
-      rotateSpeed : user.rotateSpeed,
+      csp : user.castSpeed,
+      msp : user.maxSpeed,
+      rsp : user.rotateSpeed,
 
-      conditions : user.conditions
+      cdt : user.conditions
     };
   } catch (e) {
     throw e;
@@ -1100,9 +1153,9 @@ GameManager.prototype.processChangedUserStat = function(user){
 GameManager.prototype.processUserResource = function(user){
   try {
     return{
-      objectID : user.objectID,
-      gold : user.gold,
-      jewel : user.jewel
+      // oID : user.objectID,
+      g : user.gold,
+      j : user.jewel
     };
   } catch (e) {
     throw e;
@@ -1115,10 +1168,10 @@ GameManager.prototype.processScoreDatas = function(exceptID){
       if(exceptID){
         //if user disconnect
         if(exceptID !== this.users[i].objectID){
-          datas.push({id : this.users[i].objectID, name : this.users[i].name, level: this.users[i].level, killScore : this.users[i].killCount, totalScore : this.users[i].score, totalKill : this.users[i].totalKillCount});
+          datas.push({id : this.users[i].objectID, nm : this.users[i].name, lv: this.users[i].level, kS : this.users[i].killCount, tS : this.users[i].score, tK : this.users[i].totalKillCount});
         }
       }else{
-        datas.push({id : this.users[i].objectID, name : this.users[i].name, level: this.users[i].level, killScore : this.users[i].killCount, totalScore : this.users[i].score, totalKill : this.users[i].totalKillCount});
+        datas.push({id : this.users[i].objectID, nm : this.users[i].name, lv: this.users[i].level, kS : this.users[i].killCount, tS : this.users[i].score, tK : this.users[i].totalKillCount});
       }
     }
   }
@@ -1127,21 +1180,21 @@ GameManager.prototype.processScoreDatas = function(exceptID){
 GameManager.prototype.processUserPrivateDataSetting = function(user){
   try {
     return {
-      damageRate : user.damageRate,
-      fireDamageRate : user.fireDamageRate,
-      frostDamageRate : user.frostDamageRate,
-      arcaneDamageRate : user.arcaneDamageRate,
-      resistAll : user.resistAll,
-      resistFire : user.resistFire,
-      resistFrost : user.resistFrost,
-      resistArcane : user.resistArcane,
+      dR : user.damageRate,
+      fiDR : user.fireDamageRate,
+      frDR : user.frostDamageRate,
+      acDR : user.arcaneDamageRate,
+      rA : user.resistAll,
+      rFi : user.resistFire,
+      rFr : user.resistFrost,
+      rAc : user.resistArcane,
 
-      level : user.level,
+      lv : user.level,
 
-      statPower : user.statPower,
-      statMagic : user.statMagic,
-      statSpeed : user.statSpeed,
-      cooldownReduceRate : user.cooldownReduceRate
+      sP : user.statPower,
+      sM : user.statMagic,
+      sS : user.statSpeed,
+      cRR : user.cooldownReduceRate
     };
   } catch (e) {
     throw e;
@@ -1151,25 +1204,26 @@ GameManager.prototype.processBuffDataSettings = function(){
   var userBuffDatas = [];
   for(var index in this.users){
     if(!this.users[index].isDead){
-      var buffIndexList = [];
-      var passiveIndexList = [];
-      var auraIndexList = [];
-      for(var i=0; i<this.users[index].buffList.length; i++){
-        buffIndexList.push({index : this.users[index].buffList[i].index, startTime : this.users[index].buffList[i].startTime});
-      }
-      for(var i=0; i<this.users[index].passiveList.length; i++){
-        passiveIndexList.push(this.users[index].passiveList[i].index);
-      }
-      for(var i=0; i<this.users[index].auraList.length; i++){
-        auraIndexList.push(this.users[index].auraList[i].index);
-      }
-      userBuffDatas.push({
-        objectID : index,
-        inherentPassive : this.users[index].inherentPassiveSkill,
-        buffList : buffIndexList,
-        passiveList : passiveIndexList,
-        auraList : auraIndexList
-      });
+      userBuffDatas.push(this.processBuffDataSetting(this.users[index]));
+      // var buffIndexList = [];
+      // var passiveIndexList = [];
+      // var auraIndexList = [];
+      // for(var i=0; i<this.users[index].buffList.length; i++){
+      //   buffIndexList.push({index : this.users[index].buffList[i].index, startTime : this.users[index].buffList[i].startTime});
+      // }
+      // for(var i=0; i<this.users[index].passiveList.length; i++){
+      //   passiveIndexList.push(this.users[index].passiveList[i].index);
+      // }
+      // for(var i=0; i<this.users[index].auraList.length; i++){
+      //   auraIndexList.push(this.users[index].auraList[i].index);
+      // }
+      // userBuffDatas.push({
+      //   objectID : index,
+      //   inherentPassive : this.users[index].inherentPassiveSkill,
+      //   buffList : buffIndexList,
+      //   passiveList : passiveIndexList,
+      //   auraList : auraIndexList
+      // });
     }
   }
   return userBuffDatas;
@@ -1180,7 +1234,7 @@ GameManager.prototype.processBuffDataSetting = function(user){
     var passiveIndexList = [];
     var auraIndexList = [];
     for(var i=0; i<user.buffList.length; i++){
-      buffIndexList.push({index : user.buffList[i].index, startTime : user.buffList[i].startTime});
+      buffIndexList.push({id : user.buffList[i].index, st : user.buffList[i].startTime});
     }
     for(var i=0; i<user.passiveList.length; i++){
       passiveIndexList.push(user.passiveList[i].index);
@@ -1189,11 +1243,11 @@ GameManager.prototype.processBuffDataSetting = function(user){
       auraIndexList.push(user.auraList[i].index);
     }
     return{
-      objectID : user.objectID,
-      inherentPassive : user.inherentPassiveSkill,
-      buffList : buffIndexList,
-      passiveList : passiveIndexList,
-      auraList : auraIndexList
+      oID : user.objectID,
+      iP : user.inherentPassiveSkill,
+      bL : buffIndexList,
+      pL : passiveIndexList,
+      aL : auraIndexList
     }
   } catch (e) {
     throw e;
@@ -1206,26 +1260,6 @@ GameManager.prototype.processCreatedMobDatas = function(mobs){
   }
   return returnVal;
 };
-GameManager.prototype.processMobData = function(mob){
-  return {
-    index : mob.index,
-
-    objectID : mob.objectID,
-    currentState : mob.currentState,
-    position : mob.position,
-    targetPosition : mob.targetPosition,
-    maxSpeed : mob.maxSpeed,
-    direction : mob.direction,
-    rotateSpeed : mob.rotateSpeed,
-    size : mob.size,
-    attackTime : mob.attackTime,
-
-    maxHP : mob.maxHP,
-    HP : mob.HP,
-    conditions : mob.conditions,
-    buffList : mob.buffList
-  };
-};
 GameManager.prototype.processMobDatas = function(){
   var returnVal = [];
   for(var index in this.monsters){
@@ -1236,40 +1270,68 @@ GameManager.prototype.processMobDatas = function(){
   // }
   return returnVal;
 };
+GameManager.prototype.processMobData = function(mob){
+  return {
+    id : mob.index,
+
+    oID : mob.objectID,
+    cs : mob.currentState,
+    pos : { x : Math.floor(mob.position.x), y : Math.floor(mob.position.y) },
+    tpos : { x : Math.floor(mob.targetPosition.x), y : Math.floor(mob.targetPosition.y) },
+    msp : mob.maxSpeed,
+    dir : Math.floor(mob.direction),
+    rsp : mob.rotateSpeed,
+    // size : mob.size,
+    at : mob.attackTime,
+
+    mHP : mob.maxHP,
+    HP : mob.HP,
+    cdt : mob.conditions,
+    bL : mob.buffList
+  };
+};
+GameManager.prototype.processMobStatData = function(mob){
+  return {
+    oID : mob.objectID,
+    pos : { x : Math.floor(mob.position.x), y : Math.floor(mob.position.y) },
+    dir : Math.floor(mob.direction),
+    HP : mob.HP
+  }
+};
 GameManager.prototype.processMobBuffData = function(mob){
   var buffList = [];
   for(var i=0; i<mob.buffList.length; i++){
     buffList.push(mob.buffList[i].index);
   }
   return {
-    objectID : mob.objectID,
-    buffList : buffList
+    oID : mob.objectID,
+    bL : buffList
   };
 };
 GameManager.prototype.addSkillData = function(userData){
-  if(userData.objectID in this.users){
-    userData.baseSkill = this.users[userData.objectID].baseSkill;
+  if(userData.oID in this.users){
+    userData.bS = this.users[userData.oID].baseSkill;
     // userData.equipSkills = this.users[userData.objectID].equipSkills;
-    userData.possessSkills = this.users[userData.objectID].possessSkills;
-    userData.inherentPassiveSkill= this.users[userData.objectID].inherentPassiveSkill;
+    userData.pS = this.users[userData.oID].possessSkills;
+    userData.ipS= this.users[userData.oID].inherentPassiveSkill;
   }
 };
 GameManager.prototype.addPrivateData = function(userData){
-  if(userData.objectID in this.users){
-    userData.damageRate = this.users[userData.objectID].damageRate,
-    userData.fireDamageRate = this.users[userData.objectID].fireDamageRate,
-    userData.frostDamageRate = this.users[userData.objectID].frostDamageRate,
-    userData.arcaneDamageRate = this.users[userData.objectID].arcaneDamageRate,
-    userData.resistAll = this.users[userData.objectID].resistAll,
-    userData.resistFire = this.users[userData.objectID].resistFire,
-    userData.resistFrost = this.users[userData.objectID].resistFrost,
-    userData.resistArcane = this.users[userData.objectID].resistArcane,
+  if(userData.oID in this.users){
+    userData.dR = this.users[userData.oID].damageRate,
+    userData.fiDR = this.users[userData.oID].fireDamageRate,
+    userData.frDR = this.users[userData.oID].frostDamageRate,
+    userData.acDR = this.users[userData.oID].arcaneDamageRate,
+    userData.rA = this.users[userData.oID].resistAll,
+    userData.rFi = this.users[userData.oID].resistFire,
+    userData.rFr = this.users[userData.oID].resistFrost,
+    userData.rAc = this.users[userData.oID].resistArcane,
 
-    userData.statPower = this.users[userData.objectID].statPower;
-    userData.statMagic = this.users[userData.objectID].statMagic;
-    userData.statSpeed = this.users[userData.objectID].statSpeed;
+    userData.sP = this.users[userData.oID].statPower;
+    userData.sM = this.users[userData.oID].statMagic;
+    userData.sS = this.users[userData.oID].statSpeed;
 
-    userData.cooldownReduceRate = this.users[userData.objectID].cooldownReduceRate;
+    userData.cRR = this.users[userData.oID].cooldownReduceRate;
   }
 };
 // GameManager.prototype.processSkillsDataSettings = function(){
@@ -1308,28 +1370,35 @@ GameManager.prototype.addPrivateData = function(userData){
 GameManager.prototype.processOBJDataSetting = function(data){
   if(data.objectID.substr(0, 3) === gameConfig.PREFIX_OBJECT_GOLD){
     return {
-      objectID : data.objectID,
-      position : data.position,
-      radius : data.size.width/2
+      oID : data.objectID,
+      pos : data.position,
+      rad : data.size.width/2
     };
   }else if(data.objectID.substr(0, 3) === gameConfig.PREFIX_OBJECT_JEWEL){
     return {
-      objectID : data.objectID,
-      position : data.position,
-      radius : data.size.width/2
+      oID : data.objectID,
+      pos : data.position
+      // radius : data.size.width/2
     };
   }else if(data.objectID.substr(0, 3) === gameConfig.PREFIX_OBJECT_SKILL){
     return {
-      objectID : data.objectID,
-      position : data.position,
-      radius : data.size.width/2,
-      property : data.skillProperty
+      oID : data.objectID,
+      pos : data.position,
+      // radius : data.size.width/2,
+      pro : data.skillProperty
     };
   }else if(data.objectID.substr(0, 3) === gameConfig.PREFIX_OBJECT_BOX){
     return {
-      objectID : data.objectID,
-      position : data.position,
-      radius : data.size.width/2
+      oID : data.objectID,
+      pos : data.position
+      // radius : data.size.width/2
+    }
+  }else if(data.objectID.substr(0, 3) === gameConfig.PREFIX_OBJECT_BUFF){
+    return {
+      oID : data.objectID,
+      pos : data.position,
+      // radius : data.size.width/2,
+      rID : data.resourceIndex
     }
   }
 };
@@ -1345,56 +1414,65 @@ GameManager.prototype.processOBJDataSettings = function(){
   // }
   for(var i=0; i<this.objGolds.length; i++){
     objDatas.push({
-      objectID : this.objGolds[i].objectID,
-      position : this.objGolds[i].position,
-      radius : this.objGolds[i].size.width/2
+      oID : this.objGolds[i].objectID,
+      pos : this.objGolds[i].position,
+      rad : this.objGolds[i].size.width/2
     });
   }
   for(var i=0; i<this.objJewels.length; i++){
     objDatas.push({
-      objectID : this.objJewels[i].objectID,
-      position : this.objJewels[i].position,
-      radius : this.objJewels[i].size.width/2
+      oID : this.objJewels[i].objectID,
+      pos : this.objJewels[i].position
+      // rad : this.objJewels[i].size.width/2
     });
   }
   for(var i=0; i<this.objSkills.length; i++){
     objDatas.push({
-      objectID : this.objSkills[i].objectID,
-      position : this.objSkills[i].position,
-      radius : this.objSkills[i].size.width/2,
-      property : this.objSkills[i].skillProperty
+      oID : this.objSkills[i].objectID,
+      pos : this.objSkills[i].position,
+      // radius : this.objSkills[i].size.width/2,
+      pro : this.objSkills[i].skillProperty
     });
   }
   for(var i=0; i<this.objBoxs.length; i++){
     objDatas.push({
-      objectID : this.objBoxs[i].objectID,
-      position : this.objBoxs[i].position,
-      radius : this.objBoxs[i].size.width/2
-    })
+      oID : this.objBoxs[i].objectID,
+      pos : this.objBoxs[i].position
+      // radius : this.objBoxs[i].size.width/2
+    });
+  }
+  for(var i=0; i<this.objBuffs.length; i++){
+    objDatas.push({
+      oID : this.objBuffs[i].objectID,
+      pos : this.objBuffs[i].position,
+      // radius : this.objBuffs[i].size.width/2,
+      rID : this.objBuffs[i].resourceIndex
+    });
   }
   return objDatas;
 };
 GameManager.prototype.processChestDataSetting = function(data){
   return {
-    objectID : data.objectID,
-    locationID : data.locationID,
-    grade : data.grade,
+    oID : data.objectID,
+    lID : data.locationID,
+    gd : data.grade,
 
-    maxHP : data.maxHP,
+    mHP : data.maxHP,
     HP : data.HP
   };
 };
 GameManager.prototype.processChestDataSettings = function(){
   var chestDatas = [];
   for(var i=0; i<this.chests.length; i++){
-    chestDatas.push({
-      objectID : this.chests[i].objectID,
-      locationID : this.chests[i].locationID,
-      grade : this.chests[i].grade,
-
-      maxHP : this.chests[i].maxHP,
-      HP : this.chests[i].HP
-    });
+    chestDatas.push(this.processChestDataSetting(this.chests[i]));
+    // chestDatas.push({
+    //   objectID : this.chests[i].objectID,
+    //   locationID : this.chests[i].locationID,
+    //   grade : this.chests[i].grade,
+    //
+    //   maxHP : this.chests[i].maxHP,
+    //   HP : this.chests[i].HP
+    // });
   }
   return chestDatas;
 };
@@ -1530,14 +1608,15 @@ GameManager.prototype.giveFacebookJewel = function(userID, jewel){
 GameManager.prototype.giveAllSkill = function(userID, skills){
   if(userID in this.users){
     for(var i=0; i<skills.length; i++){
-      if(i === skills.length -1){
-        var possessSkills = this.users[userID].getSkill(skills[i]);
-        if(possessSkills){
-          this.onNeedInformSkillData(this.users[userID].socketID, possessSkills);
-        }
-      }else{
-        this.users[userID].getSkill(skills[i]);
-      }
+      this.users[userID].getSkill(skills[i]);
+      // if(i === skills.length -1){
+      //   var possessSkills = this.users[userID].getSkill(skills[i]);
+      //   if(possessSkills){
+      //     this.onNeedInformSkillData(this.users[userID].socketID, possessSkills);
+      //   }
+      // }else{
+      //   this.users[userID].getSkill(skills[i]);
+      // }
     }
   }
 };
@@ -1608,7 +1687,7 @@ GameManager.prototype.disableCheatCheck = function(userID){
 GameManager.prototype.initReconnectUser = function(user, level, exp, baseSkill, passiveSkill, possessSkills){
   var randomID = SUtil.generateRandomUniqueID(this.users, gameConfig.PREFIX_USER);
   user.assignID(randomID);
-  user.setSize(serverConfig.USER_BODY_SIZE, serverConfig.USER_BODY_SIZE);
+  user.setSize(gameConfig.USER_BODY_SIZE, gameConfig.USER_BODY_SIZE);
   //set inherentPassiveSkill
   user.setReconnectLevel(level, exp);
   user.setReconnectSkills(baseSkill, passiveSkill, possessSkills);
@@ -1644,6 +1723,8 @@ function longTimeIntervalHandler(){
   var additionalGoldCount = (serverConfig.OBJ_GOLD_COUNT + serverConfig.ADDITIONAL_GOLD_PER_USER * Object.keys(this.users).length) - this.objGolds.length;
   var additionalBoxCount = (serverConfig.OBJ_BOX_COUNT + Math.floor(serverConfig.ADDITIONAL_BOX_PER_USER * Object.keys(this.users).length)) - this.objBoxs.length;
   var additionalJewelCount = (serverConfig.OBJ_JEWEL_COUNT + Math.floor(serverConfig.ADDITIONAL_JEWEL_PER_USER * Object.keys(this.users).length)) - this.objJewels.length;
+  var additionalBuffCount = (serverConfig.OBJ_BUFF_COUNT + Math.floor(serverConfig.AdDITIONAL_BUFF_PER_USER * Object.keys(this.users).length)) - this.objBuffs.length;
+
   if(additionalGoldCount > 0){
     this.createGoldsToRandomPosition(additionalGoldCount);
   }
@@ -1652,6 +1733,9 @@ function longTimeIntervalHandler(){
   }
   if(additionalJewelCount > 0){
     this.createJewelsToRandomPosition(additionalJewelCount);
+  }
+  if(additionalBuffCount > 0){
+    this.createBuffToRandomPosition(additionalBuffCount);
   }
 
   for(var i=this.objSkills.length - 1; i>= 0; i--){
@@ -1682,34 +1766,113 @@ function longTimeIntervalHandler(){
       this.objBoxs.splice(i, 1);
     }
   }
+  for(var i=this.objBuffs.length - 1; i>=0; i--){
+    if(serverConfig.OBJS_LIFE_TIME <= Date.now() - this.objBuffs[i].startTime){
+      this.onNeedInformDeleteObj(this.objBuffs[i].objectID);
+      removeOBJs.push(this.objBuffs[i].collectionEle);
+      this.objBuffs.splice(i, 1);
+    }
+  }
   // if(this.checkCreateChest()){
   setChestIndexAndDoCreateChest.call(this);
     // setTimeout(setChestIndexAndDoCreateChest.bind(this), serverConfig.CHEST_CHAIN_CREATE_TIME);
   // }
-  var smallMobCount = 0;
-  var smallCenterMobCount = 0;
-  var mediumMobcount = 0;
+  var weakSurroundMobCount = 0, weakCenterMobCount = 0, weakChestMobCount = 0;
+  var normalSurroundMobCount = 0, normalCenterMobCount = 0, normalChestMobCount = 0;
+  var strongSurroundMobCount = 0, strongCenterMobCount = 0, strongChestMobCount = 0;
   for(var index in this.monsters){
-    if(this.monsters[index].mobGenType === serverConfig.MOB_GEN_TYPE_SMALL){
-      smallMobCount ++;
-    }else if(this.monsters[index].mobGenType === serverConfig.MOB_GEN_TYPE_SMALL_CENTER){
-      smallCenterMobCount ++;
-    }else if(this.monsters[index].mobGenType === serverConfig.MOB_GEN_TYPE_MEDIUM){
-      mediumMobcount ++;
+    switch (this.monsters[index].mobGenType) {
+      case serverConfig.MOB_GEN_TYPE_WEAK_SURROUND:
+        weakSurroundMobCount++;
+        break;
+      case serverConfig.MOB_GEN_TYPE_WEAK_CENTER:
+        weakCenterMobCount++;
+        break;
+      case serverConfig.MOB_GEN_TYPE_WEAK_CHEST:
+        weakChestMobCount++;
+        break;
+      case serverConfig.MOB_GEN_TYPE_NORMAL_SURROUND:
+        normalSurroundMobCount++;
+        break;
+      case serverConfig.MOB_GEN_TYPE_NORMAL_CENTER:
+        normalCenterMobCount++;
+        break;
+      case serverConfig.MOB_GEN_TYPE_NORMAL_CHEST:
+        normalChestMobCount++;
+        break;
+      case serverConfig.MOB_GEN_TYPE_STRONG_SURROUND:
+        strongSurroundMobCount++;
+        break;
+      case serverConfig.MOB_GEN_TYPE_STRONG_CENTER:
+        strongCenterMobCount++;
+        break;
+      case serverConfig.MOB_GEN_TYPE_STRONG_CHEST:
+        strongChestMobCount++;
+        break;
     }
   }
-  var additionalSmallMobCount = (serverConfig.MOB_SMALL_COUNT + Math.floor(Object.keys(this.users).length * serverConfig.ADDITIONAL_MOB_SMALL_PER_USER) - smallMobCount);
-  if(additionalSmallMobCount > 0){
-    this.createMobs(additionalSmallMobCount, serverConfig.MOB_GEN_TYPE_SMALL);
+  var additionalWeakSurroundMobCount = (serverConfig.MOB_WEAK_SURROUND_COUNT + Math.floor(Object.keys(this.users).length * serverConfig.ADDITIONAL_MOB_WEAK_SURROUND_PER_USER) - weakSurroundMobCount);
+  var additionalWeakCenterMobCount = (serverConfig.MOB_WEAK_CENTER_COUNT + Math.floor(Object.keys(this.users).length * serverConfig.ADDITIONAL_MOB_WEAK_CENTER_PER_USER) - weakCenterMobCount);
+  var additionalWeakChestMobCount = (serverConfig.MOB_WEAK_CHEST_COUNT + Math.floor(Object.keys(this.users).length * serverConfig.ADDITIONAL_MOB_WEAK_CHEST_PER_USER) - weakChestMobCount);
+  var additionalNormalSurroundMobCount = (serverConfig.MOB_NORMAL_SURROUND_COUNT + Math.floor(Object.keys(this.users).length * serverConfig.ADDITIONAL_MOB_NORMAL_SURROUND_PER_USER) - normalSurroundMobCount);
+  var additionalNormalCenterMobCount = (serverConfig.MOB_NORMAL_CENTER_COUNT + Math.floor(Object.keys(this.users).length * serverConfig.ADDITIONAL_MOB_NORMAL_CENTER_PER_USER) - normalCenterMobCount);
+  var additionalNormalChestMobCount = (serverConfig.MOB_NORMAL_CHEST_COUNT + Math.floor(Object.keys(this.users).length * serverConfig.ADDITIONAL_MOB_NORMAL_CHEST_PER_USER) - normalChestMobCount);
+  var additionalStrongSurroundMobCount = (serverConfig.MOB_STRONG_SURROUND_COUNT + Math.floor(Object.keys(this.users).length * serverConfig.ADDITIONAL_MOB_STRONG_SURROUND_PER_USER) - strongSurroundMobCount);
+  var additionalStrongCenterMobCount = (serverConfig.MOB_STRONG_CENTER_COUNT + Math.floor(Object.keys(this.users).length * serverConfig.ADDITIONAL_MOB_STRONG_CENTER_PER_USER) - strongCenterMobCount);
+  var additionalStrongChestMobCount = (serverConfig.MOB_STRONG_CHEST_COUNT + Math.floor(Object.keys(this.users).length * serverConfig.ADDITIONAL_MOB_STRONG_CHEST_PER_USER) - strongChestMobCount);
+
+  if(additionalWeakSurroundMobCount > 0){
+    this.createMobs(additionalWeakSurroundMobCount, serverConfig.MOB_GEN_TYPE_WEAK_SURROUND);
   }
-  var additionalCenterSmallMobCount = (serverConfig.MOB_SMALL_CENTER_COUNT + Math.floor(Object.keys(this.users).length * serverConfig.ADDITIONAL_MOB_SMALL_CENTER_PER_USER) - smallCenterMobCount);
-  if(additionalCenterSmallMobCount > 0){
-    this.createMobs(additionalCenterSmallMobCount, serverConfig.MOB_GEN_TYPE_SMALL_CENTER);
+  if(additionalWeakCenterMobCount > 0){
+    this.createMobs(additionalWeakCenterMobCount, serverConfig.MOB_GEN_TYPE_WEAK_CENTER);
   }
-  var additionalMediumMobcount = (serverConfig.MOB_MEDIUM_COUNT + Math.floor(Object.keys(this.users).length * serverConfig.ADDITIONAL_MOB_MEDIUM_PER_USER) - mediumMobcount);
-  if( additionalMediumMobcount > 0){
-    this.createMobs(additionalMediumMobcount, serverConfig.MOB_GEN_TYPE_MEDIUM);
+  if(additionalWeakChestMobCount > 0){
+    this.createMobs(additionalWeakChestMobCount, serverConfig.MOB_GEN_TYPE_WEAK_CHEST);
   }
+  if(additionalNormalSurroundMobCount > 0){
+    this.createMobs(additionalNormalSurroundMobCount, serverConfig.MOB_GEN_TYPE_NORMAL_SURROUND);
+  }
+  if(additionalNormalCenterMobCount > 0){
+    this.createMobs(additionalNormalCenterMobCount, serverConfig.MOB_GEN_TYPE_NORMAL_CENTER);
+  }
+  if(additionalNormalChestMobCount > 0){
+    this.createMobs(additionalNormalChestMobCount, serverConfig.MOB_GEN_TYPE_NORMAL_CHEST);
+  }
+  if(additionalStrongSurroundMobCount > 0){
+    this.createMobs(additionalStrongSurroundMobCount, serverConfig.MOB_GEN_TYPE_STRONG_SURROUND);
+  }
+  if(additionalStrongCenterMobCount > 0){
+    this.createMobs(additionalStrongCenterMobCount, serverConfig.MOB_GEN_TYPE_STRONG_CENTER);
+  }
+  if(additionalStrongChestMobCount > 0){
+    this.createMobs(additionalStrongChestMobCount, serverConfig.MOB_GEN_TYPE_STRONG_CHEST);
+  }
+
+  // var smallMobCount = 0;
+  // var smallCenterMobCount = 0;
+  // var mediumMobcount = 0;
+  // for(var index in this.monsters){
+  //   if(this.monsters[index].mobGenType === serverConfig.MOB_GEN_TYPE_SMALL){
+  //     smallMobCount ++;
+  //   }else if(this.monsters[index].mobGenType === serverConfig.MOB_GEN_TYPE_SMALL_CENTER){
+  //     smallCenterMobCount ++;
+  //   }else if(this.monsters[index].mobGenType === serverConfig.MOB_GEN_TYPE_MEDIUM){
+  //     mediumMobcount ++;
+  //   }
+  // }
+  // var additionalSmallMobCount = (serverConfig.MOB_SMALL_COUNT + Math.floor(Object.keys(this.users).length * serverConfig.ADDITIONAL_MOB_SMALL_PER_USER) - smallMobCount);
+  // if(additionalSmallMobCount > 0){
+  //   this.createMobs(additionalSmallMobCount, serverConfig.MOB_GEN_TYPE_SMALL);
+  // }
+  // var additionalCenterSmallMobCount = (serverConfig.MOB_SMALL_CENTER_COUNT + Math.floor(Object.keys(this.users).length * serverConfig.ADDITIONAL_MOB_SMALL_CENTER_PER_USER) - smallCenterMobCount);
+  // if(additionalCenterSmallMobCount > 0){
+  //   this.createMobs(additionalCenterSmallMobCount, serverConfig.MOB_GEN_TYPE_SMALL_CENTER);
+  // }
+  // var additionalMediumMobcount = (serverConfig.MOB_MEDIUM_COUNT + Math.floor(Object.keys(this.users).length * serverConfig.ADDITIONAL_MOB_MEDIUM_PER_USER) - mediumMobcount);
+  // if( additionalMediumMobcount > 0){
+  //   this.createMobs(additionalMediumMobcount, serverConfig.MOB_GEN_TYPE_MEDIUM);
+  // }
 };
 var setChestIndexAndDoCreateChest = function(){
   if(this.checkCreateChest()){
@@ -1806,6 +1969,10 @@ function updateIntervalHandler(){
   //userEle : user, collisionObj : objExp, objSkill
   // var removeOBJs = [];
   var isCheckAura = false;
+  if(Date.now() - auraCheckTimer > 500){
+    isCheckAura = true;
+    auraCheckTimer = Date.now();
+  }
   for(var i=0; i<userEles.length; i++){
     var tempUser = userEles[i];
     //collisionObj : exp or skill object
@@ -1826,6 +1993,8 @@ function updateIntervalHandler(){
         affectedEles.push(SUtil.setAffectedEleColUserWithCollection(tempUser.id, collisionObjs[j], serverConfig.COLLISION_USER_WITH_COLLECTION_JEWEL));
       }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBJECT_BOX){
         affectedEles.push(SUtil.setAffectedEleColUserWithCollection(tempUser.id, collisionObjs[j], serverConfig.COLLISION_USER_WITH_COLLECTION_BOX));
+      }else if(collisionObjs[j].id.substr(0,3) === gameConfig.PREFIX_OBJECT_BUFF){
+        affectedEles.push(SUtil.setAffectedEleColUserWithCollection(tempUser.id, collisionObjs[j], serverConfig.COLLISION_USER_WITH_COLLECTION_BUFF));
       }else{
         console.log('check id' + collisionObjs[j].id);
       }
@@ -1833,8 +2002,9 @@ function updateIntervalHandler(){
     }
     //check user with env
     //clear auraList of user
-    if(Date.now() - auraCheckTimer > 500){
-      isCheckAura = true;
+
+    if(isCheckAura){
+      // auraCheckTimer = Date.now();
       if(tempUser.id in this.users){
         var hadImmortalAura = false;
         for(var j=0; j<this.users[tempUser.id].auraList.length; j++){
@@ -1863,9 +2033,6 @@ function updateIntervalHandler(){
         }
       }
     }
-  }
-  if(isCheckAura){
-    auraCheckTimer = Date.now();
   }
 
   //clear tree and treeArray
@@ -1929,11 +2096,15 @@ function updateIntervalHandler(){
   for(var i=0; i<this.addedObjBoxs.length; i++){
     addedObjEles.push(this.addedObjBoxs[i].collectionEle);
   }
+  for(var i=0; i<this.addedObjBuffs.length; i++){
+    addedObjEles.push(this.addedObjBuffs[i].collectionEle);
+  }
   // this.addedObjExps = [];
   this.addedObjSkills = [];
   this.addedObjGolds = [];
   this.addedObjJewels = [];
   this.addedObjBoxs = [];
+  this.addedObjBuffs = [];
 
   for(var i=0; i<addedObjEles.length; i++){
     // console.log(addedObjEles);
@@ -2211,6 +2382,8 @@ function affectedIntervalHandler(){
         this.getObj(affectedEles[i].affectedID, affectedEles[i].jewelAmount, affectedEles[i].actorID, affectedEles[i].affectedObj);
       }else if(affectedEles[i].collisionType === serverConfig.COLLISION_USER_WITH_COLLECTION_BOX){
         this.getBox(affectedEles[i].affectedID, affectedEles[i], affectedEles[i].actorID, affectedEles[i].affectedObj);
+      }else if(affectedEles[i].collisionType === serverConfig.COLLISION_USER_WITH_COLLECTION_BUFF){
+        this.getBuff(affectedEles[i].affectedID, affectedEles[i].buffGroupIndex, affectedEles[i].actorID, affectedEles[i].affectedObj)
       }else if(affectedEles[i].collisionType === serverConfig.COLLISION_USER_WITH_ENVIRONMENT_IMMORTAL){
         if(affectedEles[i].affectedID in this.users){
           this.users[affectedEles[i].affectedID].addAura(serverConfig.ENV_IMMORTAL_BUFF_INDEX);

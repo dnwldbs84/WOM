@@ -198,8 +198,8 @@ exports.setTargetPosition = function(clickPosition, user){
   }
 
   return {
-    x : targetX,
-    y : targetY
+    x : Math.floor(targetX),
+    y : Math.floor(targetY)
   };
 };
 exports.setMoveAttackUserTargetPosition = function(clickPosition, baseSkillData, user){
