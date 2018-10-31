@@ -1,4 +1,4 @@
-# AdinPlay.com ads.txt - 18-10-18  
+# AdinPlay.com ads.txt - 30-10-18  
 ##################################
 
 #Google
@@ -48,6 +48,7 @@ openx.com, 537125356, RESELLER, a698e2ec38604c6
 #Rhythmone
 rhythmone.com, 1432377581,DIRECT, a670c89d4a324e47
 rhythmone.com, 665259327, DIRECT, a670c89d4a324e47
+rhythmone.com,2451244104,DIRECT,a670c89d4a324e47
 
 
 #Gumgum
