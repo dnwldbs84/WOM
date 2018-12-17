@@ -540,19 +540,8 @@ if (true) {
     messageToClient('public', util.makePacketForm(gameConfig.MTYPE_MOB_DEAD, mobID));
   };
 }
-wss.on("headers", function(headers, msg) {
-    console.log(headers);
-    console.log(msg);
-    headers['set-cookie'] = msg.headers.cookie;
-    // headers["set-cookie"] = "SESSIONID=" + crypto.randomBytes(20).toString("hex");
-    console.log("handshake response cookie", headers["set-cookie"]);
-});
 // Websocket Events
 wss.on('connection', function(client, req){
-  client.on('headers', function(headers) {
-    console.log('headers');
-    console.log(headers);
-  });
   try {
     if (req && req.headers && req.headers.cookie) {
       var cookies = cookie.parse(req.headers.cookie);
@@ -603,28 +592,43 @@ wss.on('connection', function(client, req){
       var vars = data.v;
       switch (data.t) {
         case gameConfig.MTYPE_SET_HADER:
-          var redisSid = cookieParser.signedCookie(vars[0], '!!@@Secret Cat@@!!');
-          redisClient.get('sess:' + redisSid, function(err, result) {
-            // console.log(result);
-            if (err) { throw err; }
-            if (result) {
-              client.dbId = JSON.parse(result)['userID'];
-            }
-            if (client.dbId) {
-              messageToClient('private', util.makePacketForm(gameConfig.MTYPE_SYNC_SUCCESS), client);
-              // check duplicate access
-              wss.clients.forEach(function(cli) {
-                if (cli.dbId === client.dbId && cli !== client) {
-                  // duplicate
-                  messageToClient('private', util.makePacketForm(gameConfig.MTYPE_DUPLICATE_ACCESS), cli);
-                }
-              });
-            } else {
-              console.log('Can`t find cookies 3');
-              messageToClient('private', util.makePacketForm(gameConfig.MTYPE_ERROR_SET_ID), client);
-              // client.terminate();
-            }
-          });
+          client.dbId = vars[0]; //decode
+          if (client.dbId) {
+            messageToClient('private', util.makePacketForm(gameConfig.MTYPE_SYNC_SUCCESS), client);
+            // check duplicate access
+            wss.clients.forEach(function(cli) {
+              if (cli.dbId === client.dbId && cli !== client) {
+                // duplicate
+                messageToClient('private', util.makePacketForm(gameConfig.MTYPE_DUPLICATE_ACCESS), cli);
+              }
+            });
+          } else {
+            console.log('Can`t find cookies 3');
+            messageToClient('private', util.makePacketForm(gameConfig.MTYPE_ERROR_SET_ID), client);
+            // client.terminate();
+          }
+          // var redisSid = cookieParser.signedCookie(vars[0], '!!@@Secret Cat@@!!');
+          // redisClient.get('sess:' + redisSid, function(err, result) {
+          //   // console.log(result);
+          //   if (err) { throw err; }
+          //   if (result) {
+          //     client.dbId = JSON.parse(result)['userID'];
+          //   }
+          //   if (client.dbId) {
+          //     messageToClient('private', util.makePacketForm(gameConfig.MTYPE_SYNC_SUCCESS), client);
+          //     // check duplicate access
+          //     wss.clients.forEach(function(cli) {
+          //       if (cli.dbId === client.dbId && cli !== client) {
+          //         // duplicate
+          //         messageToClient('private', util.makePacketForm(gameConfig.MTYPE_DUPLICATE_ACCESS), cli);
+          //       }
+          //     });
+          //   } else {
+          //     console.log('Can`t find cookies 3');
+          //     messageToClient('private', util.makePacketForm(gameConfig.MTYPE_ERROR_SET_ID), client);
+          //     // client.terminate();
+          //   }
+          // });
           break;
         case gameConfig.MTYPE_REQ_START_GAME: //'reqStartGame':
           reqStartGame(vars[0], vars[1]);

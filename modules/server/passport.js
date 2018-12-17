@@ -98,7 +98,7 @@ exports.setMiddleware = function(app) {
     secret: '!!@@Secret Cat@@!!',
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 365 * 24 * 60 * 60 * 1000, secure: false }
+    cookie: { maxAge: 365 * 24 * 60 * 60 * 1000 }
   }));
 
   app.use(function(req, res, next) {
@@ -175,7 +175,8 @@ exports.setUserData = function(user) {
     return {
       n : user.displayName,
       l : user.levels,
-      f : user.skills ? false : true
+      f : user.skills ? false : true,
+      t : user.id       // encode
     }
   } else {
     return null;
