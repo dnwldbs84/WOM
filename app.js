@@ -545,6 +545,7 @@ if (true) {
 wss.on('connection', function(client, req){
   try {
     if (req) {
+      console.log(client.upgradeReq);
       console.log(req.headers);
       console.log(req.headers.cookie);
       var cookies = cookie.parse(req.headers.cookie);
