@@ -177,6 +177,7 @@ app.get('/', function(req, res){
   if (req.user) {
     if (!req.session.userID) { req.session.userID = req.user.id; }
   }
+  console.log(req.cookies);
   var userData = passport.setUserData(req.user);
   res.render('index', { user: userData, isAuth: req.user ? (req.user.googleId ? true : null) : null });
   // });
