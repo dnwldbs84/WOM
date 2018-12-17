@@ -34,8 +34,8 @@ function User(socketID, userName, userStat, userBase, exp){
   this.totalKillCount = 0;
   this.killCount = 0;
   this.killScore = 0;
-  this.skillScore = 0;
-  this.chestScore = 0;
+  // this.skillScore = 0;
+  // this.chestScore = 0;
   this.mobScore = 0;
 
   this.score = 0;
@@ -44,6 +44,8 @@ function User(socketID, userName, userStat, userBase, exp){
 
   this.gold = 0;
   this.jewel = 0;
+  this.gameGold = 0;
+  this.gameJewel = 0;
 
   this.cooldownSkills = [];
   //use when projectile tick and tick explosion
@@ -94,8 +96,9 @@ function User(socketID, userName, userStat, userBase, exp){
   this.baseReductionArcane = userBase.baseReductionArcane;
   this.baseCooldownReduceRate = userBase.baseCooldownReduceRate;
 
-  this.level = 1;
+  this.level = userStat.level;
   this.exp = exp;
+  this.gameExp = 0;
 
   this.conditions = {};
   this.conditions[gameConfig.USER_CONDITION_IMMORTAL] = false;
@@ -122,6 +125,11 @@ function User(socketID, userName, userStat, userBase, exp){
   this.regenTimer = Date.now();
 
   this.baseSkill = 0;
+
+  this.pyroEquipSkills = [];
+  this.frosterEquipSkills = [];
+  this.mysterEquipSkills = [];
+
   // this.equipSkills = [];
   this.possessSkills = [];
   this.inherentPassiveSkill = 0;
@@ -139,22 +147,36 @@ function User(socketID, userName, userStat, userBase, exp){
   this.onChangeStat = new Function();
   this.onTakeDamage = new Function();
   this.onReduceMP = new Function();
-  this.onGetExp = new Function();
+  // this.onGetExp = new Function();
   this.onGetResource = new Function();
   this.onGetSkill = new Function();
   this.onSkillChangeToResource = new Function();
 
   this.onScoreChange = new Function();
 
-  this.onLevelUP = new Function();
+  // this.onLevelUP = new Function();
   this.onDeath = new Function();
+  this.onNeedDBUpdate = new Function();
+  // this.isGetTwitterReward = false;
+  // this.isGetFacebookReward = false;
 
-  this.isGetTwitterReward = false;
-  this.isGetFacebookReward = false;
-
-  this.getExp(exp);
+  switch (this.type) {
+    case gameConfig.CHAR_TYPE_FIRE:
+      this.baseSkill = this.pyroBaseSkill;
+      this.inherentPassiveSkill = this.pyroInherentPassiveSkill;
+      break;
+    case gameConfig.CHAR_TYPE_FROST:
+      this.baseSkill = this.frosterBaseSkill;
+      this.inherentPassiveSkill = this.frosterInherentPassiveSkill;
+      break;
+    case gameConfig.CHAR_TYPE_ARCANE:
+      this.baseSkill = this.mysterBaseSkill;
+      this.inherentPassiveSkill = this.mysterInherentPassiveSkill;
+      break;
+  }
+  // this.getExp(exp);
   this.initStat();
-  this.updateCharTypeSkill();
+  // this.updateCharTypeSkill();
 
   //cheat var
   this.isTeleported = false;
@@ -166,11 +188,11 @@ User.prototype.constructor = User;
 User.prototype.setName = function(name){
   this.name = name;
 };
-User.prototype.setSkills = function(baseSkill, possessSkills, inherentPassiveSkill){
-  this.baseSkill = baseSkill;
+User.prototype.setSkills = function(possessSkills){
+  // this.baseSkill = baseSkill;
   // this.equipSkills = equipSkills;
   this.possessSkills = possessSkills;
-  this.inherentPassiveSkill = inherentPassiveSkill;
+  // this.inherentPassiveSkill = inherentPassiveSkill;
 };
 //init user current stat
 User.prototype.initStat = function(){
@@ -210,73 +232,86 @@ User.prototype.initStat = function(){
   this.setMaxSpeed(this.moveSpeed);
   this.setRotateSpeed(this.rotateSpeed);
 };
-User.prototype.updateCharTypeLevel = function(){
-  var inherentLevel = Math.floor(this.level * 0.8);
-  switch (this.type) {
+// User.prototype.updateCharTypeLevel = function(){
+//   var inherentLevel = Math.floor(this.level * 0.8);
+//   switch (this.type) {
+//     case gameConfig.CHAR_TYPE_FIRE:
+//       this.pyroLevel = this.level;
+//       break;
+//     case gameConfig.CHAR_TYPE_FROST:
+//       this.frosterLevel = this.level;
+//       break;
+//     case gameConfig.CHAR_TYPE_ARCANE:
+//       this.mysterLevel = this.level;
+//       break;
+//   }
+//   if(this.pyroLevel < inherentLevel){
+//     this.pyroLevel = inherentLevel;
+//   }
+//   if(this.frosterLevel < inherentLevel){
+//     this.frosterLevel = inherentLevel;
+//   }
+//   if(this.mysterLevel < inherentLevel){
+//     this.mysterLevel = inherentLevel;
+//   }
+// };
+User.prototype.updateEquipSkills = function(charType, equipSkills) {
+  switch (charType) {
     case gameConfig.CHAR_TYPE_FIRE:
-      this.pyroLevel = this.level;
+      this.pyroEquipSkills = equipSkills;
       break;
     case gameConfig.CHAR_TYPE_FROST:
-      this.frosterLevel = this.level;
+      this.frosterEquipSkills = equipSkills;
       break;
     case gameConfig.CHAR_TYPE_ARCANE:
-      this.mysterLevel = this.level;
+      this.mysterEquipSkills = equipSkills;
       break;
   }
-  if(this.pyroLevel < inherentLevel){
-    this.pyroLevel = inherentLevel;
-  }
-  if(this.frosterLevel < inherentLevel){
-    this.frosterLevel = inherentLevel;
-  }
-  if(this.mysterLevel < inherentLevel){
-    this.mysterLevel = inherentLevel;
-  }
-};
-User.prototype.updateCharTypeSkill = function(){
-  var baseSkillLevel = objectAssign({}, util.findData(skillTable, 'index', this.baseSkill)).level;
-  var basePassiveSkillLevel = objectAssign({}, util.findData(skillTable, 'index', this.inherentPassiveSkill)).level;
-  var transmissionBaseSkillLevel = Math.floor(baseSkillLevel * 0.8);
-  var transmissionPassiveSkillLevel = Math.floor(basePassiveSkillLevel * 0.8);
-  switch (this.type) {
-    case gameConfig.CHAR_TYPE_FIRE:
-      this.pyroBaseSkill = this.baseSkill;
-      this.pyroInherentPassiveSkill = this.inherentPassiveSkill;
-      break;
-    case gameConfig.CHAR_TYPE_FROST:
-      this.frosterBaseSkill = this.baseSkill;
-      this.frosterInherentPassiveSkill = this.inherentPassiveSkill;
-      break;
-    case gameConfig.CHAR_TYPE_ARCANE:
-      this.mysterBaseSkill = this.baseSkill;
-      this.mysterInherentPassiveSkill = this.inherentPassiveSkill;
-      break;
-  }
-  var pyroBaseSkillData = objectAssign({}, util.findData(skillTable, 'index', this.pyroBaseSkill));
-  var pyroPassiveSkillData = objectAssign({}, util.findData(skillTable, 'index', this.pyroInherentPassiveSkill));
-  var frosterBaseSkillData = objectAssign({}, util.findData(skillTable, 'index', this.frosterBaseSkill));
-  var frosterPassiveSkillData = objectAssign({}, util.findData(skillTable, 'index', this.frosterInherentPassiveSkill));
-  var mysterBaseSkillData = objectAssign({}, util.findData(skillTable, 'index', this.mysterBaseSkill));
-  var mysterPassiveSkillData = objectAssign({}, util.findData(skillTable, 'index', this.mysterInherentPassiveSkill));
-  if(pyroBaseSkillData.level < transmissionBaseSkillLevel){
-    this.pyroBaseSkill = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', pyroBaseSkillData.groupIndex, 'level', transmissionBaseSkillLevel)).index;
-  }
-  if(pyroPassiveSkillData.level < transmissionPassiveSkillLevel){
-    this.pyroInherentPassiveSkill = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', pyroPassiveSkillData.groupIndex, 'level', transmissionPassiveSkillLevel)).index;
-  }
-  if(frosterBaseSkillData.level < transmissionBaseSkillLevel){
-    this.frosterBaseSkill = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', frosterBaseSkillData.groupIndex, 'level', transmissionBaseSkillLevel)).index;
-  }
-  if(frosterPassiveSkillData.level < transmissionPassiveSkillLevel){
-    this.frosterInherentPassiveSkill = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', frosterPassiveSkillData.groupIndex, 'level', transmissionPassiveSkillLevel)).index;
-  }
-  if(mysterBaseSkillData.level < transmissionBaseSkillLevel){
-    this.mysterBaseSkill = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', mysterBaseSkillData.groupIndex, 'level', transmissionBaseSkillLevel)).index;
-  }
-  if(mysterPassiveSkillData.level < transmissionPassiveSkillLevel){
-    this.mysterInherentPassiveSkill = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', mysterPassiveSkillData.groupIndex, 'level', transmissionPassiveSkillLevel)).index;
-  }
-};
+}
+// User.prototype.updateCharTypeSkill = function(){
+//   var baseSkillLevel = objectAssign({}, util.findData(skillTable, 'index', this.baseSkill)).level;
+//   var basePassiveSkillLevel = objectAssign({}, util.findData(skillTable, 'index', this.inherentPassiveSkill)).level;
+//   var transmissionBaseSkillLevel = Math.floor(baseSkillLevel * 0.8);
+//   var transmissionPassiveSkillLevel = Math.floor(basePassiveSkillLevel * 0.8);
+//   switch (this.type) {
+//     case gameConfig.CHAR_TYPE_FIRE:
+//       this.pyroBaseSkill = this.baseSkill;
+//       this.pyroInherentPassiveSkill = this.inherentPassiveSkill;
+//       break;
+//     case gameConfig.CHAR_TYPE_FROST:
+//       this.frosterBaseSkill = this.baseSkill;
+//       this.frosterInherentPassiveSkill = this.inherentPassiveSkill;
+//       break;
+//     case gameConfig.CHAR_TYPE_ARCANE:
+//       this.mysterBaseSkill = this.baseSkill;
+//       this.mysterInherentPassiveSkill = this.inherentPassiveSkill;
+//       break;
+//   }
+//   var pyroBaseSkillData = objectAssign({}, util.findData(skillTable, 'index', this.pyroBaseSkill));
+//   var pyroPassiveSkillData = objectAssign({}, util.findData(skillTable, 'index', this.pyroInherentPassiveSkill));
+//   var frosterBaseSkillData = objectAssign({}, util.findData(skillTable, 'index', this.frosterBaseSkill));
+//   var frosterPassiveSkillData = objectAssign({}, util.findData(skillTable, 'index', this.frosterInherentPassiveSkill));
+//   var mysterBaseSkillData = objectAssign({}, util.findData(skillTable, 'index', this.mysterBaseSkill));
+//   var mysterPassiveSkillData = objectAssign({}, util.findData(skillTable, 'index', this.mysterInherentPassiveSkill));
+//   if(pyroBaseSkillData.level < transmissionBaseSkillLevel){
+//     this.pyroBaseSkill = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', pyroBaseSkillData.groupIndex, 'level', transmissionBaseSkillLevel)).index;
+//   }
+//   if(pyroPassiveSkillData.level < transmissionPassiveSkillLevel){
+//     this.pyroInherentPassiveSkill = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', pyroPassiveSkillData.groupIndex, 'level', transmissionPassiveSkillLevel)).index;
+//   }
+//   if(frosterBaseSkillData.level < transmissionBaseSkillLevel){
+//     this.frosterBaseSkill = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', frosterBaseSkillData.groupIndex, 'level', transmissionBaseSkillLevel)).index;
+//   }
+//   if(frosterPassiveSkillData.level < transmissionPassiveSkillLevel){
+//     this.frosterInherentPassiveSkill = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', frosterPassiveSkillData.groupIndex, 'level', transmissionPassiveSkillLevel)).index;
+//   }
+//   if(mysterBaseSkillData.level < transmissionBaseSkillLevel){
+//     this.mysterBaseSkill = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', mysterBaseSkillData.groupIndex, 'level', transmissionBaseSkillLevel)).index;
+//   }
+//   if(mysterPassiveSkillData.level < transmissionPassiveSkillLevel){
+//     this.mysterInherentPassiveSkill = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', mysterPassiveSkillData.groupIndex, 'level', transmissionPassiveSkillLevel)).index;
+//   }
+// };
 User.prototype.updateStatAndCondition = function(){
   var additionalPower = 0, additionalMagic = 0, additionalSpeed = 0,
       additionalMaxHP = 0, additionalMaxMP = 0, additionalMaxHPRate = 100, additionalMaxMPRate = 100,
@@ -780,10 +815,12 @@ User.prototype.getSkill = function(index){
       var goldAmount = skillData.exchangeToGold;
       var jewelAmount = skillData.exchangeToJewel;
       if(util.isNumeric(goldAmount)){
-        this.gold += goldAmount;
+        this.gameGold += goldAmount
+        // this.gold += goldAmount;
       }
       if(util.isNumeric(jewelAmount)){
-        this.jewel += jewelAmount;
+        this.gameJewel += jewelAmount;
+        // this.jewel += jewelAmount;
       }
       this.onSkillChangeToResource(this, index);
     }
@@ -803,7 +840,7 @@ User.prototype.getSkill = function(index){
     //   //do nothing
     //   console.log('skill reach max level');
     // }
-    this.calcUserScore();
+    // this.calcUserScore();
   }
 };
 User.prototype.upgradeSkill = function(skillIndex){
@@ -820,6 +857,7 @@ User.prototype.upgradeSkill = function(skillIndex){
   for(var i=0; i<this.possessSkills.length; i++){
     if(this.possessSkills[i] === skillIndex){
       isPossession = true;
+      break;
     }
   }
   var skillData = objectAssign({}, util.findData(skillTable, 'index', skillIndex));
@@ -833,15 +871,29 @@ User.prototype.upgradeSkill = function(skillIndex){
           if(isBaseSkill){
             this.baseSkill = nextSkillIndex;
             this.onSkillUpgrade(this, skillIndex, nextSkillIndex);
-            this.updateCharTypeSkill();
+            // this.updateCharTypeSkill();
           }else if(isInherentSkill){
             this.inherentPassiveSkill = nextSkillIndex;
             this.onSkillUpgrade(this, skillIndex, nextSkillIndex);
-            this.updateCharTypeSkill();
+            // this.updateCharTypeSkill();
           }else if(isPossession){
             var index = this.possessSkills.indexOf(skillIndex);
             this.possessSkills.splice(index, 1);
             this.possessSkills.push(nextSkillIndex);
+            // update char type equip skills
+            index = this.pyroEquipSkills.indexOf(skillIndex);
+            if (index !== -1) {
+              this.pyroEquipSkills.splice(index, 1, nextSkillIndex);
+            }
+            index = this.frosterEquipSkills.indexOf(skillIndex);
+            if (index !== -1) {
+              this.frosterEquipSkills.splice(index, 1, nextSkillIndex);
+            }
+            index = this.mysterEquipSkills.indexOf(skillIndex);
+            if (index !== -1) {
+              this.mysterEquipSkills.splice(index, 1, nextSkillIndex);
+            }
+
             //check equip passive
             for(var i=0; i<this.passiveList.length; i++){
               var buffGroupIndex = skillData.buffToSelf;
@@ -906,8 +958,10 @@ User.prototype.upgradeSkill = function(skillIndex){
         // console.log('skill reach max level');
       }
     }
-    this.onBuffExchange(this);
-    this.calcUserScore();
+    if (skillData && skillData.type === gameConfig.SKILL_TYPE_PASSIVE) {
+      this.onBuffExchange(this);
+    }
+    // this.calcUserScore();
   }
 };
 User.prototype.exchangePassive = function(beforeBuffGID, afterBuffGID){
@@ -979,7 +1033,7 @@ User.prototype.checkSkillPossession = function(skillIndex){
 };
 User.prototype.takeDamage = function(attackUserID, fireDamage, frostDamage, arcaneDamage, damageToMP, hitBuffList, skillIndex){
   if(!this.conditions[gameConfig.USER_CONDITION_IMMORTAL]){
-    if(attackUserID.substr(0, 3) === gameConfig.PREFIX_MONSTER){
+    if(attackUserID.substr(0, 1) === gameConfig.PREFIX_MONSTER){
       var dmg = fireDamage * (1 - this.resistAll/100);
       this.HP -= dmg;
       this.onTakeDamage(this);
@@ -1135,157 +1189,158 @@ User.prototype.death = function(attackUserID){
   //calculate exp to attacker
   if(!this.isDead){
     this.isDead = true;
-    this.clearAll();
 
     this.onDeath(this, attackUserID, this.objectID, this.name);
+    this.onNeedDBUpdate();
+    this.clearAll();
     this.setPosition(-2000, -2000);
   }
 };
-User.prototype.decreaseLevel = function(level){
-  this.level = level;
-  this.exp = 0;
-};
-User.prototype.decreaseResource = function(rate, goldReductionMin, jewelReductionMin){
-  var loseGoldAmount = Math.floor(this.gold * rate / 100) > goldReductionMin ? Math.floor(this.gold * rate / 100) : goldReductionMin;
-  var loseJewelAmount = Math.floor(this.jewel * rate / 100) > jewelReductionMin ? Math.floor(this.jewel * rate / 100) : jewelReductionMin;
-
-  if(loseGoldAmount > this.gold){
-    loseGoldAmount = this.gold;
-  }
-  if(loseJewelAmount > this.jewel){
-    loseJewelAmount = this.jewel;
-  }
-  this.gold -= loseGoldAmount;
-  this.jewel -= loseJewelAmount;
-  return{
-    gL : loseGoldAmount,
-    jL : loseJewelAmount
-  };
-};
-User.prototype.lossSkills = function(lossRate){
-  var rand = Math.random() * 100;
-  if(lossRate > rand){
-    var lossSkillCount = Math.floor(this.skillScore / serverConfig.SKILL_LOSS_PER_SKILL_SCORE);
-    if(lossSkillCount){
-      var skillListOverLevel2 = [];
-      var baseSkillData = objectAssign({}, util.findData(skillTable, 'index', this.baseSkill));
-      if(baseSkillData.level > 1){
-        skillListOverLevel2.push(baseSkillData);
-      }
-      var inherentPassiveSkillData = objectAssign({}, util.findData(skillTable, 'index', this.inherentPassiveSkill));
-      if(inherentPassiveSkillData.level > 1){
-        skillListOverLevel2.push(inherentPassiveSkillData);
-      }
-      var allPossessSkills = []
-      for(var i=0; i<this.possessSkills.length; i++){
-        var skillData = objectAssign({}, util.findData(skillTable, 'index', this.possessSkills[i]));
-        allPossessSkills.push(skillData);
-        if(skillData.level > 1){
-          skillListOverLevel2.push(skillData);
-        }
-      }
-      lossSkillCount = lossSkillCount > skillListOverLevel2.length ? skillListOverLevel2.length : lossSkillCount;
-      if(lossSkillCount && skillListOverLevel2.length){
-        var beforeSkills = [];
-        var lossSkillList = [];
-        var repeatCount = 1;
-        for(var i=0; i<lossSkillCount; i++){
-          var randomIndex = Math.floor(Math.random() * skillListOverLevel2.length);
-
-          var beforeSkill = skillListOverLevel2[randomIndex];
-          if(beforeSkill.level !== 1){
-            var wasLossSkill = false;
-            var doLoss = true;
-            for(var j=0; j<lossSkillList.length; j++){
-              if(lossSkillList[j].groupIndex === beforeSkill.groupIndex){
-                wasLossSkill = true;
-              }
-            }
-            if(wasLossSkill){
-              var randForLoss = Math.floor(Math.random() * 100);
-              if(randForLoss > serverConfig.SKILL_DUPLICATE_LOSS_RATE){
-                doLoss = false;
-              }
-            }
-
-            if(doLoss){
-              // if(randomIndex !== 0 && randomIndex !== 1){
-              if(beforeSkill.groupIndex !== baseSkillData.groupIndex && beforeSkill.groupIndex !== inherentPassiveSkillData.groupIndex){
-                //except base and passive skill
-                beforeSkills.push(beforeSkill);
-              }
-              lossSkillList.push(beforeSkill);
-
-              var afterSkill = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', beforeSkill.groupIndex, 'nextSkillIndex', beforeSkill.index));
-              skillListOverLevel2.splice(randomIndex, 1, afterSkill);
-            }else{
-              //if dont decrease, repeat tenTimes
-              if(repeatCount > 10){
-                repeatCount = 1;
-              }else{
-                i--;
-                repeatCount++;
-              }
-            }
-          }else{
-            //if dont decrease, repeat tenTimes
-            if(repeatCount > 10){
-              repeatCount = 1;
-            }else{
-              i--;
-              repeatCount++;
-            }
-          }
-        }
-        if(skillListOverLevel2[0].groupIndex === baseSkillData.groupIndex){
-          this.baseSkill = skillListOverLevel2[0].index;
-        }
-
-        for(var i=0; i<skillListOverLevel2.length; i++){
-          if(skillListOverLevel2[i].groupIndex === inherentPassiveSkillData.groupIndex){
-            this.inherentPassiveSkill = skillListOverLevel2[i].index;
-            break;
-          }
-        }
-        for(var i=0; i<skillListOverLevel2.length; i++){
-          for(var j=0; j<allPossessSkills.length; j++){
-            if(allPossessSkills[j].groupIndex === skillListOverLevel2[i].groupIndex){
-              allPossessSkills.splice(j, 1, skillListOverLevel2[i]);
-              break;
-            }
-          }
-        }
-        this.possessSkills = [];
-        for(var i=0; i<allPossessSkills.length; i++){
-          this.possessSkills.push(allPossessSkills[i].index);
-        }
-
-        //set attackUser`s skill at beforeSkills
-        if(beforeSkills.length){
-          var index = Math.floor(Math.random() * beforeSkills.length);
-          var attackUserSkillData = beforeSkills[index];
-          //set level to 1
-          var attackUserSkillIndex = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', attackUserSkillData.groupIndex, 'level', 1)).index;
-        }
-
-        var lossSkills = [];
-        for(var i=0; i<lossSkillList.length; i++){
-          lossSkills.push(lossSkillList[i].index);
-        }
-
-        return {
-          bS : this.baseSkill,
-          iPS : this.inherentPassiveSkill,
-          pS : this.possessSkills,
-          lS : lossSkills,
-
-          attackUserSkill : attackUserSkillIndex || 0
-        };
-      }
-    }
-  }
-  return false;
-};
+// User.prototype.decreaseLevel = function(level){
+//   this.level = level;
+//   this.exp = 0;
+// };
+// User.prototype.decreaseResource = function(rate, goldReductionMin, jewelReductionMin){
+//   var loseGoldAmount = Math.floor(this.gold * rate / 100) > goldReductionMin ? Math.floor(this.gold * rate / 100) : goldReductionMin;
+//   var loseJewelAmount = Math.floor(this.jewel * rate / 100) > jewelReductionMin ? Math.floor(this.jewel * rate / 100) : jewelReductionMin;
+//
+//   if(loseGoldAmount > this.gold){
+//     loseGoldAmount = this.gold;
+//   }
+//   if(loseJewelAmount > this.jewel){
+//     loseJewelAmount = this.jewel;
+//   }
+//   this.gold -= loseGoldAmount;
+//   this.jewel -= loseJewelAmount;
+//   return{
+//     gL : loseGoldAmount,
+//     jL : loseJewelAmount
+//   };
+// };
+// User.prototype.lossSkills = function(lossRate){
+//   var rand = Math.random() * 100;
+//   if(lossRate > rand){
+//     var lossSkillCount = Math.floor(this.skillScore / serverConfig.SKILL_LOSS_PER_SKILL_SCORE);
+//     if(lossSkillCount){
+//       var skillListOverLevel2 = [];
+//       var baseSkillData = objectAssign({}, util.findData(skillTable, 'index', this.baseSkill));
+//       if(baseSkillData.level > 1){
+//         skillListOverLevel2.push(baseSkillData);
+//       }
+//       var inherentPassiveSkillData = objectAssign({}, util.findData(skillTable, 'index', this.inherentPassiveSkill));
+//       if(inherentPassiveSkillData.level > 1){
+//         skillListOverLevel2.push(inherentPassiveSkillData);
+//       }
+//       var allPossessSkills = []
+//       for(var i=0; i<this.possessSkills.length; i++){
+//         var skillData = objectAssign({}, util.findData(skillTable, 'index', this.possessSkills[i]));
+//         allPossessSkills.push(skillData);
+//         if(skillData.level > 1){
+//           skillListOverLevel2.push(skillData);
+//         }
+//       }
+//       lossSkillCount = lossSkillCount > skillListOverLevel2.length ? skillListOverLevel2.length : lossSkillCount;
+//       if(lossSkillCount && skillListOverLevel2.length){
+//         var beforeSkills = [];
+//         var lossSkillList = [];
+//         var repeatCount = 1;
+//         for(var i=0; i<lossSkillCount; i++){
+//           var randomIndex = Math.floor(Math.random() * skillListOverLevel2.length);
+//
+//           var beforeSkill = skillListOverLevel2[randomIndex];
+//           if(beforeSkill.level !== 1){
+//             var wasLossSkill = false;
+//             var doLoss = true;
+//             for(var j=0; j<lossSkillList.length; j++){
+//               if(lossSkillList[j].groupIndex === beforeSkill.groupIndex){
+//                 wasLossSkill = true;
+//               }
+//             }
+//             if(wasLossSkill){
+//               var randForLoss = Math.floor(Math.random() * 100);
+//               if(randForLoss > serverConfig.SKILL_DUPLICATE_LOSS_RATE){
+//                 doLoss = false;
+//               }
+//             }
+//
+//             if(doLoss){
+//               // if(randomIndex !== 0 && randomIndex !== 1){
+//               if(beforeSkill.groupIndex !== baseSkillData.groupIndex && beforeSkill.groupIndex !== inherentPassiveSkillData.groupIndex){
+//                 //except base and passive skill
+//                 beforeSkills.push(beforeSkill);
+//               }
+//               lossSkillList.push(beforeSkill);
+//
+//               var afterSkill = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', beforeSkill.groupIndex, 'nextSkillIndex', beforeSkill.index));
+//               skillListOverLevel2.splice(randomIndex, 1, afterSkill);
+//             }else{
+//               //if dont decrease, repeat tenTimes
+//               if(repeatCount > 10){
+//                 repeatCount = 1;
+//               }else{
+//                 i--;
+//                 repeatCount++;
+//               }
+//             }
+//           }else{
+//             //if dont decrease, repeat tenTimes
+//             if(repeatCount > 10){
+//               repeatCount = 1;
+//             }else{
+//               i--;
+//               repeatCount++;
+//             }
+//           }
+//         }
+//         if(skillListOverLevel2[0].groupIndex === baseSkillData.groupIndex){
+//           this.baseSkill = skillListOverLevel2[0].index;
+//         }
+//
+//         for(var i=0; i<skillListOverLevel2.length; i++){
+//           if(skillListOverLevel2[i].groupIndex === inherentPassiveSkillData.groupIndex){
+//             this.inherentPassiveSkill = skillListOverLevel2[i].index;
+//             break;
+//           }
+//         }
+//         for(var i=0; i<skillListOverLevel2.length; i++){
+//           for(var j=0; j<allPossessSkills.length; j++){
+//             if(allPossessSkills[j].groupIndex === skillListOverLevel2[i].groupIndex){
+//               allPossessSkills.splice(j, 1, skillListOverLevel2[i]);
+//               break;
+//             }
+//           }
+//         }
+//         this.possessSkills = [];
+//         for(var i=0; i<allPossessSkills.length; i++){
+//           this.possessSkills.push(allPossessSkills[i].index);
+//         }
+//
+//         //set attackUser`s skill at beforeSkills
+//         if(beforeSkills.length){
+//           var index = Math.floor(Math.random() * beforeSkills.length);
+//           var attackUserSkillData = beforeSkills[index];
+//           //set level to 1
+//           var attackUserSkillIndex = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', attackUserSkillData.groupIndex, 'level', 1)).index;
+//         }
+//
+//         var lossSkills = [];
+//         for(var i=0; i<lossSkillList.length; i++){
+//           lossSkills.push(lossSkillList[i].index);
+//         }
+//
+//         return {
+//           bS : this.baseSkill,
+//           iPS : this.inherentPassiveSkill,
+//           pS : this.possessSkills,
+//           lS : lossSkills,
+//
+//           attackUserSkill : attackUserSkillIndex || 0
+//         };
+//       }
+//     }
+//   }
+//   return false;
+// };
 // User.prototype.cancelBlur = function(){
 //   for(var i=this.buffList.length - 1; i>=0; i--){
 //     var buffs = util.findAndSetBuffs(this.buffList[i], buffTable, this.buffList[i].actorID);
@@ -1300,84 +1355,156 @@ User.prototype.lossSkills = function(lossRate){
 //   }
 //   this.onChangeStat(this);
 // };
-User.prototype.getExp = function(exp, killScore, chestScore, mobScore){
-  if(!this.isDead){
-    var userLevelData = objectAssign({}, util.findDataWithTwoColumns(userStatTable, 'type', this.type, 'level', this.level));
-    if(userLevelData.needExp === -1){
-      // console.log('user reach max level');
-    }else{
-      this.exp += exp;
-      this.onGetExp(this, {type : gameConfig.GET_RESOURCE_TYPE_EXP, amount : exp});
-    }
-    if(userLevelData.needExp !== -1 && this.exp >= userLevelData.needExp){
-      this.exp -= userLevelData.needExp;
-      this.levelUp();
-    }
-    if(killScore){
-      this.killCount ++;
-      this.totalKillCount ++;
-      this.killScore += killScore;
-      this.calcUserScore();
-      this.onScoreChange();
-    }
-    if(chestScore){
-      this.chestScore += chestScore;
-      this.calcUserScore();
-      this.onScoreChange();
-    }
-    if(mobScore){
-      this.mobScore += mobScore;
-      this.calcUserScore();
-      this.onScoreChange();
-    }
-    this.calcUserScore();
+User.prototype.calcGame = function() {
+  this.gold += this.gameGold;
+  this.jewel += this.gameJewel;
+  this.gameGold = 0;
+  this.gameJewel = 0;
+  // need calculate
+  var additionalExp = 30 + this.mobScore + this.killScore;
+  this.addExp(additionalExp);
+  // this.addExp(10000);
+
+  return {
+    j: this.jewel,
+    g: this.gold,
+    l: this.level,
+    e: this.exp
+    // a: additionalExp
+  }
+}
+User.prototype.addExp = function(exp) {
+  var userLevelData = objectAssign({}, util.findDataWithTwoColumns(userStatTable, 'type', this.type, 'level', this.level));
+  if (userLevelData.needExp === -1) {
+    // max level dont level up
+    this.exp = 0;
+  } else {
+    this.exp += exp;
+  }
+
+  if (userLevelData.needExp !== -1 && this.exp >= userLevelData.needExp) {
+    this.exp -= userLevelData.needExp;
+    this.levelUp();
+  }
+}
+User.prototype.levelUp = function(){
+  this.level ++;
+
+  var userLevelData = objectAssign({}, util.findDataWithTwoColumns(userStatTable, 'type', this.type, 'level', this.level));
+  this.gold += userLevelData.levelUpGold;
+  this.jewel += userLevelData.levelUpJewel;
+
+  this.setCharSkills();
+  this.updateUserBaseStat(userLevelData);
+
+  while(userLevelData.needExp !== -1 && this.exp >= userLevelData.needExp) {
+    this.level ++;
+    this.exp -= userLevelData.needExp;
+    userLevelData = objectAssign({}, util.findDataWithTwoColumns(userStatTable, 'type', this.type, 'level', this.level));
+    this.gold += userLevelData.levelUpGold;
+    this.jewel += userLevelData.levelUpJewel;
+    this.updateUserBaseStat(userLevelData);
   }
 };
+User.prototype.setCharSkills = function() {
+  // if (this.level % 5 === 0) {
+  var skillLevel = Math.floor(this.level / 5) + 1;
+  switch (this.type) {
+    case gameConfig.CHAR_TYPE_FIRE:
+      var baseGroupIndex = objectAssign({}, util.findData(skillTable, 'index', gameConfig.SKILL_INDEX_PYRO_BASE)).groupIndex;
+      this.pyroBaseSkill = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', baseGroupIndex, 'level', skillLevel)).index;
+      var passiveGroupIndex = objectAssign({}, util.findData(skillTable, 'index', gameConfig.SKILL_INDEX_PYRO_PASSIVE)).groupIndex;
+      this.pyroInherentPassiveSkill = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', passiveGroupIndex, 'level', skillLevel)).index;
+      this.baseSkill = this.pyroBaseSkill;
+      this.inherentPassiveSkill = this.pyroInherentPassiveSkill;
+      break;
+    case gameConfig.CHAR_TYPE_FROST:
+      var baseGroupIndex = objectAssign({}, util.findData(skillTable, 'index', gameConfig.SKILL_INDEX_FROST_BASE)).groupIndex;
+      this.frosterBaseSkill = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', baseGroupIndex, 'level', skillLevel)).index;
+      var passiveGroupIndex = objectAssign({}, util.findData(skillTable, 'index', gameConfig.SKILL_INDEX_FROST_PASSIVE)).groupIndex;
+      this.frosterInherentPassiveSkill = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', passiveGroupIndex, 'level', skillLevel)).index;
+      this.baseSkill = this.frosterBaseSkill;
+      this.inherentPassiveSkill = this.frosterInherentPassiveSkill;
+      break;
+    case gameConfig.CHAR_TYPE_ARCANE:
+      var baseGroupIndex = objectAssign({}, util.findData(skillTable, 'index', gameConfig.SKILL_INDEX_ARCANE_BASE)).groupIndex;
+      this.mysterBaseSkill = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', baseGroupIndex, 'level', skillLevel)).index;
+      var passiveGroupIndex = objectAssign({}, util.findData(skillTable, 'index', gameConfig.SKILL_INDEX_ARCANE_PASSIVE)).groupIndex;
+      this.mysterInherentPassiveSkill = objectAssign({}, util.findDataWithTwoColumns(skillTable, 'groupIndex', passiveGroupIndex, 'level', skillLevel)).index;
+      this.baseSkill = this.mysterBaseSkill;
+      this.inherentPassiveSkill = this.mysterInherentPassiveSkill;
+      break;
+    default:
+  }
+  // }
+};
+// User.prototype.getExp = function(exp, killScore, chestScore, mobScore){
+//   if(!this.isDead){
+//     var userLevelData = objectAssign({}, util.findDataWithTwoColumns(userStatTable, 'type', this.type, 'level', this.level));
+//     if(userLevelData.needExp === -1){
+//       // console.log('user reach max level');
+//     }else{
+//       this.exp += exp;
+//       this.onGetExp(this, {type : gameConfig.GET_RESOURCE_TYPE_EXP, amount : exp});
+//     }
+//     if(userLevelData.needExp !== -1 && this.exp >= userLevelData.needExp){
+//       this.exp -= userLevelData.needExp;
+//       this.levelUp();
+//     }
+//     if(killScore){
+//       this.killCount ++;
+//       this.totalKillCount ++;
+//       this.killScore += killScore;
+//       this.calcUserScore();
+//       this.onScoreChange();
+//     }
+//     if(chestScore){
+//       this.chestScore += chestScore;
+//       this.calcUserScore();
+//       this.onScoreChange();
+//     }
+//     if(mobScore){
+//       this.mobScore += mobScore;
+//       this.calcUserScore();
+//       this.onScoreChange();
+//     }
+//     this.calcUserScore();
+//   }
+// };
 User.prototype.getGold = function(goldAmount){
   if(util.isNumeric(goldAmount)){
-    this.gold += goldAmount;
+    // this.gold += goldAmount;
+    this.gameGold += goldAmount;
     this.onGetResource(this, {type : gameConfig.GET_RESOURCE_TYPE_GOLD, amount : goldAmount});
   }
   // this.calcUserScore();
 };
 User.prototype.getJewel = function(jewelAmount){
   if(util.isNumeric(jewelAmount)){
-    this.jewel += jewelAmount;
-    this.calcUserScore();
+    // this.jewel += jewelAmount;
+    this.gameJewel += jewelAmount;
+    // this.calcUserScore();
     this.onGetResource(this, {type : gameConfig.GET_RESOURCE_TYPE_JEWEL, amount : jewelAmount});
   }
 };
-User.prototype.addResource = function(gold, jewel){
-  if(util.isNumeric(gold)){
+// User.prototype.setResource = function(gold, jewel){
+//   if(util.isNumeric(gold)){
+//     this.gameGold = gold
+//     // this.gold = gold;
+//   }
+//   if(util.isNumeric(jewel)){
+//     // this.jewel = jewel;
+//     this.gameJewel = jewel;
+//   }
+// };
+User.prototype.setStartResource = function(gold, jewel) {
+  if (util.isNumeric(gold)) {
     this.gold = gold;
+    this.gameGold = 0;
   }
-  if(util.isNumeric(jewel)){
-    this.jewel = jewel;
-  }
-};
-User.prototype.levelUp = function(){
-  this.level ++;
-  var userLevelData = objectAssign({}, util.findDataWithTwoColumns(userStatTable, 'type', this.type, 'level', this.level));
-  //add levelBonus
-  //additional level up check.
-  this.updateUserBaseStat(userLevelData);
-  // this.initStat();
-  // this.restoreWhenLevelUp();
-  // this.getExp(0);
-  this.updateCharTypeLevel();
-
-  var additionalLevelUp = false;
-  if(userLevelData.needExp !== -1 && this.exp >= userLevelData.needExp){
-    additionalLevelUp = true;
-    this.exp -= userLevelData.needExp;
-    this.levelUp();
-  }
-  if(!additionalLevelUp){
-    this.onLevelUP(this);
-    this.calcUserScore();
-    this.onScoreChange();
-    this.onChangePrivateStat(this);
-    this.addBuff(serverConfig.LEVEL_UP_BUFF_INDEX, this.objectID);
+  if (util.isNumeric(jewel)) {
+    this.jewel= jewel;
+    this.gameJewel = 0;
   }
 };
 User.prototype.startUpdate = function(){
@@ -1389,8 +1516,10 @@ User.prototype.startUpdate = function(){
     this.regenInterval = setInterval(regenIntervalHandler.bind(this), serverConfig.USER_REGEN_TIMER);
   }
 };
-User.prototype.setStat = function(levelData, baseData){
+User.prototype.setStat = function(levelData, baseData, exp){
   this.type = levelData.type;
+  this.level = levelData.level;
+  this.exp = exp;
 
   this.basePower = levelData.power;
   this.baseMagic = levelData.magic;
@@ -1425,37 +1554,37 @@ User.prototype.setStat = function(levelData, baseData){
 
   this.initStat();
 };
-User.prototype.setSkill = function(charType, baseSkill, passiveSkill){
-  switch (charType) {
-    case gameConfig.CHAR_TYPE_FIRE:
-      if(this.pyroBaseSkill && this.pyroInherentPassiveSkill){
-        this.baseSkill = this.pyroBaseSkill;
-        this.inherentPassiveSkill = this.pyroInherentPassiveSkill;
-      }else{
-        this.baseSkill = baseSkill;
-        this.inherentPassiveSkill = passiveSkill;
-      }
-      break;
-    case gameConfig.CHAR_TYPE_FROST:
-      if(this.frosterBaseSkill && this.frosterInherentPassiveSkill){
-        this.baseSkill = this.frosterBaseSkill;
-        this.inherentPassiveSkill = this.frosterInherentPassiveSkill
-      }else{
-        this.baseSkill = baseSkill;
-        this.inherentPassiveSkill = passiveSkill;
-      }
-      break;
-    case gameConfig.CHAR_TYPE_ARCANE:
-      if(this.mysterBaseSkill && this.mysterInherentPassiveSkill){
-        this.baseSkill = this.mysterBaseSkill;
-        this.inherentPassiveSkill = this.mysterInherentPassiveSkill;
-      }else{
-        this.baseSkill = baseSkill;
-        this.inherentPassiveSkill = passiveSkill;
-      }
-      break;
-  }
-};
+// User.prototype.setSkill = function(charType, baseSkill, passiveSkill){
+//   switch (charType) {
+//     case gameConfig.CHAR_TYPE_FIRE:
+//       if(this.pyroBaseSkill && this.pyroInherentPassiveSkill){
+//         this.baseSkill = this.pyroBaseSkill;
+//         this.inherentPassiveSkill = this.pyroInherentPassiveSkill;
+//       }else{
+//         this.baseSkill = baseSkill;
+//         this.inherentPassiveSkill = passiveSkill;
+//       }
+//       break;
+//     case gameConfig.CHAR_TYPE_FROST:
+//       if(this.frosterBaseSkill && this.frosterInherentPassiveSkill){
+//         this.baseSkill = this.frosterBaseSkill;
+//         this.inherentPassiveSkill = this.frosterInherentPassiveSkill
+//       }else{
+//         this.baseSkill = baseSkill;
+//         this.inherentPassiveSkill = passiveSkill;
+//       }
+//       break;
+//     case gameConfig.CHAR_TYPE_ARCANE:
+//       if(this.mysterBaseSkill && this.mysterInherentPassiveSkill){
+//         this.baseSkill = this.mysterBaseSkill;
+//         this.inherentPassiveSkill = this.mysterInherentPassiveSkill;
+//       }else{
+//         this.baseSkill = baseSkill;
+//         this.inherentPassiveSkill = passiveSkill;
+//       }
+//       break;
+//   }
+// };
 User.prototype.getLevel = function(charType){
   switch (charType) {
     case gameConfig.CHAR_TYPE_FIRE:
@@ -1510,23 +1639,37 @@ User.prototype.updateUserBaseStat = function(userLevelData){
   this.baseMagic = userLevelData.magic;
   this.baseSpeed = userLevelData.speed;
 };
-User.prototype.calcUserScore = function(){
-  var levelScore = this.level  * serverConfig.SCORE_FACOTR_LEVEL;
-  // var goldScore = this.gold * serverConfig.SCORE_FACTOR_GOLD;
-  var jewelScore = this.jewel * serverConfig.SCORE_FACTOR_JEWEL;
-
-  var skillScore = 0;
-  var baseSkillData = objectAssign({}, util.findData(skillTable, 'index', this.baseSkill));
-  skillScore += getSkillScoreFactor(baseSkillData.tier) * baseSkillData.level;
-  var inherentPassiveSkillData = objectAssign({}, util.findData(skillTable, 'index', this.inherentPassiveSkill));
-  skillScore += getSkillScoreFactor(inherentPassiveSkillData.tier) * inherentPassiveSkillData.level;
-  for(var i=0; i<this.possessSkills.length; i++){
-    var skillData = objectAssign({}, util.findData(skillTable, 'index', this.possessSkills[i]));
-    skillScore += getSkillScoreFactor(skillData.tier) * skillData.level;
-  }
-  this.skillScore = util.isNumeric(skillScore) ? skillScore : 0;
-  this.score = this.skillScore + this.killScore + this.chestScore + this.mobScore + levelScore + jewelScore - serverConfig.SCORE_FACTOR_START;
-};
+User.prototype.killUser = function(score) {
+  this.killCount ++;
+  this.totalKillCount ++;
+  this.killScore += score;
+  this.calcScore();
+}
+User.prototype.killMob = function(score) {
+  this.mobScore += score;
+  this.calcScore();
+}
+User.prototype.calcScore = function() {
+  this.score = (this.mobScore + this.killScore) * 10;
+  this.onScoreChange();
+}
+// User.prototype.calcUserScore = function(){
+//   var levelScore = this.level  * serverConfig.SCORE_FACOTR_LEVEL;
+//   // var goldScore = this.gold * serverConfig.SCORE_FACTOR_GOLD;
+//   var jewelScore = this.jewel * serverConfig.SCORE_FACTOR_JEWEL;
+//
+//   var skillScore = 0;
+//   var baseSkillData = objectAssign({}, util.findData(skillTable, 'index', this.baseSkill));
+//   skillScore += getSkillScoreFactor(baseSkillData.tier) * baseSkillData.level;
+//   var inherentPassiveSkillData = objectAssign({}, util.findData(skillTable, 'index', this.inherentPassiveSkill));
+//   skillScore += getSkillScoreFactor(inherentPassiveSkillData.tier) * inherentPassiveSkillData.level;
+//   for(var i=0; i<this.possessSkills.length; i++){
+//     var skillData = objectAssign({}, util.findData(skillTable, 'index', this.possessSkills[i]));
+//     skillScore += getSkillScoreFactor(skillData.tier) * skillData.level;
+//   }
+//   this.skillScore = util.isNumeric(skillScore) ? skillScore : 0;
+//   this.score = this.skillScore + this.killScore + this.chestScore + this.mobScore + levelScore + jewelScore - serverConfig.SCORE_FACTOR_START;
+// };
 User.prototype.addSkillTick = function(){
   this.skillTick++;
 };
@@ -1549,7 +1692,7 @@ User.prototype.usePortal = function(){
   var thisUser = this;
   setTimeout(function(){
     thisUser.isUsePortal = false;
-  }, 5000);
+  }, 3000);
 };
 User.prototype.clearAll = function(){
   clearInterval(this.buffUpdateInterval);
@@ -1562,19 +1705,18 @@ User.prototype.clearAll = function(){
 
   this.killScore = 0;
   this.killCount = 0;
-  this.chestScore = 0;
+  // this.chestScore = 0;
   this.mobScore = 0;
 };
-User.prototype.setReconnectLevel = function(level, exp){
-  this.level = level;
-  this.exp = exp;
-
-  if(level > 3){
-    this.pyroLevel = level - 2;
-    this.frosterLevel = level - 2;
-    this.mysterLevel = level -2;
-  }
-};
+// User.prototype.setReconnectLevel = function(level, exp){
+//   this.level = level;
+//   this.exp = exp;
+//   // if(level > 3){
+//   //   this.pyroLevel = level - 2;
+//   //   this.frosterLevel = level - 2;
+//   //   this.mysterLevel = level -2;
+//   // }
+// };
 User.prototype.setReconnectSkills = function(baseSkill, passiveSkill, possessSkills){
   this.baseSkill = baseSkill;
   this.inherentPassiveSkill = passiveSkill;
@@ -1596,9 +1738,9 @@ User.prototype.setReconnectSkills = function(baseSkill, passiveSkill, possessSki
 };
 User.prototype.setReconnectScore = function(killCount, totalKillCount){
   this.killCount = killCount;
-  this.killScore = killCount * 500;
+  // this.killScore = killCount * 500;
   this.totalKillCount = totalKillCount;
-  this.calcUserScore();
+  // this.calcUserScore();
 };
 User.prototype.setReconnectHPMP = function(HP, MP){
   if(util.isNumeric(HP)){

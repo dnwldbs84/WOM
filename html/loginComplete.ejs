@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Success</title>
+  </head>
+  <body style="background: white">
+    <h4 id="title">Login Success</h4>
+    <p>Wait for a monent.</p>
+  </body>
+  <script type="text/javascript">
+    <% if (_u) { %>
+      var _u = <%- JSON.stringify(_u) %>;
+    <% } else { %>
+      _u = null;
+    <% } %>
+    <% if (_d) { %>
+      var _d = true;
+    <% } else { %>
+      _d = false;
+    <% } %>
+    <% if (_a) { %>
+      var _a = true;
+    <% } else { %>
+      _a = false;
+    <% } %>
+    if (_d) {
+      document.getElementById('title').innerText = 'That account was already registered.'
+    }
+    if (window.opener) {
+      window.opener.focus();
+      if (window.opener._onU) {
+        window.opener._onU(_u, _d, _a);
+      }
+    }
+    window.close();
+  </script>
+</html>

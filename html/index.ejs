@@ -22,8 +22,8 @@
   <meta name="twitter:site" content="http://worldofmage.io" />
   <meta name="twitter:description" content="Competition io game, World of Mage.io! Become a most powerful mage in WOM.io">
   <meta name="twitter:image:src" content="http://worldofmage.io/images/thumbnail.png">
-  <meta name="google-site-verification" content="u9VNa89q8zI0P2Q4-LxW2OGJUu6af0L2m2NIehVjm2s" />
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <!-- <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"> -->
+  <link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
   <title>WOM.io</title>
   <!-- Global site tag (gtag.js) - Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=UA-112883634-1"></script>
@@ -135,7 +135,7 @@
       </div>
       <button id="btnSelectSkillCancel"><img src="/images/cancel.png" /><span>Esc or R-Click</span></button>
     </div>
-    <div class="gameSceneHudTopRightCenter">
+    <div class="gameSceneHudTopRightCenter" id="hudResourceUI">
       <div class="gameSceneResourceContainer">
         <img src="/images/GoldIcon.png" />
         <div id="goldContainer">0</div>
@@ -156,19 +156,21 @@
     <div class="gameSceneHudBottomLeft">
       <div id="miniMapChest1" type="chest"><img src="/images/chestGround.png" /><img src="/images/void.png" /></div>
       <div id="miniMapChest2" type="chest"><img src="/images/chestGround.png" /><img src="/images/void.png" /></div>
-      <div id="miniMapChest3" type="chest"><img src="/images/chestGround.png" /><img src="/images/void.png" /></div>
+      <!-- <div id="miniMapChest3" type="chest"><img src="/images/chestGround.png" /><img src="/images/void.png" /></div>
       <div id="miniMapChest4" type="chest"><img src="/images/chestGround.png" /><img src="/images/void.png" /></div>
       <div id="miniMapChest5" type="chest"><img src="/images/chestGround.png" /><img src="/images/void.png" /></div>
       <div id="miniMapChest6" type="chest"><img src="/images/chestGround.png" /><img src="/images/void.png" /></div>
       <div id="miniMapChest7" type="chest"><img src="/images/chestGround.png" /><img src="/images/void.png" /></div>
       <div id="miniMapChest8" type="chest"><img src="/images/chestGround.png" /><img src="/images/void.png" /></div>
-      <div id="miniMapChest9" type="chest"><img src="/images/chestGround.png" /><img src="/images/void.png" /></div>
-      <div id="miniMapSafe1" type="safeZone"><img src="/images/SafeZone.png" /></div>
-      <div id="miniMapSafe2" type="safeZone"><img src="/images/SafeZone.png" /></div>
-      <div id="miniMapPortal1" type="portal"><img src="/images/PortalZone.png" /></div>
+      <div id="miniMapChest9" type="chest"><img src="/images/chestGround.png" /><img src="/images/void.png" /></div> -->
+      <div id="miniMapSafe" type="safeZone"><img src="/images/SafeZone.png" /></div>
+      <!-- <div id="miniMapSafe1" type="safeZone"><img src="/images/SafeZone.png" /></div> -->
+      <!-- <div id="miniMapSafe2" type="safeZone"><img src="/images/SafeZone.png" /></div> -->
+      <div id="miniMapPortal" type="portal"><img src="/images/PortalZone.png" /></div>
+      <!-- <div id="miniMapPortal1" type="portal"><img src="/images/PortalZone.png" /></div>
       <div id="miniMapPortal2" type="portal"><img src="/images/PortalZone.png" /></div>
       <div id="miniMapPortal3" type="portal"><img src="/images/PortalZone.png" /></div>
-      <div id="miniMapPortal4" type="portal"><img src="/images/PortalZone.png" /></div>
+      <div id="miniMapPortal4" type="portal"><img src="/images/PortalZone.png" /></div> -->
       <div id="miniMapUser" type="user"></div>
     </div>
     <div class="gameSceneHudBottomCenterLeft">
@@ -270,9 +272,40 @@
     </div>
     <div class="gameSceneDeadScene" id="gameSceneDeadScene">
       <div class="deadSceneBackground deadSceneBackgroundDefault" id="deadSceneBackground"></div>
-      <div class="deadSceneTextContainer deadSceneTextDefault" id="deadSceneTextContainer">
-        <span id="deadSceneText"></span>
-        <div class="deadSceneLoseInfoContainer">
+      <div class="deadSceneTextContainer deadSceneDefault" id="deadSceneTextContainer">
+        <span id="deadSceneText" class="deadSceneDefault"></span>
+        <div id="deadSceneInfoContainer" class="deadSceneInfoContainer deadSceneDefault">
+          <div id="deadSceneTop" class="deadSceneTop">
+            <span id="deadSceneInfoName">Pyro</span>&nbsp;&nbsp;&nbsp;<span id="deadSceneInfoLevel" class="yellow">Lv.5</span>
+            <div id="deadSceneInfoBaseSkills">
+              <div class="deadSceneBaseSkills" id="deadSceneBaseSkill" style="left: 40%"><img /><span class="deadSceneSkillLevel"></span></div>
+              <div class="deadSceneBaseSkills" id="deadScenePassiveSkill" style="left: 53%"><img /><span class="deadSceneSkillLevel"></span></div>
+            </div>
+            <div id="deadSceneBeforeLevel" class="deadSceneBeforeLevel">Lv.5</div>
+            <div class="deadSceneExpBar">
+              <span id="deadSceneInfoExpText">0%</span>
+              <div id="deadSceneInfoExpBar"></div>
+            </div>
+            <div id="deadSceneAfterLevel" class="deadSceneAfterLevel">Lv.6</div>
+          </div>
+          <div id="deadSceneMid" class="deadSceneMid deadSceneDefault">
+            <span id="deadSceneLevelUpText" class="deadSceneLevelUpText disable">Level Up Bonus!!</span>
+            <div>
+              <img src="/images/GoldIcon.png" />
+              <span id="deadSceneInfoGold">0</span>
+            </div>
+            <div>
+              <img src="/images/JewelIcon.png" />
+              <span id="deadSceneInfoJewel">0</span>
+            </div>
+          </div>
+          <div id="deadSceneBottom" class="deadSceneBottom deadSceneDefault">
+            <span id="deadSceneInfoNewSkillText" class="yellow">New Skills</span>
+            <div id="deadSceneInfoNewSkills"></div>
+          </div>
+          <button id="deadSceneConfirm" class="deadSceneConfirm deadSceneDefault">Confirm</button>
+        </div>
+        <!-- <div class="deadSceneLoseInfoContainer">
           <span id="deadSceneToLevel"></span>
           <div class="deadSceneLoseResourceContainer">
             <img src="/images/GoldIcon.png" />
@@ -282,7 +315,7 @@
             <img src="/images/JewelIcon.png" />
             <div id="deadSceneLoseJewel"></div>
           </div>
-        </div>
+        </div> -->
       </div>
     </div>
     <canvas id="canvas"></canvas>
@@ -293,14 +326,14 @@
   <div id="startScene" class="startScene enable">
     <div class="startSceneHud">
       <div class="startSceneHudTopLeft">
-        <a href="http://www.addictinggames.com/">
+        <a href="http://www.addictinggames.com/" target="_blank">
           <img src="/images/addicting-games-horizontal_rev-sponsor@2x.png" />
         </a>
         <!-- <h3>Featured YouTuber</h3>
           <a href="" id="startSceneUtuber" target="_blank"></a> -->
       </div>
       <div class="startSceneHudTopRight">
-        <button id="settingButton1"><i class="material-icons">settings</i></button>
+        <button id="settingButton1"><i class="fa fa-cog fa-3x" aria-hidden="true"></i></button>
       </div>
       <div class="startSceneHudCenter">
         <div class="startSceneHudTitle">
@@ -311,19 +344,27 @@
           <span id="loadingText">loading ... </span>
         </div>
         <div id="startSceneHudContent" class="disable">
-          <!-- <div class="startSceneHudCenterLeft" id="startSceneDisplayAdContainer">
-
-          </div> -->
-          <div class="startSceneHudCenterCenter">
+          <div class="startSceneHudCenterLeftDown disable" id="startSceneLogin">
+            <h3>Login</h3>
+            <hr>
+            <button id="signInGoogle1" class="btn-google"><i class="fa fa-google"></i> | Sign In with Google</button>
+            <!-- <a href="/" onclick="window.open('/auth/google/', 'newwindow', 'width=500, height=800'); return false"><img src="/images/GoldIcon.png"/></a> -->
+          </div>
+          <div class="loginContainer" id="loginContainer">
+            <h4>Login</h4><hr>
+            <button id="playGoogle" class="btn-google"><i class="fa fa-google"></i> | Play with Google</button>
+            <button id="playAsGuest">Play as Guest</button>
+          </div>
+          <div class="startSceneHudCenterCenter disable" id="charSelectContainer">
             <input type="text" maxlength="15" placeholder="Enter Your Nickname" id="userStartNickName"/>
             <div class="startSceneHudCenterCenterCharSelect" id="startSceneHudCenterCenterCharSelect">
-              <div type="1" class="selectedChar" style="left: 23px;">
+              <div type="1" class="selectedChar" style="left: 23px;"><span>Lv. 1</span>
                 <img src="/images/charFireSymbol.png" />
               </div>
-              <div type="2" style="left: 145px;">
+              <div type="2" style="left: 145px;"><span>Lv. 1</span>
                 <img src="/images/charFrostSymbol.png" />
               </div>
-              <div type="3" style="left: 267px;">
+              <div type="3" style="left: 267px;"><span>Lv. 1</span>
                 <img src="/images/charArcaneSymbol.png" />
               </div>
             </div>
@@ -369,17 +410,11 @@
               <p>● <span class="strong">Enter :</span> chatting</p>
               <p>● <span class="strong">Home :</span> suicide</p>
               <h3>Game Tip</h3>
-              <p>● Using <a href="https://chrome.en.softonic.com/" target="_blank">Google Chrome</a> is highly recommended for best performance</p>
-              <p>● Each Characters Passive Spell make character special.<span class="memo">[upgrade it!!!]</span></p>
+              <p>● Each Characters Passive Spell make character special.<span class="memo">[passive skill automaticly upgrade every 5 character level]</span></p>
               <p>● All spells can equip regardless of character type.<span class="memo">[except character spell]</span></p>
               <p>● Unlock spell`s property by upgrade.</p>
-              <p>● If you hit trees or rocks, you will get exp.</p>
-              <p>● If you destroy chests or kill other character, you will get exp and golds.</p>
               <p>● Chests may drop spell and gold and jewel.</p>
-              <p>● Trees may drop spell and gold and jewel.<span class="memo">[low rate]</span></p>
-              <p>● Rocks may drop golds and jewel.<span class="memo">[low rate]<span></p>
               <p>● Charater may drop spell and gold and jewel.</p>
-              <p>● If you die, your character will lost resources and even may lost spell level.</p>
               <p>● <span class="red fontNormal">Fire spell</span> can ignite oppenent.</p>
               <p>● <span class="blue fontNormal">Ice spell</span> can chill oppenent.</p>
               <p>● <span class="purple fontNormal">Arcane spell</span> burn enemy`s MP.<span class="memo">[A certain percentage of damage]</span></p>
@@ -390,18 +425,20 @@
       </div>
       <div class="startSceneHudBottom">
         <div class="iospaceIFrame">
-          <iframe id="IOG_CP" scrolling="no" frameborder="0" width="200" height="145" src="https://viral.iogames.space/cp/worldofmage-io" style="border-radius:10px;-webkit-box-shadow:0 3px 6px rgba(0,0,0,.25),0 3px 6px rgba(0,0,0,.4); -moz-box-shadow:0 3px 6px rgba(0,0,0,.25),0 3px 6px rgba(0,0,0,.4); box-shadow:0 3px 6px rgba(0,0,0,.25),0 3px 6px rgba(0,0,0,.4);">
-          </iframe>
+          <!-- <iframe id="IOG_CP" scrolling="no" frameborder="0" width="200" height="145" src="https://viral.iogames.space/cp/worldofmage-io" style="border-radius:10px;-webkit-box-shadow:0 3px 6px rgba(0,0,0,.25),0 3px 6px rgba(0,0,0,.4); -moz-box-shadow:0 3px 6px rgba(0,0,0,.25),0 3px 6px rgba(0,0,0,.4); box-shadow:0 3px 6px rgba(0,0,0,.25),0 3px 6px rgba(0,0,0,.4);">
+          </iframe> -->
+          <iframe style="visibility: visible;" id="IOG_CP" scrolling="no" frameborder="0" width="220" height="125" src="http://viral.iogames.space"></iframe>
         </div>
         <div class="startSceneHudBottomLeft">
-          <div class="SNSReward twitterReward" id="startSceneTwitterReward"><img src="/images/GoldIcon.png" /><span>5000</span><img src="/images/complete.png" class="complete disable" /></div>
-          <div class="SNSReward facebookReward" id="startSceneFacebookReward"><img src="/images/JewelIcon.png" /><span>5</span><img src="/images/complete.png" class="complete disable"/></div>
-          <div class="startSceneHudSocial">
+          <!-- <div class="SNSReward twitterReward" id="startSceneTwitterReward"><img src="/images/GoldIcon.png" /><span>5000</span><img src="/images/complete.png" class="complete disable" /></div>
+          <div class="SNSReward facebookReward" id="startSceneFacebookReward"><img src="/images/JewelIcon.png" /><span>5</span><img src="/images/complete.png" class="complete disable"/></div> -->
+          <!-- <div class="startSceneHudSocial">
             <a id="startSceneFacebook" href="http://www.facebook.com/sharer.php?u=http://worldofmage.io" target="_blank" class="socialBtn facebookBtn"></a>
             <a id="startSceneTwitter" href="https://twitter.com/intent/tweet?text=Competition+io+game,+WorldOfMage.io+has+come.+Join+and+play+with+friends!+%40WorldOfMageIO+%3E%3E+&url=http%3A%2F%2Fworldofmage.io" target="_blank" class="socialBtn twitterBtn"></a>
-            <!-- <a href="" target="_blank" class="socialBtn redditBtn"></a> -->
-            <a href="http://iogames.space/" target="_blank" class="moreIOBtn">More IO Games</a>
-          </div>
+            <a href="" target="_blank" class="socialBtn redditBtn"></a>
+          </div> -->
+          <a href="http://iogames.space/" target="_blank" class="moreIOBtn">More IO Games</a>
+          <a href="http://www.addictinggames.com/" target="_blank" class="moreAddictingBtn">More Games</a>
         </div>
         <div class="startSceneHudBottomRight">
           <div class="changelogText">
@@ -420,14 +457,24 @@
   <div id="standingScene" class="disable">
     <div class="standingSceneHud">
       <div class="standingSceneHudTopLeft">
-        <a href="http://www.addictinggames.com/">
+        <a href="http://www.addictinggames.com/" target="_blank">
           <img src="/images/addicting-games-horizontal_rev-sponsor@2x.png" />
         </a>
         <!-- <h3>Featured YouTuber</h3>
           <a href="" id="standingSceneUtuber" target="_blank"></a> -->
       </div>
       <div class="standingSceneHudTopRight">
-        <button id="settingButton2"><i class="material-icons">settings</i></button>
+        <button id="settingButton2"><i class="fa fa-cog fa-3x" aria-hidden="true"></i></button>
+      </div>
+      <div class="standingSceneHudTopRightCenter">
+        <div class="standingSceneResourceContainer">
+          <img src="/images/GoldIcon.png" />
+          <div id="goldContainer2">0</div>
+        </div>
+        <div class="standingSceneResourceContainer">
+          <img src="/images/JewelIcon.png" />
+          <div id="jewelContainer2">0</div>
+        </div>
       </div>
       <div class="standingSceneHudCenter">
         <div class="standingSceneHudTitle">
@@ -436,6 +483,12 @@
         <!-- <div class="standingSceneHudCenterLeft" id="standingSceneDisplayAdContainer">
 
         </div> -->
+        <div class="standingSceneHudCenterLeftDown disable" id="standingSceneLogin">
+          <h3>Login</h3>
+          <hr>
+          <button id="signInGoogle2" class="btn-google"><i class="fa fa-google"></i> | Sign In with Google</button>
+          <!-- <a href="/" onclick="window.open('/auth/google/', 'newwindow', 'width=500, height=500'); return false"><img src="/images/GoldIcon.png"/></a> -->
+        </div>
         <div class="standingSceneHudCenterCenter">
           <input type="text" maxlength="15" placeholder="Enter Your Nickname" id="userStandingNickName"/>
           <div class="standingSceneHudCenterCenterCharSelect" id="standingSceneHudCenterCenterCharSelect">
@@ -493,17 +546,11 @@
             <p>● <span class="strong">Enter :</span> chatting</p>
             <p>● <span class="strong">Home :</span> suicide</p>
             <h3>Game Tip</h3>
-            <p>● Using <a href="https://chrome.en.softonic.com/" target="_blank">Google Chrome</a> is highly recommended for best performance</p>
-            <p>● Each Characters Passive Spell make character special.<span class="memo">[upgrade it!!!]</span></p>
+            <p>● Each Characters Passive Spell make character special.<span class="memo">[passive skill automaticly upgrade every 5 character level]</span></p>
             <p>● All spells can equip regardless of character type.<span class="memo">[except character spell]</span></p>
             <p>● Unlock spell`s property by upgrade.</p>
-            <p>● If you hit trees or rocks, you will get exp.</p>
-            <p>● If you destroy chests or kill other character, you will get exp and golds.</p>
             <p>● Chests may drop spell and gold and jewel.</p>
-            <p>● Trees may drop spell and gold and jewel.<span class="memo">[low rate]</span></p>
-            <p>● Rocks may drop golds and jewel.<span class="memo">[low rate]<span></p>
             <p>● Charater may drop spell and gold and jewel.</p>
-            <p>● If you die, your character will lost resources and even may lost spell level.</p>
             <p>● <span class="red fontNormal">Fire spell</span> can ignite oppenent.</p>
             <p>● <span class="blue fontNormal">Ice spell</span> can chill oppenent.</p>
             <p>● <span class="purple fontNormal">Arcane spell</span> burn enemy`s MP.<span class="memo">[A certain percentage of damage]</span></p>
@@ -513,18 +560,20 @@
       </div>
       <div class="standingSceneHudBottom">
         <div class="iospaceIFrame">
-          <iframe id="IOG_CP" scrolling="no" frameborder="0" width="200" height="145" src="https://viral.iogames.space/cp/worldofmage-io" style="border-radius:10px;-webkit-box-shadow:0 3px 6px rgba(0,0,0,.25),0 3px 6px rgba(0,0,0,.4); -moz-box-shadow:0 3px 6px rgba(0,0,0,.25),0 3px 6px rgba(0,0,0,.4); box-shadow:0 3px 6px rgba(0,0,0,.25),0 3px 6px rgba(0,0,0,.4);">
-          </iframe>
+          <!-- <iframe id="IOG_CP" scrolling="no" frameborder="0" width="200" height="145" src="https://viral.iogames.space/cp/worldofmage-io" style="border-radius:10px;-webkit-box-shadow:0 3px 6px rgba(0,0,0,.25),0 3px 6px rgba(0,0,0,.4); -moz-box-shadow:0 3px 6px rgba(0,0,0,.25),0 3px 6px rgba(0,0,0,.4); box-shadow:0 3px 6px rgba(0,0,0,.25),0 3px 6px rgba(0,0,0,.4);">
+          </iframe> -->
+          <iframe style="visibility: visible;" id="IOG_CP" scrolling="no" frameborder="0" width="220" height="125" src="http://viral.iogames.space"></iframe>
         </div>
         <div class="standingSceneHudBottomLeft">
-          <div class="SNSReward twitterReward" id="standingSceneTwitterReward"><img src="/images/GoldIcon.png" /><span>5000</span><img src="/images/complete.png" class="complete disable" /></div>
-          <div class="SNSReward facebookReward" id="standingSceneFacebookReward"><img src="/images/JewelIcon.png" /><span>5</span><img src="/images/complete.png" class="complete disable"/></div>
-          <div class="standingSceneHudSocial">
+          <!-- <div class="SNSReward twitterReward" id="standingSceneTwitterReward"><img src="/images/GoldIcon.png" /><span>5000</span><img src="/images/complete.png" class="complete disable" /></div>
+          <div class="SNSReward facebookReward" id="standingSceneFacebookReward"><img src="/images/JewelIcon.png" /><span>5</span><img src="/images/complete.png" class="complete disable"/></div> -->
+          <!-- <div class="standingSceneHudSocial">
             <a id="standingSceneFacebook" href="http://www.facebook.com/sharer.php?u=http://worldofmage.io" target="_blank" class="socialBtn facebookBtn"></a>
             <a id="standingSceneTwitter" href="https://twitter.com/intent/tweet?text=Competition+io+game,+WorldOfMage.io+has+come.+Join+and+play+with+friends!+%40WorldOfMageIO+%3E%3E+&url=http%3A%2F%2Fworldofmage.io" target="_blank" class="socialBtn twitterBtn"></a>
-            <!-- <a href="" target="_blank" class="socialBtn redditBtn"></a> -->
-            <a href="http://iogames.space/" target="_blank" class="moreIOBtn">More IO Games</a>
-          </div>
+            <a href="" target="_blank" class="socialBtn redditBtn"></a>
+          </div> -->
+          <a href="http://iogames.space/" target="_blank" class="moreIOBtn">More IO Games</a>
+          <a href="http://www.addictinggames.com/" target="_blank" class="moreAddictingBtn">More Games</a>
         </div>
         <div class="standingSceneHudBottomRight">
           <div class="changelogText">
@@ -602,7 +651,11 @@
       <label for="bind4"> Spell 4 : </label><input type="text" maxlength="1" id="bind4" placeholder="4"> <br>
       <label for="bindS"> Stop : </label><input type="text" maxlength="1" id="bindS" placeholder="S"> <br>
       <label for="bindG"> Spell Setting : </label><input type="text" maxlength="1" id="bindG" placeholder="G"> <br>
-      <label for="bindHome"> Suicide : </label><input type="text" maxlength="1" id="bindHome" placeholder="HOME"> <br>
+      <!-- <label for="bindHome"> Suicide : </label><input type="text" maxlength="1" id="bindHome" placeholder="HOME"> <br> -->
+      <hr>
+    </div>
+    <div>
+      <button id="optionLogout" class="optionLogout btn-disable disable">Log Out</button>
     </div>
   </div>
   <table class="flashMessageTable"><tbody><tr>
@@ -630,6 +683,19 @@
   <button class="disable" id="displayAdRefresh" onclick="aiptag.cmd.display.push(function() { aipDisplayTag.refresh('worldofmage-io_300x250'); });">Refresh Ad</button>
   <button class="disable" id="videoAdPlay" onclick="aiptag.cmd.player.push(function() { adplayer.startPreRoll(); });"></button>
 
+  <script>
+    <% if (user) { %>
+      var _u = <%- JSON.stringify(user) %>;
+    <% } else { %>
+      _u = null;
+    <% } %>
+    <% if (isAuth) { %>
+      var _a = <%- JSON.stringify(isAuth) %>;
+    <% } else { %>
+      _a = false;
+      var _onU = new Function();
+    <% } %>
+  </script>
   <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.slim.js"></script> -->
   <!-- <script src="/socket.io/socket.io.js"></script> -->
   <script src="/js/bundle.js"></script>

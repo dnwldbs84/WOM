@@ -28,8 +28,8 @@ exports.generateRandomUniqueID = function(uniqueCheckArray, prefix){
 };
 function generateRandomID(prefix){
   var output = prefix;
-  for(var i=0; i<6; i++){
-    output += Math.floor(Math.random()*16).toString(16);
+  for(var i=0; i<2; i++){
+    output += Math.floor(Math.random()*36).toString(36);
   }
   return output;
 };
@@ -41,19 +41,23 @@ exports.generateRandomPos = function(checkTree, minX, minY, maxX, maxY, radius, 
   while(isCollision){
     if (repeatCount > 20){
       isCollision = false;
-    }else{
+    } else {
       isCollision = false;
       var pos = {
         x : Math.floor(Math.random()*(maxX - minX) + minX),
         y : Math.floor(Math.random()*(maxY - minY) + minY)
       }
-      var collisionObjs = util.checkCircleCollision(checkTree, pos.x, pos.y, radius + diffRangeWithOthers, objID);
-      if(collisionObjs.length > 0){
+      if (pos.x >= gameConfig.CANVAS_MAX_SIZE.width - 350 && pos.y >= gameConfig.CANVAS_MAX_SIZE.height - 350) {
         isCollision = true;
-      }else if(checkTree2){
-        var collisionObjs = util.checkCircleCollision(checkTree2, pos.x, pos.y, radius + diffRangeWithOthers, objID);
-        if(collisionObjs.length >0){
+      } else {
+        var collisionObjs = util.checkCircleCollision(checkTree, pos.x, pos.y, radius + diffRangeWithOthers, objID);
+        if(collisionObjs.length > 0){
           isCollision = true;
+        }else if(checkTree2){
+          var collisionObjs = util.checkCircleCollision(checkTree2, pos.x, pos.y, radius + diffRangeWithOthers, objID);
+          if(collisionObjs.length >0){
+            isCollision = true;
+          }
         }
       }
     }
@@ -159,9 +163,9 @@ exports.onUserTakeDamage = function(user, skillIndex){
 exports.onUserReduceMP = function(user){
   this.onNeedInformUserReduceMP(user);
 };
-exports.onUserGetExp = function(user, resource){
-  this.onNeedInformUserGetExp(user, resource);
-};
+// exports.onUserGetExp = function(user, resource){
+//   this.onNeedInformUserGetExp(user, resource);
+// };
 exports.onUserGetResource = function(user, resource){
   this.onNeedInformUserGetResource(user, resource);
 };
@@ -174,42 +178,46 @@ exports.onUserSkillChangeToResource = function(user, skillIndex){
 exports.onUserScoreChange = function(){
   this.onNeedInformScoreData();
 };
-exports.onUserLevelUP = function(user){
-  this.onNeedInformUserLevelUp(user);
-};
+// exports.onUserLevelUP = function(user){
+//   this.onNeedInformUserLevelUp(user);
+// };
 exports.onUserDeath = function(user, attackUserID, deadUserID, deadUserName){
   var dropData = objectAssign({}, util.findDataWithTwoColumns(charDropTable, 'level', user.level, 'type', user.type));
 
-  user.decreaseLevel(dropData.levelTo);
-  var skillIndexes = user.lossSkills(dropData.lossSkillRate);
-  user.updateCharTypeLevel();
-  user.updateCharTypeSkill();
-  var loseResource = user.decreaseResource(dropData.resourceReductionRate, dropData.goldReductionMin, dropData.jewelReductionMin);
+  // user.decreaseLevel(dropData.levelTo);
+  // var skillIndexes = user.lossSkills(dropData.lossSkillRate);
+  // user.updateCharTypeLevel();
+  // user.updateCharTypeSkill();
+  // var loseResource = user.decreaseResource(dropData.resourceReductionRate, dropData.goldReductionMin, dropData.jewelReductionMin);
 
   //give resource to kill user
-  if(attackUserID !== deadUserID && attackUserID.substr(0, 3) === gameConfig.PREFIX_USER){
+  if(attackUserID !== deadUserID && attackUserID.substr(0, 1) === gameConfig.PREFIX_USER){
     if(attackUserID in this.users){
-      this.users[attackUserID].getExp(dropData.provideExp, dropData.provideScore);
+      this.users[attackUserID].killUser(dropData.provideScore);
+      // this.users[attackUserID].getExp(dropData.provideExp, dropData.provideScore);
       if(dropData.provideGold){
         this.users[attackUserID].getGold(dropData.provideGold);
       }
       if(dropData.provideJewel){
         this.users[attackUserID].getJewel(dropData.provideJewel);
       }
-      if(skillIndexes.attackUserSkill){
-        this.users[attackUserID].getSkill(skillIndexes.attackUserSkill);
-        // var possessSkills = this.users[attackUserID].getSkill(skillIndexes.attackUserSkill);
-        // if(possessSkills){
-        //   this.onNeedInformSkillData(this.users[attackUserID].socketID, possessSkills);
-        // }
-      }
+      // if(skillIndexes.attackUserSkill){
+      //   this.users[attackUserID].getSkill(skillIndexes.attackUserSkill);
+      //   // var possessSkills = this.users[attackUserID].getSkill(skillIndexes.attackUserSkill);
+      //   // if(possessSkills){
+      //   //   this.onNeedInformSkillData(this.users[attackUserID].socketID, possessSkills);
+      //   // }
+      // }
     }else{
       console.log(attackUserID + ' is not exists');
     }
   }
-  if(skillIndexes){
-    delete skillIndexes.attackUserSkill;
+  if (deadUserID in this.users) {
+    var deadUserCalcInfo = this.users[deadUserID].calcGame();
   }
+  // if(skillIndexes){
+  //   delete skillIndexes.attackUserSkill;
+  // }
   //set drop resources
   var golds = [], jewels = [], skills = [];
   var goldCount = Math.floor(Math.random() * (dropData.goldDropMaxCount - dropData.goldDropMinCount + 1) + dropData.goldDropMinCount);
@@ -247,11 +255,11 @@ exports.onUserDeath = function(user, attackUserID, deadUserID, deadUserName){
       }
     }
   }
-  if(attackUserID.substr(0, 3) === gameConfig.PREFIX_USER){
+  if(attackUserID.substr(0, 1) === gameConfig.PREFIX_USER){
     var attackUserType = this.getUserType(attackUserID);
     var killFeedBackLevel = this.calcKillFeedBackLevel(attackUserID);
     var attackUserName = this.getUserName(attackUserID);
-  }else if(attackUserID.substr(0, 3) === gameConfig.PREFIX_MONSTER){
+  }else if(attackUserID.substr(0, 1) === gameConfig.PREFIX_MONSTER){
     attackUserType = gameConfig.CHAR_TYPE_MOB;
     killFeedBackLevel = gameConfig.KILL_FEEDBACK_LEVEL_0;
     if(attackUserID in this.monsters){
@@ -263,8 +271,8 @@ exports.onUserDeath = function(user, attackUserID, deadUserID, deadUserName){
   var deadUserType = this.getUserType(deadUserID);
 
   this.onNeedInformUserDeath({uID : attackUserID, tp : attackUserType, fl : killFeedBackLevel, nm : attackUserName},
-                             {uID : deadUserID, tp : deadUserType, nm : deadUserName}
-                             , loseResource, skillIndexes);
+                             {uID : deadUserID, tp : deadUserType, nm : deadUserName}, deadUserCalcInfo);
+                             // , loseResource, skillIndexes);
   userDrop.call(this, golds, jewels, skills, user.center);
 };
 exports.onMobTakeDamage = function(mob, skillIndex){
@@ -279,7 +287,8 @@ exports.onMobDeath = function(mob, attackUserID){
     this.onNeedInformMobDeath(mob.objectID);
   }
   if(attackUserID in this.users && !this.users[attackUserID].isDead){
-    this.users[attackUserID].getExp(mob.provideExp, 0, 0, mob.provideScore);
+    // this.users[attackUserID].getExp(mob.provideExp, 0, 0, mob.provideScore);
+    this.users[attackUserID].killMob(mob.provideScore);
     if(mob.provideGold){
       this.users[attackUserID].getGold(mob.provideGold);
     }
@@ -621,7 +630,7 @@ exports.checkUserBuff = function(user, skillData){
 
 exports.onChestDestroy = function(cht, attackUserID){
   if(attackUserID in this.users && !this.users[attackUserID].isDead){
-    this.users[attackUserID].getExp(cht.chestData.provideExp, 0, cht.chestData.provideScore);
+    // this.users[attackUserID].getExp(cht.chestData.provideExp, 0, cht.chestData.provideScore);
     if(cht.chestData.provideGold){
       this.users[attackUserID].getGold(cht.chestData.provideGold);
     }
@@ -703,7 +712,7 @@ exports.getBoxDrop = function(){
     }
   }
   return {
-    exp : dropData.provideExp || 0,
+    // exp : dropData.provideExp || 0,
     gold : goldAmount || 0,
     jewel : jewelAmount || 0,
     skillIndex : skillIndex || 0

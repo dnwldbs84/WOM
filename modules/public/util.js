@@ -1,7 +1,8 @@
 var gameConfig = require('./gameConfig.json');
 var radianFactor = Math.PI/180;
 var objectAssign = require('../../modules/public/objectAssign.js');
-var msgpack = require('msgpack-js');
+// var msgpack = require('msgpack-js');
+var msgpack = require('msgpack-lite');
 
 //must use with bind or call method
 exports.rotate = function(deltaTime){
@@ -539,12 +540,19 @@ exports.calcTargetPosition = function(centerPosition, direction, range){
 };
 //find last coincident data
 exports.findData = function(table, columnName, value){
-  var data = undefined;
-  for(var i=0; i<table.length; i++){
-    if(table[i][columnName] == value){
-      data = table[i];
-      break;
+  try {
+    if (table) {
+      var data = undefined;
+      for(var i=0; i<table.length; i++){
+        if(table[i][columnName] == value){
+          data = table[i];
+          break;
+        }
+      }
+      return data;
     }
+  } catch (e) {
+    console.log(e);
   }
   // for(var index in table){
   //   //use ==, because value can be integer
@@ -553,21 +561,26 @@ exports.findData = function(table, columnName, value){
   //     break;
   //   }
   // }
-  return data;
 };
 exports.findAllDatas = function(table, columnName, value){
-  var datas = [];
-  for(var i=0; i<table.length; i++){
-    if(table[i][columnName] == value){
-      datas.push(table[i]);
+  try {
+    if (table) {
+      var datas = [];
+      for(var i=0; i<table.length; i++){
+        if(table[i][columnName] == value){
+          datas.push(table[i]);
+        }
+      }
+      // for(var index in table){
+        //   if(table[index][columnName] == value){
+          //     datas.push(table[index]);
+          //   }
+          // }
+      return datas;
     }
+  } catch (e) {
+    console.log(e);
   }
-  // for(var index in table){
-  //   if(table[index][columnName] == value){
-  //     datas.push(table[index]);
-  //   }
-  // }
-  return datas;
 }
 exports.findDataWithTwoColumns = function(table, columnName1, value1, columnName2, value2){
   var datas = [];
@@ -791,9 +804,9 @@ exports.setImgCssStyle = function(imgDiv, iconData, expandRate){
 };
 exports.processMessage = function(msg, stringLength, isName){
   var newMsg = msg.replace(/(<([^>]+)>)/ig, '').substring(0,stringLength);
-  if(isName){
+  if (isName) {
     return newMsg.replace(/\s/gi, "");
-  }else{
+  } else {
     return newMsg;
   }
 };
@@ -937,6 +950,15 @@ exports.setDrawMobs = function(monsters, gameConfig){
   }
   return drawMobs;
 };
+exports.checkName = function(charType, name) {
+  if ((name.slice(0, 5) == "Pyro#" && charType !== gameConfig.CHAR_TYPE_FIRE) ||
+      (name.slice(0, 8) == "Froster#" && charType !== gameConfig.CHAR_TYPE_FROST) ||
+      (name.slice(0, 7) == "Myster#" && charType !== gameConfig.CHAR_TYPE_ARCANE)){
+    return null;
+  } else {
+    return name;
+  }
+}
 exports.setRandomName = function(charType){
   var suffix = "";
   for(var i=0; i<3; i++){
@@ -984,10 +1006,301 @@ exports.makePacketForm = function(type){
     vars.push(arguments[i]);
   }
   return msgpack.encode({
-    type: type,
-    vars: vars
+    t: type,
+    v: vars
   });
 };
 exports.decodePacket = function(data){
     return msgpack.decode(data);
 };
+
+
+exports.processUserData = function(rawData) {
+  return {
+    oID: rawData[0],
+    tp: rawData[1],
+    nm: rawData[2],
+    cs: rawData[3],
+    pos: rawData[4],
+    tpos: rawData[5],
+    msp: rawData[6],
+    dir: rawData[7],
+    rsp: rawData[8],
+    lv: rawData[9],
+    ep: rawData[10],
+    mHP: rawData[11],
+    mMP: rawData[12],
+    HP: rawData[13],
+    MP: rawData[14],
+    csp: rawData[15],
+    cdt: rawData[16]
+  };
+};
+exports.processUserAddData = function(rawData) {
+  return {
+    oID: rawData[0],
+    tp: rawData[1],
+    nm: rawData[2],
+    cs: rawData[3],
+    pos: rawData[4],
+    tpos: rawData[5],
+    msp: rawData[6],
+    dir: rawData[7],
+    rsp: rawData[8],
+    lv: rawData[9],
+    ep: rawData[10],
+    mHP: rawData[11],
+    mMP: rawData[12],
+    HP: rawData[13],
+    MP: rawData[14],
+    csp: rawData[15],
+    cdt: rawData[16],
+
+    bS: rawData[17],
+    pS: rawData[18],
+    ipS: rawData[19],
+    eS: rawData[20],
+    aS: rawData[21],
+
+    dR: rawData[22],
+    fiDR: rawData[23],
+    frDR: rawData[24],
+    acDR: rawData[25],
+    rA: rawData[26],
+    rFi: rawData[27],
+    rFr: rawData[28],
+    rAc: rawData[29],
+    sP: rawData[30],
+    sM: rawData[31],
+    sS: rawData[32],
+    cRR: rawData[33],
+
+    g: rawData[34],
+    j: rawData[35]
+  };
+};
+exports.processUserAddReData = function(rawData) {
+  return {
+    oID: rawData[0],
+    tp: rawData[1],
+    nm: rawData[2],
+    cs: rawData[3],
+    pos: rawData[4],
+    tpos: rawData[5],
+    msp: rawData[6],
+    dir: rawData[7],
+    rsp: rawData[8],
+    lv: rawData[9],
+    ep: rawData[10],
+    mHP: rawData[11],
+    mMP: rawData[12],
+    HP: rawData[13],
+    MP: rawData[14],
+    csp: rawData[15],
+    cdt: rawData[16],
+
+    bS: rawData[17],
+    pS: rawData[18],
+    ipS: rawData[19],
+
+    dR: rawData[20],
+    fiDR: rawData[21],
+    frDR: rawData[22],
+    acDR: rawData[23],
+    rA: rawData[24],
+    rFi: rawData[25],
+    rFr: rawData[26],
+    rAc: rawData[27],
+    sP: rawData[28],
+    sM: rawData[29],
+    sS: rawData[30],
+    cRR: rawData[31]
+  };
+};
+exports.processUserMAData = function(rawData) {
+  return {
+    oID: rawData[0],
+    tp: rawData[1],
+    nm: rawData[2],
+    cs: rawData[3],
+    pos: rawData[4],
+    tpos: rawData[5],
+    msp: rawData[6],
+    dir: rawData[7],
+    rsp: rawData[8],
+    lv: rawData[9],
+    ep: rawData[10],
+    mHP: rawData[11],
+    mMP: rawData[12],
+    HP: rawData[13],
+    MP: rawData[14],
+    csp: rawData[15],
+    cdt: rawData[16],
+
+    sID: rawData[17],
+    sTPos: rawData[18],
+    mB: rawData[19]
+  };
+};
+exports.processUserUSData = function(rawData) {
+  return {
+    oID: rawData[0],
+    tp: rawData[1],
+    nm: rawData[2],
+    cs: rawData[3],
+    pos: rawData[4],
+    tpos: rawData[5],
+    msp: rawData[6],
+    dir: rawData[7],
+    rsp: rawData[8],
+    lv: rawData[9],
+    ep: rawData[10],
+    mHP: rawData[11],
+    mMP: rawData[12],
+    HP: rawData[13],
+    MP: rawData[14],
+    csp: rawData[15],
+    cdt: rawData[16],
+
+    sID: rawData[17],
+    sDir: rawData[18],
+    sTPos: rawData[19],
+
+    sPIDs: rawData[20]
+  };
+};
+exports.processUserStatData = function(rawData) {
+  return {
+      oID: rawData[0],
+      tp : rawData[1],
+      lv : rawData[2],
+      ep : rawData[3],
+      mHP: rawData[4],
+      mMP: rawData[5],
+      HP : rawData[6],
+      MP : rawData[7],
+      csp: rawData[8],
+      msp: rawData[9],
+      rsp: rawData[10],
+      cdt: rawData[11]
+  };
+};
+exports.processScoreDatas = function(rawDatas) {
+  var datas = [];
+  for (var i=0; i<rawDatas.length; i++) {
+    datas.push({
+      id : rawDatas[i][0],
+      nm : rawDatas[i][1],
+      lv: rawDatas[i][2],
+      kS : rawDatas[i][3],
+      tS : rawDatas[i][4],
+      tK : rawDatas[i][5]
+    });
+  }
+  return datas;
+};
+exports.processUserPrivateData = function(rawData) {
+  return  {
+    dR : rawData[0],
+    fiDR : rawData[1],
+    frDR : rawData[2],
+    acDR : rawData[3],
+    rA : rawData[4],
+    rFi : rawData[5],
+    rFr : rawData[6],
+    rAc : rawData[7],
+    lv : rawData[8],
+    sP : rawData[9],
+    sM : rawData[10],
+    sS : rawData[11],
+    cRR : rawData[12]
+  };
+};
+exports.processMobData = function(rawData) {
+  return {
+    id : rawData[0],
+    oID : rawData[1],
+    cs : rawData[2],
+    pos : rawData[3],
+    tpos : rawData[4],
+    msp : rawData[5],
+    dir : rawData[6],
+    rsp : rawData[7],
+    at : rawData[8],
+    mHP : rawData[9],
+    HP : rawData[10],
+    cdt : rawData[11],
+    bL : rawData[12]
+  };
+};
+exports.processMobDatas = function(rawDatas) {
+  var datas = [];
+  for (var i=0; i<rawDatas.length; i++) {
+    datas.push(exports.processMobData(rawDatas[i]));
+  }
+  return datas;
+};
+exports.processBuffData = function(rawData) {
+  return {
+    oID : rawData[0],
+    iP : rawData[1],
+    bL : rawData[2],
+    pL : rawData[3],
+    aL : rawData[4]
+  };
+}
+exports.processBuffDatas = function(rawDatas) {
+  var datas = [];
+  for (var i=0; i<rawDatas.length; i++) {
+    datas.push(exports.processBuffData(rawDatas[i]));
+  }
+  return datas;
+}
+exports.processMobStatData = function(rawData) {
+  return {
+    oID : rawData[0],
+    pos : rawData[1],
+    dir : rawData[2],
+    HP : rawData[3]
+  }
+}
+exports.processMobBuffData = function(rawData) {
+  return {
+    oID : rawData[0],
+    bL : rawData[1]
+  }
+}
+exports.processObjDatas = function(rawDatas) {
+  var datas = [];
+  for (var i=0; i<rawDatas.length; i++) {
+    var data = {};
+    switch (rawDatas[i][0].substr(0, 1)) {
+      case gameConfig.PREFIX_OBJECT_GOLD:
+        data.oID = rawDatas[i][0];
+        data.pos = rawDatas[i][1];
+        data.rad = rawDatas[i][2];
+        break;
+      case gameConfig.PREFIX_OBJECT_JEWEL:
+        data.oID = rawDatas[i][0];
+        data.pos = rawDatas[i][1];
+        break;
+      case gameConfig.PREFIX_OBJECT_SKILL:
+        data.oID = rawDatas[i][0];
+        data.pos = rawDatas[i][1];
+        data.pro = rawDatas[i][2];
+        break;
+      case gameConfig.PREFIX_OBJECT_BOX:
+        data.oID = rawDatas[i][0];
+        data.pos = rawDatas[i][1];
+        break;
+      case gameConfig.PREFIX_OBJECT_BUFF:
+        data.oID = rawDatas[i][0];
+        data.pos = rawDatas[i][1];
+        data.rID = rawDatas[i][2];
+        break;
+      default:
+    }
+    datas.push(data);
+  }
+  return datas;
+}

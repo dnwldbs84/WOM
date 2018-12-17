@@ -25,6 +25,8 @@ function Monster(mobData, mobGenData){
   this.index = mobData.index;
   this.name = mobData.mobName;
 
+  this.genIndex = mobGenData.index;
+
   this.mobGenType = mobGenData.mobGenType;
 
   this.isAttack = false;
