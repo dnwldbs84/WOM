@@ -540,7 +540,11 @@ if (true) {
     messageToClient('public', util.makePacketForm(gameConfig.MTYPE_MOB_DEAD, mobID));
   };
 }
-
+wss.on("headers", function(headers, msg) {
+    headers['set-cookie'] = msg.headers.cookie;
+    // headers["set-cookie"] = "SESSIONID=" + crypto.randomBytes(20).toString("hex");
+    console.log("handshake response cookie", headers["set-cookie"]);
+});
 // Websocket Events
 wss.on('connection', function(client, req){
   client.on('headers', function(headers) {
@@ -548,11 +552,7 @@ wss.on('connection', function(client, req){
     console.log(headers);
   });
   try {
-    if (req) {
-      console.log(req);
-      console.log(req.cookie);
-      console.log(req.headers);
-      console.log(req.headers.cookie);
+    if (req && req.headers && req.headers.cookie) {
       var cookies = cookie.parse(req.headers.cookie);
       var redisSid = cookieParser.signedCookie(cookies["connect.sid"], '!!@@Secret Cat@@!!');
       redisClient.get('sess:' + redisSid, function(err, result) {
@@ -576,6 +576,8 @@ wss.on('connection', function(client, req){
           // client.terminate();
         }
       });
+    } else {
+      messageToClient('private', util.makePacketForm(gameConfig.MTYPE_NEED_SET_HEADER), client);
     }
   } catch (e) {
     console.log('Can`t find cookies 2');
@@ -598,6 +600,30 @@ wss.on('connection', function(client, req){
       var data = util.decodePacket(msg);
       var vars = data.v;
       switch (data.t) {
+        case gameConfig.MTYPE_SET_HADER:
+          var redisSid = cookieParser.signedCookie(vars[0], '!!@@Secret Cat@@!!');
+          redisClient.get('sess:' + redisSid, function(err, result) {
+            // console.log(result);
+            if (err) { throw err; }
+            if (result) {
+              client.dbId = JSON.parse(result)['userID'];
+            }
+            if (client.dbId) {
+              messageToClient('private', util.makePacketForm(gameConfig.MTYPE_SYNC_SUCCESS), client);
+              // check duplicate access
+              wss.clients.forEach(function(cli) {
+                if (cli.dbId === client.dbId && cli !== client) {
+                  // duplicate
+                  messageToClient('private', util.makePacketForm(gameConfig.MTYPE_DUPLICATE_ACCESS), cli);
+                }
+              });
+            } else {
+              console.log('Can`t find cookies 3');
+              messageToClient('private', util.makePacketForm(gameConfig.MTYPE_ERROR_SET_ID), client);
+              // client.terminate();
+            }
+          });
+          break;
         case gameConfig.MTYPE_REQ_START_GAME: //'reqStartGame':
           reqStartGame(vars[0], vars[1]);
           break;
