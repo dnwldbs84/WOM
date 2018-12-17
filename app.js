@@ -545,6 +545,8 @@ if (true) {
 wss.on('connection', function(client, req){
   try {
     if (req) {
+      console.log(req.headers);
+      console.log(req.headers.cookie);
       var cookies = cookie.parse(req.headers.cookie);
       var redisSid = cookieParser.signedCookie(cookies["connect.sid"], '!!@@Secret Cat@@!!');
       redisClient.get('sess:' + redisSid, function(err, result) {
