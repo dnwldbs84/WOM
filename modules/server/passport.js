@@ -98,7 +98,7 @@ exports.setMiddleware = function(app) {
     secret: '!!@@Secret Cat@@!!',
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 365 * 24 * 60 * 60 * 1000 }
+    cookie: { maxAge: 365 * 24 * 60 * 60 * 1000, secure: false }
   }));
 
   app.use(function(req, res, next) {
