@@ -541,6 +541,8 @@ if (true) {
   };
 }
 wss.on("headers", function(headers, msg) {
+    console.log(headers);
+    console.log(msg);
     headers['set-cookie'] = msg.headers.cookie;
     // headers["set-cookie"] = "SESSIONID=" + crypto.randomBytes(20).toString("hex");
     console.log("handshake response cookie", headers["set-cookie"]);
