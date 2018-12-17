@@ -543,8 +543,14 @@ if (true) {
 
 // Websocket Events
 wss.on('connection', function(client, req){
+  client.on('headers', function(headers) {
+    console.log('headers');
+    console.log(headers);
+  });
   try {
     if (req) {
+      console.log(req);
+      console.log(req.cookie);
       console.log(req.headers);
       console.log(req.headers.cookie);
       var cookies = cookie.parse(req.headers.cookie);
