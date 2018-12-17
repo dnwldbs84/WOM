@@ -3,12 +3,12 @@ var mysql = require('mysql'),
     pool = null;
 
 var setting = {
-  // socketPath : '/var/run/mysqld/mysqld.sock',
+  socketPath : '/var/run/mysqld/mysqld.sock',
   connectionLimit: 10,
   host: '',
   user: '',
   password: '',
-  database: 'test',
+  database: 'WOM',
 
   dateStrings: 'date'
 };
