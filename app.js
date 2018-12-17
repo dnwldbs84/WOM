@@ -549,6 +549,7 @@ wss.on('connection', function(client, req){
       var redisSid = cookieParser.signedCookie(cookies["connect.sid"], '!!@@Secret Cat@@!!');
       redisClient.get('sess:' + redisSid, function(err, result) {
         // console.log(result);
+        if (err) { throw err; }
         if (result) {
           client.dbId = JSON.parse(result)['userID'];
         }
@@ -570,6 +571,7 @@ wss.on('connection', function(client, req){
     }
   } catch (e) {
     console.log('Can`t find cookies 2');
+    console.log(e);
     // go to error
     messageToClient('private', util.makePacketForm(gameConfig.MTYPE_ERROR_SET_ID), client);
     return;
