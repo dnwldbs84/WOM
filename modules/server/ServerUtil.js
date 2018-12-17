@@ -13,6 +13,16 @@ var charDropTable = csvJson.toObject(serverDataJson.charDrop, csvJsonOption);
 var boxDropTable = csvJson.toObject(serverDataJson.boxDrop, csvJsonOption);
 var objectAssign = require('../public/objectAssign');
 
+var key = "WTFFFFFFF!!!!! DB id key how longadsf";
+var encryptor = require('simple-encryptor')(key);
+
+exports.encrypt = function(str) {
+  return encryptor.encrypt(str);
+}
+exports.decrypt = function(str) {
+  return encryptor.decrypt(str);
+}
+
 exports.generateRandomUniqueID = function(uniqueCheckArray, prefix){
   var IDisUnique = false;
   while(!IDisUnique){

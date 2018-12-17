@@ -32,6 +32,7 @@ var userStatTable = csvJson.toObject(dataJson.userStatData, csvJsonOption);
 // var buffTable = csvJson.toObject(dataJson.buffData, csvJsonOption);
 
 var util = require('./modules/public/util.js');
+var ServerUtil = require('./modules/server/ServerUtil.js');
 
 var isServerDown = false, serverDownTimeout = false;
 
@@ -542,41 +543,41 @@ if (true) {
 }
 // Websocket Events
 wss.on('connection', function(client, req){
-  try {
-    if (req && req.headers && req.headers.cookie) {
-      var cookies = cookie.parse(req.headers.cookie);
-      var redisSid = cookieParser.signedCookie(cookies["connect.sid"], '!!@@Secret Cat@@!!');
-      redisClient.get('sess:' + redisSid, function(err, result) {
-        // console.log(result);
-        if (err) { throw err; }
-        if (result) {
-          client.dbId = JSON.parse(result)['userID'];
-        }
-        if (client.dbId) {
-          messageToClient('private', util.makePacketForm(gameConfig.MTYPE_SYNC_SUCCESS), client);
-          // check duplicate access
-          wss.clients.forEach(function(cli) {
-            if (cli.dbId === client.dbId && cli !== client) {
-              // duplicate
-              messageToClient('private', util.makePacketForm(gameConfig.MTYPE_DUPLICATE_ACCESS), cli);
-            }
-          });
-        } else {
-          console.log('Can`t find cookies 1');
-          messageToClient('private', util.makePacketForm(gameConfig.MTYPE_ERROR_SET_ID), client);
-          // client.terminate();
-        }
-      });
-    } else {
+  // try {
+  //   if (req && req.headers && req.headers.cookie) {
+  //     var cookies = cookie.parse(req.headers.cookie);
+  //     var redisSid = cookieParser.signedCookie(cookies["connect.sid"], '!!@@Secret Cat@@!!');
+  //     redisClient.get('sess:' + redisSid, function(err, result) {
+  //       // console.log(result);
+  //       if (err) { throw err; }
+  //       if (result) {
+  //         client.dbId = JSON.parse(result)['userID'];
+  //       }
+  //       if (client.dbId) {
+  //         messageToClient('private', util.makePacketForm(gameConfig.MTYPE_SYNC_SUCCESS), client);
+  //         // check duplicate access
+  //         wss.clients.forEach(function(cli) {
+  //           if (cli.dbId === client.dbId && cli !== client) {
+  //             // duplicate
+  //             messageToClient('private', util.makePacketForm(gameConfig.MTYPE_DUPLICATE_ACCESS), cli);
+  //           }
+  //         });
+  //       } else {
+  //         console.log('Can`t find cookies 1');
+  //         messageToClient('private', util.makePacketForm(gameConfig.MTYPE_ERROR_SET_ID), client);
+  //         // client.terminate();
+  //       }
+  //     });
+  //   } else {
       messageToClient('private', util.makePacketForm(gameConfig.MTYPE_NEED_SET_HEADER), client);
-    }
-  } catch (e) {
-    console.log('Can`t find cookies 2');
-    console.log(e);
-    // go to error
-    messageToClient('private', util.makePacketForm(gameConfig.MTYPE_ERROR_SET_ID), client);
-    return;
-  }
+  //   }
+  // } catch (e) {
+  //   console.log('Can`t find cookies 2');
+  //   console.log(e);
+  //   // go to error
+  //   messageToClient('private', util.makePacketForm(gameConfig.MTYPE_ERROR_SET_ID), client);
+  //   return;
+  // }
 
   var user;
   // var uid = null;
@@ -592,7 +593,7 @@ wss.on('connection', function(client, req){
       var vars = data.v;
       switch (data.t) {
         case gameConfig.MTYPE_SET_HADER:
-          client.dbId = vars[0]; //decode
+          client.dbId = ServerUtil.decrypt(vars[0]); //decode
           if (client.dbId) {
             messageToClient('private', util.makePacketForm(gameConfig.MTYPE_SYNC_SUCCESS), client);
             // check duplicate access

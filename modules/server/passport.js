@@ -3,6 +3,7 @@ var DBQuery = require('./DBQuery.js');
 var LocalStartegy = require('passport-local').Strategy;
 var GoogleStrategy = require('passport-google-oauth20').Strategy;
 var passport = require('passport');
+var ServerUtil = require('./ServerUtil.js');
 
 var session = require('express-session'),
     RedisStore = require('connect-redis')(session),
@@ -176,7 +177,7 @@ exports.setUserData = function(user) {
       n : user.displayName,
       l : user.levels,
       f : user.skills ? false : true,
-      t : user.id       // encode
+      t : ServerUtil.encrypt(user.id)       // encode
     }
   } else {
     return null;
