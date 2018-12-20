@@ -2,6 +2,7 @@ var mysql = require('mysql');
 var DB = require('./DB.js');
 var gameConfig = require('../public/gameConfig.json');
 var util = require('../public/util.js');
+var ServerUtil = require('./ServerUtil.js');
 
 var DBQuery = (function() {
   function _findById(id, cb) {
@@ -126,7 +127,7 @@ var DBQuery = (function() {
       _findById(id, function(err, result) {
         if (err && !result) { return; }
         try {
-          var displayName = user.name;
+          var displayName = user.name ? ServerUtil.checkName(user.name) : '';
           var levels = result.levels.split(',');
           var exps = result.exps.split(',');
           var equipSkillName = 'pyroEquipSkills';
