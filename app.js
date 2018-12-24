@@ -703,7 +703,7 @@ wss.on('connection', function(client, req){
           killme();
           break;
         case gameConfig.MTYPE_GIVE_EXP: //'giveExp':
-          // giveExp();
+          giveExp();
           break;
         case gameConfig.MTYPE_GIVE_RESOURCES: //'giveResources':
           giveResources();
@@ -1435,9 +1435,9 @@ wss.on('connection', function(client, req){
     GM.killme(user.objectID);
   }
   // socket.on('giveExp', function(){
-  // function giveExp(){
-  //   GM.giveExp(user.objectID);
-  // }
+  function giveExp(){
+    GM.giveExp(user.objectID);
+  }
   // socket.on('giveResources', function(){
   function giveResources(){
     GM.giveResources(user.objectID);

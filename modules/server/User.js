@@ -75,7 +75,8 @@ function User(socketID, userName, userStat, userBase, exp){
   this.baseMPRegen = userBase.baseMPRegen;
   this.baseHPRegenRate = userBase.baseHPRegenRate;
   this.baseMPRegenRate = userBase.baseMPRegenRate;
-  this.baseMoveSpeed = userBase.baseMoveSpeed;
+  this.baseMoveSpeed = userStat.moveSpeed;
+  // this.baseMoveSpeed = userBase.baseMoveSpeed;
   this.baseRotateSpeed = userBase.baseRotateSpeed;
   this.baseCastSpeed = userBase.baseCastSpeed;
   this.baseDamage = userBase.baseDamage;
@@ -1355,6 +1356,9 @@ User.prototype.death = function(attackUserID){
 //   }
 //   this.onChangeStat(this);
 // };
+User.prototype.addScore = function(score) {
+  this.killScore += score;
+}
 User.prototype.calcGame = function() {
   this.gold += this.gameGold;
   this.jewel += this.gameJewel;
@@ -1531,7 +1535,8 @@ User.prototype.setStat = function(levelData, baseData, exp){
   this.baseHPRegenRate = baseData.baseHPRegenRate;
   this.baseMPRegen = baseData.baseMPRegen;
   this.baseMPRegenRate = baseData.baseMPRegenRate;
-  this.baseMoveSpeed = baseData.baseMoveSpeed;
+  // this.baseMoveSpeed = baseData.baseMoveSpeed;
+  this.baseMoveSpeed = levelData.moveSpeed;
   this.baseRotateSpeed = baseData.baseRotateSpeed;
   this.baseCastSpeed = baseData.baseCastSpeed;
   this.baseDamage = baseData.baseDamage;
@@ -1638,6 +1643,9 @@ User.prototype.updateUserBaseStat = function(userLevelData){
   this.basePower = userLevelData.power;
   this.baseMagic = userLevelData.magic;
   this.baseSpeed = userLevelData.speed;
+
+  // update base move speed
+  this.baseMoveSpeed = userLevelData.moveSpeed;
 };
 User.prototype.killUser = function(score) {
   this.killCount ++;

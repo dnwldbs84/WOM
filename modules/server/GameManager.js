@@ -1804,13 +1804,13 @@ GameManager.prototype.killme = function(userID){
     this.users[userID].death(userID);
   }
 };
-// GameManager.prototype.giveExp = function(userID){
-//   if(userID in this.users){
-//     if(!this.users[userID].isDead){
-//       this.users[userID].getExp(500);
-//     }
-//   }
-// };
+GameManager.prototype.giveExp = function(userID){
+  if(userID in this.users){
+    if(!this.users[userID].isDead){
+      this.users[userID].addScore(500);
+    }
+  }
+};
 GameManager.prototype.giveResources = function(userID){
   if(userID in this.users){
     this.users[userID].getGold(10000);
